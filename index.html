@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Turbo Team Battle | Telegram Mini App</title>
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Google Fonts: Orbitron & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- QRCode.js for Deposit Address QR -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    
+    <!-- ================= 1. TOP BRAND HEADER: TURBO TAP GAME WITH OFFICIAL LOGO ================= -->
+    <div class="top-brand-bar">
+      <!-- Official Logo on Left (as indicated in red circle) -->
+      <div class="brand-logo-wrap" onclick="openProfileModal()" title="Turbo Tap Official Logo">
+        <img src="images/logo.png" alt="Turbo Tap Logo" class="brand-top-logo">
+      </div>
+
+      <!-- Turbo Tap Game Brand Box -->
+      <div class="brand-box">
+        <div class="brand-shine"></div>
+        <div class="brand-spark left-spark"><i class="fa-solid fa-bolt-lightning text-gold"></i></div>
+        <div class="brand-title-wrap">
+          <span class="brand-tag"><i class="fa-solid fa-gamepad"></i> OFFICIAL MINI APP</span>
+          <span class="brand-text">TURBO TAP GAME</span>
+        </div>
+        <div class="brand-spark right-spark"><i class="fa-solid fa-crown text-gold"></i></div>
+      </div>
+    </div>
+
+    <!-- ================= 2. USER PROFILE BAR (CLICK ENTIRE BOX FOR DETAILS) ================= -->
+    <div class="user-profile-bar" id="userProfileBtn" onclick="openProfileModal()" title="Click anywhere to view full user profile details">
+      <!-- Gol (Circular) Profile Avatar Ring with Username -->
+      <div class="user-circle-wrap">
+        <div class="user-circle-ring">
+          <img id="userAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=TurboWarrior" alt="Avatar">
+          <span class="user-status-dot"></span>
+        </div>
+      </div>
+
+      <!-- User Info & Username Display -->
+      <div class="user-profile-info">
+        <div class="user-top-line">
+          <span class="user-circle-name" id="userName">Commander</span>
+          <span class="user-verified-badge" title="Verified Web3 Member"><i class="fa-solid fa-circle-check"></i></span>
+        </div>
+        <div class="user-sub-line">
+          <span class="user-id-pill"><i class="fa-brands fa-telegram"></i> <span id="userIdDisplay">#1001</span></span>
+          <span class="user-rank-pill"><i class="fa-solid fa-shield-halved text-gold"></i> MASTER TIER</span>
+        </div>
+      </div>
+
+      <!-- Interactive Click Indicator -->
+      <div class="user-profile-cta">
+        <span class="cta-label">DETAILS</span>
+        <div class="cta-arrow-ring"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>
+    </div>
+
+    <!-- ================= 3. DUAL WALLETS BAR (GAME & REFERRAL) ================= -->
+    <header class="top-nav">
+      <div class="header-wallets-full">
+        <!-- Main Game Wallet -->
+        <div class="wallet-pill game-pill" onclick="openDepositModal()" title="Deposit BSC BEP-20">
+          <div class="wallet-icon-ring"><i class="fa-solid fa-gamepad"></i></div>
+          <div class="wallet-details">
+            <span class="w-label">GAME WALLET</span>
+            <div class="wallet-amount">$<span id="walletBalance">25.00</span></div>
+          </div>
+          <button class="wallet-action-icon" title="Deposit BSC BEP-20"><i class="fa-solid fa-plus"></i></button>
+        </div>
+
+        <!-- Referral Bonus Wallet -->
+        <div class="wallet-pill ref-pill" onclick="navigateTo('screenReferral')" title="Referral Bonus Wallet ($25/friend)">
+          <div class="wallet-icon-ring ref-ring"><i class="fa-solid fa-gift"></i></div>
+          <div class="wallet-details">
+            <span class="w-label">REF BONUS (+$25)</span>
+            <div class="wallet-amount text-gold">$<span id="headerRefBalance">0.00</span></div>
+          </div>
+          <div class="wallet-action-icon ref-share" title="Share Referral Link"><i class="fa-solid fa-share-nodes"></i></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Container with multiple screens -->
+    <main class="main-content">
+
+      <!-- ================= SCREEN 1: ARENA LOBBY ================= -->
+      <section id="screenLobby" class="view-screen active">
+        <!-- Live Status Bar -->
+        <div class="hero-banner">
+          <div class="banner-badge"><span class="pulse-dot"></span> MULTIPLAYER ARENA LIVE</div>
+          <h1 class="hero-title">TEAM BATTLE ARENA</h1>
+          <p class="hero-sub">Select your team pool, auto-match opponents, and take the cash rewards!</p>
+          
+          <div class="live-stats-bar">
+            <div class="stat-item">
+              <span class="stat-num" id="onlineCount">1,840</span>
+              <span class="stat-lbl">Online</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-num" id="activeBattlesCount">412</span>
+              <span class="stat-lbl">Active Battles</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-num text-gold">$14,920</span>
+              <span class="stat-lbl">Paid Today</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Room Selector Grid -->
+        <div class="section-heading">
+          <h2><i class="fa-solid fa-gamepad"></i> Choose Battle Team</h2>
+          <span class="heading-tag">AUTO MATCHMAKING</span>
+        </div>
+
+        <div class="rooms-grid">
+          <!-- Room 1: 3 Players -> $2 -->
+          <div class="room-card room-trio" data-players="3" data-prize="2">
+            <div class="room-glow cyan-glow"></div>
+            <div class="room-header">
+              <span class="room-badge cyan-badge"><i class="fa-solid fa-bolt"></i> FASTEST MATCH</span>
+              <span class="room-players-tag"><i class="fa-solid fa-users"></i> 3 PLAYERS</span>
+            </div>
+            <div class="room-body">
+              <div class="room-icon-box cyan-box">
+                <i class="fa-solid fa-user-ninja"></i>
+              </div>
+              <div class="room-details">
+                <div class="room-name">TRIO SHOWDOWN</div>
+                <div class="room-desc">3 Players Solo Knockout</div>
+              </div>
+            </div>
+            <div class="room-prize-row">
+              <div class="prize-info">
+                <span class="prize-label">WINNER REWARD</span>
+                <span class="prize-value cyan-val">$2.00</span>
+              </div>
+              <button class="join-btn cyan-btn" onclick="startMatchmaking(3, 2.00, 'Trio Showdown')">
+                <span>JOIN $2</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Room 2: 5 Players -> $4 -->
+          <div class="room-card featured room-squad" data-players="5" data-prize="4">
+            <div class="featured-ribbon"><i class="fa-solid fa-fire"></i> POPULAR</div>
+            <div class="room-glow purple-glow"></div>
+            <div class="room-header">
+              <span class="room-badge purple-badge"><i class="fa-solid fa-trophy"></i> SQUAD BATTLE</span>
+              <span class="room-players-tag"><i class="fa-solid fa-users"></i> 5 PLAYERS</span>
+            </div>
+            <div class="room-body">
+              <div class="room-icon-box purple-box">
+                <i class="fa-solid fa-skull-crossbones"></i>
+              </div>
+              <div class="room-details">
+                <div class="room-name">SQUAD DOMINATION</div>
+                <div class="room-desc">5-Player Rush Elimination</div>
+              </div>
+            </div>
+            <div class="room-prize-row">
+              <div class="prize-info">
+                <span class="prize-label">WINNER REWARD</span>
+                <span class="prize-value purple-val">$4.00</span>
+              </div>
+              <button class="join-btn purple-btn" onclick="startMatchmaking(5, 4.00, 'Squad Domination')">
+                <span>JOIN $4</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Room 3: 8 Players -> $7 -->
+          <div class="room-card room-elite" data-players="8" data-prize="7">
+            <div class="room-glow amber-glow"></div>
+            <div class="room-header">
+              <span class="room-badge amber-badge"><i class="fa-solid fa-crosshairs"></i> HIGH STAKES</span>
+              <span class="room-players-tag"><i class="fa-solid fa-users"></i> 8 PLAYERS</span>
+            </div>
+            <div class="room-body">
+              <div class="room-icon-box amber-box">
+                <i class="fa-solid fa-shield-virus"></i>
+              </div>
+              <div class="room-details">
+                <div class="room-name">ELITE SYNDICATE</div>
+                <div class="room-desc">8-Player Mega Clash</div>
+              </div>
+            </div>
+            <div class="room-prize-row">
+              <div class="prize-info">
+                <span class="prize-label">WINNER REWARD</span>
+                <span class="prize-value amber-val">$7.00</span>
+              </div>
+              <button class="join-btn amber-btn" onclick="startMatchmaking(8, 7.00, 'Elite Syndicate')">
+                <span>JOIN $7</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Room 4: 12 Players -> $15 -->
+          <div class="room-card jackpot room-royale" data-players="12" data-prize="15">
+            <div class="room-glow gold-glow"></div>
+            <div class="room-header">
+              <span class="room-badge gold-badge"><i class="fa-solid fa-crown"></i> GRAND JACKPOT</span>
+              <span class="room-players-tag"><i class="fa-solid fa-users"></i> 12 PLAYERS</span>
+            </div>
+            <div class="room-body">
+              <div class="room-icon-box gold-box">
+                <i class="fa-solid fa-dragon"></i>
+              </div>
+              <div class="room-details">
+                <div class="room-name">CHAMPIONS ROYALE</div>
+                <div class="room-desc">12-Player Ultimate Showdown</div>
+              </div>
+            </div>
+            <div class="room-prize-row">
+              <div class="prize-info">
+                <span class="prize-label">JACKPOT POOL</span>
+                <span class="prize-value gold-val">$15.00</span>
+              </div>
+              <button class="join-btn gold-btn" onclick="startMatchmaking(12, 15.00, 'Champions Royale')">
+                <span>JOIN $15</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Access Referral Promo Banner -->
+        <div class="ref-promo-card" onclick="navigateTo('screenReferral')">
+          <div class="ref-promo-icon"><i class="fa-solid fa-gift"></i></div>
+          <div class="ref-promo-text">
+            <div class="ref-promo-head">INVITE FRIENDS & EARN $25.00</div>
+            <div class="ref-promo-desc">Get instant $25 bonus in Referral Wallet for every active friend!</div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-gold"></i>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 2: MATCHMAKING SEARCH ================= -->
+      <section id="screenMatchmaking" class="view-screen">
+        <div class="matchmaking-container">
+          <div class="radar-wrapper">
+            <div class="radar-circle circle-1"></div>
+            <div class="radar-circle circle-2"></div>
+            <div class="radar-circle circle-3"></div>
+            <div class="radar-sweep"></div>
+            <div class="radar-center-icon">
+              <i class="fa-solid fa-satellite-dish fa-spin"></i>
+            </div>
+          </div>
+
+          <div class="search-status-box">
+            <span class="search-badge pulse"><i class="fa-solid fa-magnifying-glass"></i> MATCHMAKING ACTIVE</span>
+            <h2 id="searchRoomTitle">Searching 5-Player Squad...</h2>
+            <div class="search-pool-tag">Prize Pool: <b id="searchPoolPrize" class="text-gold">$4.00</b></div>
+            <div class="search-timer-text">Elapsed: <span id="searchTimer">00:03</span> | Ping: <span id="searchPing">24ms</span></div>
+          </div>
+
+          <div class="slots-progress-container">
+            <div class="slots-header">
+              <span>PLAYERS CONNECTED</span>
+              <span id="slotsCountText">1 / 5</span>
+            </div>
+            <div class="slots-bar">
+              <div id="slotsBarFill" class="slots-bar-fill" style="width: 20%;"></div>
+            </div>
+          </div>
+
+          <div class="players-slot-grid" id="playersSlotGrid"></div>
+
+          <div class="matchmaking-actions">
+            <button class="cancel-search-btn" id="cancelSearchBtn" onclick="cancelMatchmaking()">
+              <i class="fa-solid fa-xmark"></i> CANCEL SEARCH
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 3: COUNTDOWN ================= -->
+      <section id="screenCountdown" class="view-screen">
+        <div class="countdown-modal-box">
+          <div class="vs-badge">ALL PLAYERS READY!</div>
+          <div class="match-pool-chip">PRIZE POOL: <span id="countdownPrizeText">$4.00</span></div>
+          <h2 class="battle-starting-title">BATTLE STARTS IN</h2>
+          <div class="huge-countdown" id="hugeCountdownNumber">3</div>
+          <p class="countdown-tip">Tip: Tap the Energy Core as fast as possible to overwhelm opponents!</p>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 4: ARENA BATTLE ================= -->
+      <section id="screenBattle" class="view-screen">
+        <div class="battle-header">
+          <div class="battle-pool-pill">
+            <i class="fa-solid fa-trophy"></i> POOL: <b id="battlePrizeText">$4.00</b>
+          </div>
+          <div class="battle-timer-box">
+            <i class="fa-solid fa-stopwatch"></i>
+            <span id="battleTimer">15s</span>
+          </div>
+          <button class="mute-btn" id="soundToggleBtn" onclick="toggleAudio()"><i class="fa-solid fa-volume-high"></i></button>
+        </div>
+
+        <div class="live-leaderboard-card">
+          <div class="board-title">
+            <span><i class="fa-solid fa-ranking-star"></i> LIVE ARENA STANDINGS</span>
+            <span class="live-pill">LIVE</span>
+          </div>
+          <div class="opponents-list" id="opponentsList"></div>
+        </div>
+
+        <div class="battle-tap-area">
+          <div class="tap-target-wrapper">
+            <div class="tap-rings">
+              <div class="ring-pulse r1"></div>
+              <div class="ring-pulse r2"></div>
+            </div>
+            <button id="tapOrb" class="battle-orb" ontouchstart="handleOrbTap(event)" onmousedown="handleOrbTap(event)">
+              <div class="orb-inner">
+                <i class="fa-solid fa-bolt-lightning"></i>
+                <div class="orb-tap-text">TAP FAST!</div>
+                <div class="orb-score" id="userLiveScore">0</div>
+              </div>
+            </button>
+          </div>
+
+          <div class="boost-meter-container">
+            <div class="boost-label">
+              <span><i class="fa-solid fa-fire"></i> TURBO FRENZY (3X)</span>
+              <span id="boostPercent">0%</span>
+            </div>
+            <div class="boost-track">
+              <div id="boostFill" class="boost-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 5: RESULTS ================= -->
+      <section id="screenResult" class="view-screen">
+        <div class="result-card">
+          <div class="result-confetti" id="confettiContainer"></div>
+          <div class="result-badge-wrap" id="resultIconWrap">
+            <div class="result-trophy-ring"><i class="fa-solid fa-crown text-gold"></i></div>
+          </div>
+          <h2 class="result-heading" id="resultTitle">VICTORY!</h2>
+          <p class="result-sub" id="resultSubtitle">You conquered the arena!</p>
+
+          <div class="reward-box" id="rewardBox">
+            <span class="reward-lbl">PRIZE CREDITED</span>
+            <div class="reward-amount">+<span id="resultRewardAmt">$4.00</span></div>
+            <span class="reward-status"><i class="fa-solid fa-circle-check"></i> Added to Game Wallet</span>
+          </div>
+
+          <div class="match-summary-board" id="matchSummaryBoard"></div>
+
+          <div class="result-actions">
+            <button class="primary-action-btn" onclick="returnToLobby()">
+              <i class="fa-solid fa-play"></i> PLAY AGAIN
+            </button>
+            <button class="secondary-action-btn" onclick="shareTelegramScore()">
+              <i class="fa-brands fa-telegram"></i> SHARE IN TELEGRAM
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 6: DEDICATED REFERRAL WALLET ================= -->
+      <section id="screenReferral" class="view-screen">
+        <div class="ref-wallet-header">
+          <div class="ref-card-glow"></div>
+          <div class="ref-badge"><i class="fa-solid fa-gift"></i> REFERRAL BONUS SYSTEM</div>
+          <div class="ref-balance-title">REFERRAL WALLET BALANCE</div>
+          <div class="ref-balance-big">$<span id="refWalletBalance">0.00</span> <small>USD</small></div>
+          <p class="ref-reward-highlight">Earn <b>+$25.00</b> for every friend who joins via your link!</p>
+
+          <div class="ref-stats-grid">
+            <div class="ref-stat-box">
+              <span class="rs-num" id="totalFriendsCount">0</span>
+              <span class="rs-lbl">Friends Invited</span>
+            </div>
+            <div class="ref-stat-box">
+              <span class="rs-num text-gold" id="totalEarnedRef">$0.00</span>
+              <span class="rs-lbl">Total Earned</span>
+            </div>
+            <div class="ref-stat-box">
+              <span class="rs-num text-green" id="refStatusReady">BSC Ready</span>
+              <span class="rs-lbl">Network</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Share Your Link Box -->
+        <div class="ref-link-card">
+          <div class="card-title"><i class="fa-solid fa-link text-cyan"></i> YOUR PERSONAL INVITE LINK</div>
+          <p class="card-desc">Share this link in Telegram channels, groups, or friends. When they click and join, you get $25 instantly!</p>
+          
+          <div class="link-input-group">
+            <input type="text" id="referralLinkInput" readonly value="https://t.me/TurboTapgame_bot/Play?startapp=ref_1001">
+            <button class="copy-link-btn" onclick="copyReferralLink()"><i class="fa-solid fa-copy"></i> COPY</button>
+          </div>
+
+          <div class="share-actions-row">
+            <button class="tg-share-btn" onclick="shareInviteToTelegram()">
+              <i class="fa-brands fa-telegram"></i> SEND TO TELEGRAM FRIENDS
+            </button>
+            <button class="claim-btn" onclick="openWithdrawModal('referral')">
+              <i class="fa-solid fa-money-bill-transfer"></i> WITHDRAW BONUS (BSC BEP-20)
+            </button>
+          </div>
+        </div>
+
+        <!-- How It Works & Demo Test Bonus -->
+        <div class="how-it-works-card">
+          <div class="card-title"><i class="fa-solid fa-circle-question text-purple"></i> HOW REFERRALS WORK</div>
+          <div class="steps-list">
+            <div class="step-item">
+              <div class="step-dot">1</div>
+              <div class="step-txt">Copy your unique link and send to friends or groups.</div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">2</div>
+              <div class="step-txt">Friend opens the mini app through your link.</div>
+            </div>
+            <div class="step-item">
+              <div class="step-dot">3</div>
+              <div class="step-txt"><b>$25.00</b> is credited into your Referral Wallet automatically!</div>
+            </div>
+          </div>
+
+          <div class="demo-invite-test">
+            <button class="test-invite-btn" onclick="simulateFriendJoined()">
+              <i class="fa-solid fa-user-plus"></i> Simulate 1 Friend Join (+$25 Bonus Test)
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 7: WALLET & FINANCE ================= -->
+      <section id="screenWallet" class="view-screen">
+        <div class="finance-card">
+          <div class="finance-header-row">
+            <div>
+              <span class="finance-sub">MAIN GAME BALANCE</span>
+              <div class="finance-main-val">$<span id="financeWalletVal">25.00</span></div>
+            </div>
+            <div class="network-badge"><i class="fa-solid fa-circle-nodes text-gold"></i> BSC BEP-20 (BNB Smart Chain)</div>
+          </div>
+
+          <div class="wallet-cta-row">
+            <button class="w-cta-btn deposit-btn" onclick="openDepositModal()">
+              <i class="fa-solid fa-arrow-down-long"></i>
+              <span>DEPOSIT</span>
+            </button>
+            <button class="w-cta-btn withdraw-btn" onclick="openWithdrawModal('game')">
+              <i class="fa-solid fa-arrow-up-long"></i>
+              <span>WITHDRAW</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Your Unique Auto-Generated Deposit Address Card -->
+        <div class="deposit-preview-card">
+          <div class="card-title">
+            <span><i class="fa-solid fa-wallet text-gold"></i> YOUR DEDICATED DEPOSIT ADDRESS</span>
+            <span class="badge-auto">AUTO-GENERATED</span>
+          </div>
+          <p class="card-desc">Your personal unique Binance Smart Chain (BEP-20) address. Any USDT (BEP-20) sent here credits automatically to your game wallet!</p>
+
+          <div class="user-address-box">
+            <div class="chain-tag">BSC (BEP-20)</div>
+            <div class="addr-text" id="userDedicatedAddress">0x71Ca...b89A</div>
+            <button class="copy-small-btn" onclick="copyDepositAddress()"><i class="fa-solid fa-copy"></i> Copy</button>
+          </div>
+        </div>
+
+        <!-- Transaction History -->
+        <div class="history-card">
+          <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> TRANSACTION HISTORY (BSC BEP-20)</div>
+          <div class="history-list" id="globalHistoryList">
+            <div class="h-row">
+              <div class="h-info">
+                <span class="h-title"><i class="fa-solid fa-gift text-gold"></i> Welcome Starter Pack</span>
+                <span class="h-date">Today, 12:00</span>
+              </div>
+              <span class="h-amt text-green">+$25.00</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= MODAL: DEPOSIT WITH QR CODE (STRICTLY BSC BEP-20) ================= -->
+      <div id="depositModal" class="app-modal">
+        <div class="modal-backdrop" onclick="closeDepositModal()"></div>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-qrcode text-cyan"></i> BSC BEP-20 Deposit</h3>
+            <button class="modal-close-btn" onclick="closeDepositModal()"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body text-center">
+            
+            <!-- Network Fixed Banner -->
+            <div class="bsc-single-banner">
+              <i class="fa-solid fa-cube text-gold"></i>
+              <span>Network: <b>Binance Smart Chain (BSC BEP-20)</b></span>
+            </div>
+
+            <!-- QR Code Render Container -->
+            <div class="qr-container-box">
+              <div id="depositQRCode" class="qr-code"></div>
+            </div>
+
+            <!-- Address Copy Box -->
+            <div class="deposit-address-container">
+              <span class="deposit-lbl">Your Dedicated USDT (BSC BEP-20) Address:</span>
+              <div class="deposit-input-wrap">
+                <input type="text" id="modalDepositAddressInput" readonly value="0x71Ca...b89A">
+                <button class="copy-btn-primary" onclick="copyDepositAddressModal()"><i class="fa-solid fa-copy"></i> COPY</button>
+              </div>
+            </div>
+
+            <div class="deposit-notice">
+              <i class="fa-solid fa-triangle-exclamation text-amber"></i> Send only <b>USDT (BEP-20)</b> on <b>Binance Smart Chain</b> to this address. Funds will reflect after 1 block confirmation!
+            </div>
+
+            <!-- Quick Add Demo Funds button for testing -->
+            <div class="test-deposit-wrap">
+              <button class="test-deposit-btn" onclick="testInstantDeposit(10)">
+                <i class="fa-solid fa-bolt"></i> Simulate Test Deposit (+$10.00 USDT BEP-20)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= MODAL: WITHDRAWAL (STRICTLY BSC BEP-20) ================= -->
+      <div id="withdrawModal" class="app-modal">
+        <div class="modal-backdrop" onclick="closeWithdrawModal()"></div>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-money-bill-transfer text-green"></i> Request Withdrawal (BSC BEP-20)</h3>
+            <button class="modal-close-btn" onclick="closeWithdrawModal()"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <!-- Source Wallet Selector -->
+            <div class="withdraw-source-box">
+              <label>Select Balance to Withdraw:</label>
+              <div class="wallet-select-grid">
+                <div class="wallet-sel-card active" id="selGameWallet" onclick="selectWithdrawWallet('game')">
+                  <span class="w-name">Game Wallet</span>
+                  <span class="w-bal text-cyan">$<span id="withdrawAvailGame">25.00</span></span>
+                </div>
+                <div class="wallet-sel-card" id="selRefWallet" onclick="selectWithdrawWallet('referral')">
+                  <span class="w-name">Referral Wallet</span>
+                  <span class="w-bal text-gold">$<span id="withdrawAvailRef">0.00</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Destination Address Input (BSC BEP-20 only) -->
+            <div class="form-group">
+              <label for="withdrawAddressInput">Your USDT (BSC BEP-20) Wallet Address:</label>
+              <input type="text" id="withdrawAddressInput" class="form-input" placeholder="Paste your 0x... BSC BEP-20 address" spellcheck="false">
+              <span class="input-hint"><i class="fa-solid fa-info-circle"></i> Must start with <b>0x</b> (Binance Smart Chain BEP-20)</span>
+            </div>
+
+            <!-- Amount Input -->
+            <div class="form-group">
+              <div class="form-label-row">
+                <label for="withdrawAmountInput">Amount to Withdraw ($ USD):</label>
+                <span class="max-btn" onclick="setMaxWithdraw()">MAX</span>
+              </div>
+              <input type="number" id="withdrawAmountInput" class="form-input" placeholder="Min. $5.00" min="5" step="1">
+            </div>
+
+            <div class="withdraw-fee-summary">
+              <div class="fee-row"><span>Withdrawal Amount:</span> <span id="feeAmountDisplay">$0.00</span></div>
+              <div class="fee-row"><span>Network:</span> <span class="text-gold">BSC BEP-20</span></div>
+              <div class="fee-row"><span>BSC Gas Fee:</span> <span class="text-green">FREE ($0.00)</span></div>
+              <div class="fee-row total"><span>You Receive (USDT BEP-20):</span> <b class="text-gold" id="feeReceiveDisplay">$0.00</b></div>
+            </div>
+
+            <button class="submit-withdraw-btn" onclick="processWithdrawalSubmit()">
+              <i class="fa-solid fa-paper-plane"></i> SUBMIT WITHDRAWAL
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= MODAL: USER PROFILE DETAILS ================= -->
+      <div id="profileModal" class="app-modal">
+        <div class="modal-backdrop" onclick="closeProfileModal()"></div>
+        <div class="modal-content profile-modal-content">
+          <div class="modal-header">
+            <h3><i class="fa-solid fa-id-card text-cyan"></i> Player Profile Details</h3>
+            <button class="modal-close-btn" onclick="closeProfileModal()"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          
+          <div class="modal-body">
+            <!-- Profile Avatar Card -->
+            <div class="profile-hero-card">
+              <div class="profile-avatar-large-wrap">
+                <img id="profLargeAvatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=TurboWarrior" alt="Avatar">
+                <span class="profile-verified-badge" title="Verified Account"><i class="fa-solid fa-circle-check"></i></span>
+              </div>
+              <div class="profile-hero-info">
+                <h4 id="profHeroUsername">turbogame</h4>
+                <div class="profile-status-pill"><span class="pulse-dot"></span> Online & Active</div>
+                <div class="profile-tier-tag"><i class="fa-solid fa-shield-halved text-gold"></i> Tier: <b>Master Rank</b></div>
+              </div>
+            </div>
+
+            <!-- Details List Grid -->
+            <div class="profile-details-list">
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-user text-cyan"></i> Username:</div>
+                <div class="prof-val" id="profUsername">turbogame</div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-envelope text-purple"></i> Email:</div>
+                <div class="prof-val" id="profEmail">Not set</div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-brands fa-telegram text-cyan"></i> Telegram ID:</div>
+                <div class="prof-val highlight" id="profTelegramId">#389338</div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-at text-gold"></i> Telegram Username:</div>
+                <div class="prof-val" id="profTelegramUser">@turbogame</div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-cube text-gold"></i> Network:</div>
+                <div class="prof-val text-gold">BSC BEP-20</div>
+              </div>
+
+              <div class="prof-detail-row full-width">
+                <div class="prof-label"><i class="fa-solid fa-wallet text-cyan"></i> Dedicated BSC Address:</div>
+                <div class="prof-addr-box">
+                  <span id="profBscAddress">0x71Ca...b89A</span>
+                  <button class="copy-tiny-btn" onclick="copyProfileAddress()"><i class="fa-solid fa-copy"></i> Copy</button>
+                </div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-gamepad text-green"></i> Game Wallet:</div>
+                <div class="prof-val text-green" id="profGameBal">$25.00</div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-gift text-gold"></i> Referral Wallet:</div>
+                <div class="prof-val text-gold" id="profRefBal">$0.00</div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-users text-cyan"></i> Total Referrals:</div>
+                <div class="prof-val" id="profFriendsCount">0 Friends</div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-coins text-gold"></i> Referral Bonus:</div>
+                <div class="prof-val text-gold" id="profRefEarned">$0.00</div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-shield-check text-green"></i> Account Status:</div>
+                <div class="prof-val text-green"><i class="fa-solid fa-circle-check"></i> Verified Active</div>
+              </div>
+            </div>
+
+            <!-- Profile Quick Action Buttons -->
+            <div class="profile-modal-actions">
+              <button class="prof-action-btn prof-deposit-btn" onclick="closeProfileModal(); openDepositModal();">
+                <i class="fa-solid fa-circle-plus"></i> Deposit BSC
+              </button>
+              <button class="prof-action-btn prof-copy-id-btn" onclick="copyUserId()">
+                <i class="fa-solid fa-copy"></i> Copy ID
+              </button>
+              <button class="prof-action-btn prof-close-btn" onclick="closeProfileModal()">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= MODAL: 1ST TIME SIGN UP ================= -->
+      <div id="signupModal" class="app-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content signup-content">
+          <div class="signup-badge">
+            <i class="fa-solid fa-gamepad"></i> QUICK 1-TIME SIGN UP
+          </div>
+          <h2 class="signup-title">ENTER THE ARENA</h2>
+          <p class="signup-sub">Create your gamer identity once. Your Telegram ID will automatically keep you logged in forever!</p>
+
+          <div class="signup-bonus-chip">
+            <i class="fa-solid fa-gift text-gold"></i>
+            <span>Includes <b>$25.00</b> Free Game Bonus!</span>
+          </div>
+
+          <form id="signupForm" onsubmit="handleRegistrationSubmit(event)">
+            <div class="form-group text-left">
+              <label for="regUsername">Choose Your Username:</label>
+              <input type="text" id="regUsername" class="form-input" placeholder="e.g. TurboWarrior" required maxlength="20">
+              <span class="input-hint">You can choose any name you like</span>
+            </div>
+
+            <div class="form-group text-left">
+              <label for="regEmail">Your Email Address:</label>
+              <input type="email" id="regEmail" class="form-input" placeholder="e.g. player@gmail.com" required>
+              <span class="input-hint">For account recovery & withdrawal receipts</span>
+            </div>
+
+            <button type="submit" class="submit-signup-btn">
+              <span>START PLAYING NOW</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (4 Main Sections) -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" id="navArenaBtn" onclick="navigateTo('screenLobby')">
+        <i class="fa-solid fa-gamepad"></i>
+        <span>Arena</span>
+      </button>
+      <button class="nav-btn" id="navReferralBtn" onclick="navigateTo('screenReferral')">
+        <i class="fa-solid fa-gift"></i>
+        <span>Referrals ($25)</span>
+      </button>
+      <button class="nav-btn" id="navWalletBtn" onclick="navigateTo('screenWallet')">
+        <i class="fa-solid fa-wallet"></i>
+        <span>Wallet</span>
+      </button>
+      <button class="nav-btn" onclick="openDepositModal()">
+        <i class="fa-solid fa-circle-down"></i>
+        <span>Deposit</span>
+      </button>
+    </nav>
+
+    <!-- Notification Toast -->
+    <div id="appToast" class="app-toast"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

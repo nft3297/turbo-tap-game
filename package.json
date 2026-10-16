@@ -1,0 +1,19 @@
+{
+  "name": "turbo-tap-game",
+  "version": "1.0.0",
+  "description": "Turbo Tap Game - Telegram Mini App with Multiplayer Battle Arena & BSC BEP-20 Wallets",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "telegram-mini-app",
+    "turbo-tap-game",
+    "bsc",
+    "bep20",
+    "web3"
+  ],
+  "author": "onlinetoonline123",
+  "license": "MIT"
+}

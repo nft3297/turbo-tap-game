@@ -1,0 +1,42 @@
+{
+  "users": {
+    "99999": {
+      "telegramId": "99999",
+      "username": "AlphaPlayer",
+      "email": "alpha@gmail.com",
+      "bscAddress": "0xb78d0aa62787dc7e905f078c8f920cd1429128d5",
+      "wallet": 25,
+      "refWallet": 0,
+      "friendsCount": 0,
+      "totalRefEarned": 0,
+      "referredBy": null,
+      "createdAt": "2026-10-16T12:14:10.118Z"
+    },
+    "389338": {
+      "telegramId": "389338",
+      "username": "turbogame",
+      "email": "turbogame@gmail.com",
+      "bscAddress": "0xdd2d2d834f796d3acf4d283e43e41d8ceb819afa",
+      "wallet": 25,
+      "refWallet": 0,
+      "friendsCount": 0,
+      "totalRefEarned": 0,
+      "referredBy": null,
+      "createdAt": "2026-10-16T12:26:20.426Z"
+    },
+    "941877": {
+      "telegramId": "941877",
+      "username": "turbogame",
+      "email": "turbogame@gmail.com",
+      "bscAddress": "0x37ee8e981ea778f7b0fe9d6bd73f767910480c56",
+      "wallet": 25,
+      "refWallet": 0,
+      "friendsCount": 0,
+      "totalRefEarned": 0,
+      "referredBy": null,
+      "createdAt": "2026-10-16T12:17:46.988Z"
+    }
+  },
+  "withdrawals": [],
+  "deposits": []
+}

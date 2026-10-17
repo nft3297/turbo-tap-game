@@ -842,44 +842,21 @@ async function testInstantDeposit(amount) {
   showToast(`✅ Deposit confirmed! +$${amount.toFixed(2)} USDT (BEP-20) credited!`);
 }
 
-// 11. Withdrawal System (Strictly BSC BEP-20)
-function openWithdrawModal(source = 'profit') {
+// 11. Withdrawal System (Strictly BSC BEP-20 from Withdraw Wallet)
+function openWithdrawModal() {
   triggerHaptic('impact');
-  selectWithdrawWallet(source);
+  STATE.withdrawSource = 'withdraw';
   document.getElementById('withdrawModal').classList.add('active');
+  updateWithdrawCalculation();
 }
 
 function closeWithdrawModal() {
   document.getElementById('withdrawModal').classList.remove('active');
 }
 
-function selectWithdrawWallet(source) {
-  triggerHaptic('light');
-  STATE.withdrawSource = source;
-
-  const profitCard = document.getElementById('selProfitWallet');
-  const withdrawCard = document.getElementById('selWithdrawWallet');
-  const refCard = document.getElementById('selRefWallet');
-  const gameCard = document.getElementById('selGameWallet');
-
-  [profitCard, withdrawCard, refCard, gameCard].forEach(c => c?.classList.remove('active'));
-
-  if (source === 'profit') profitCard?.classList.add('active');
-  else if (source === 'withdraw') withdrawCard?.classList.add('active');
-  else if (source === 'referral') refCard?.classList.add('active');
-  else if (source === 'game') gameCard?.classList.add('active');
-
-  updateWithdrawCalculation();
-}
-
 function setMaxWithdraw() {
   triggerHaptic('light');
-  let maxBal = 0;
-  if (STATE.withdrawSource === 'profit') maxBal = STATE.profitWallet || 0;
-  else if (STATE.withdrawSource === 'withdraw') maxBal = STATE.withdrawWallet || 0;
-  else if (STATE.withdrawSource === 'referral') maxBal = STATE.refWallet || 0;
-  else maxBal = STATE.wallet || 0;
-
+  const maxBal = STATE.withdrawWallet || 0;
   document.getElementById('withdrawAmountInput').value = Math.floor(maxBal);
   updateWithdrawCalculation();
 }
@@ -918,25 +895,10 @@ async function processWithdrawalSubmit() {
     return;
   }
 
-  let currentAvailable = 0;
-  let sourceName = 'Profit Wallet';
-  if (STATE.withdrawSource === 'profit') {
-    currentAvailable = STATE.profitWallet || 0;
-    sourceName = 'Profit Wallet';
-  } else if (STATE.withdrawSource === 'withdraw') {
-    currentAvailable = STATE.withdrawWallet || 0;
-    sourceName = 'Withdraw Wallet';
-  } else if (STATE.withdrawSource === 'referral') {
-    currentAvailable = STATE.refWallet || 0;
-    sourceName = 'Referral Wallet';
-  } else {
-    currentAvailable = STATE.wallet || 0;
-    sourceName = 'Game Wallet';
-  }
-
+  const currentAvailable = STATE.withdrawWallet || 0;
   if (amount > currentAvailable) {
     triggerHaptic('warning');
-    showToast(`⚠️ Insufficient balance in ${sourceName}!`);
+    showToast(`⚠️ Insufficient balance in Withdraw Wallet ($${currentAvailable.toFixed(2)})!`);
     return;
   }
 
@@ -949,27 +911,18 @@ async function processWithdrawalSubmit() {
         telegramId: STATE.user.id,
         address,
         amount,
-        source: STATE.withdrawSource
+        source: 'withdraw'
       })
     });
   } catch (err) {}
 
-  if (STATE.withdrawSource === 'profit') {
-    STATE.profitWallet = Math.max(0, (STATE.profitWallet || 0) - amount);
-    STATE.withdrawWallet = Math.max(0, (STATE.withdrawWallet || 0) - amount);
-  } else if (STATE.withdrawSource === 'withdraw') {
-    STATE.withdrawWallet = Math.max(0, (STATE.withdrawWallet || 0) - amount);
-  } else if (STATE.withdrawSource === 'referral') {
-    STATE.refWallet = Math.max(0, (STATE.refWallet || 0) - amount);
-  } else {
-    STATE.wallet = Math.max(0, (STATE.wallet || 0) - amount);
-  }
+  STATE.withdrawWallet = Math.max(0, (STATE.withdrawWallet || 0) - amount);
 
   updateAllBalances();
   sounds.playVictory();
   triggerHaptic('success');
 
-  addTransaction(`Withdrawal to ${address.substring(0, 6)}... (BSC BEP-20, ${sourceName})`, `-$${amount.toFixed(2)}`, 'text-amber');
+  addTransaction(`Withdrawal to ${address.substring(0, 6)}... (BSC BEP-20)`, `-$${amount.toFixed(2)}`, 'text-amber');
 
   addressInput.value = '';
   amountInput.value = '';

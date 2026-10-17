@@ -623,18 +623,7 @@
                   <span class="rule-icon text-cyan"><i class="fa-solid fa-gamepad"></i></span>
                   <div class="rule-txt"><b>Play Immediately:</b> Once funds arrive in Game Wallet, you can immediately join 1v1 battles and win cash!</div>
                 </li>
-                <li>
-                  <span class="rule-icon text-purple"><i class="fa-solid fa-lock"></i></span>
-                  <div class="rule-txt"><b>24/7 Automated Gateway:</b> Protected & verified by NOWPayments institutional crypto gateway.</div>
-                </li>
               </ul>
-            </div>
-
-            <!-- Quick Add Demo Funds button for testing -->
-            <div class="test-deposit-wrap">
-              <button class="test-deposit-btn" onclick="testInstantDeposit(10)">
-                <i class="fa-solid fa-bolt"></i> Simulate Test Deposit (+$10.00 USDT BEP-20)
-              </button>
             </div>
           </div>
         </div>
@@ -649,25 +638,19 @@
             <button class="modal-close-btn" onclick="closeWithdrawModal()"><i class="fa-solid fa-xmark"></i></button>
           </div>
           <div class="modal-body">
-            <!-- Source Wallet Selector -->
+            <!-- Source Wallet: Strictly Withdraw Wallet -->
             <div class="withdraw-source-box">
-              <label>Select Balance to Withdraw:</label>
-              <div class="wallet-select-grid four-grid">
-                <div class="wallet-sel-card active" id="selProfitWallet" onclick="selectWithdrawWallet('profit')">
-                  <span class="w-name">Profit Wallet</span>
-                  <span class="w-bal text-green">$<span id="withdrawAvailProfit">0.00</span></span>
-                </div>
-                <div class="wallet-sel-card" id="selWithdrawWallet" onclick="selectWithdrawWallet('withdraw')">
-                  <span class="w-name">Withdraw Wallet</span>
+              <label>Withdrawal Wallet:</label>
+              <div class="wallet-sel-card active single-withdraw-card" id="selWithdrawWallet">
+                <div class="single-w-content">
+                  <div class="single-w-left">
+                    <span class="w-icon-circle"><i class="fa-solid fa-wallet text-purple"></i></span>
+                    <div class="single-w-info">
+                      <span class="w-name">Withdraw Wallet</span>
+                      <span class="w-sub">Eligible payout balance (BSC BEP-20)</span>
+                    </div>
+                  </div>
                   <span class="w-bal text-purple">$<span id="withdrawAvailWithdraw">0.00</span></span>
-                </div>
-                <div class="wallet-sel-card" id="selRefWallet" onclick="selectWithdrawWallet('referral')">
-                  <span class="w-name">Referral Bonus</span>
-                  <span class="w-bal text-gold">$<span id="withdrawAvailRef">0.00</span></span>
-                </div>
-                <div class="wallet-sel-card" id="selGameWallet" onclick="selectWithdrawWallet('game')">
-                  <span class="w-name">Game Wallet</span>
-                  <span class="w-bal text-cyan">$<span id="withdrawAvailGame">0.00</span></span>
                 </div>
               </div>
             </div>

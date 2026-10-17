@@ -1724,6 +1724,59 @@ body {
   background: rgba(0, 240, 255, 0.08);
 }
 
+.single-withdraw-card {
+  border: 1px solid rgba(168, 85, 247, 0.4) !important;
+  background: rgba(168, 85, 247, 0.08) !important;
+  padding: 12px 14px;
+  cursor: default;
+}
+
+.single-withdraw-card.active {
+  border-color: var(--purple, #a855f7) !important;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+}
+
+.single-w-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.single-w-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.w-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+}
+
+.single-w-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.single-w-info .w-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.single-w-info .w-sub {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
 .w-name {
   font-size: 0.68rem;
   color: #94a3b8;

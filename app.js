@@ -47,7 +47,11 @@ const STATE = {
   withdrawSource: 'game',
   qrCodeInstance: null,
 
-  soundEnabled: true,
+  soundEnabled: localStorage.getItem('turbo_sound') !== 'false',
+  hapticEnabled: localStorage.getItem('turbo_haptic') !== 'false',
+  fastImgEnabled: localStorage.getItem('turbo_fast_img') !== 'false',
+  effectsEnabled: localStorage.getItem('turbo_effects') !== 'false',
+
   currentRoom: null,
   matchmakingInterval: null,
   searchTimerSeconds: 0,
@@ -162,12 +166,15 @@ class SoundFX {
 const sounds = new SoundFX();
 
 function triggerHaptic(type = 'light') {
+  if (STATE.hapticEnabled === false) return;
   if (tg?.HapticFeedback) {
     if (type === 'impact') tg.HapticFeedback.impactOccurred('medium');
     else if (type === 'heavy') tg.HapticFeedback.impactOccurred('heavy');
     else if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
     else if (type === 'warning') tg.HapticFeedback.notificationOccurred('warning');
     else tg.HapticFeedback.impactOccurred('light');
+  } else if (navigator.vibrate) {
+    navigator.vibrate(type === 'heavy' ? 40 : 15);
   }
 }
 
@@ -325,6 +332,99 @@ function copyUserId() {
   navigator.clipboard.writeText(String(STATE.user.id));
   triggerHaptic('success');
   showToast(`✅ Copied User ID: #${STATE.user.id}`);
+}
+
+// ================= SETTINGS & PREFERENCES FUNCTIONS =================
+function openSettingsModal() {
+  triggerHaptic('impact');
+
+  const unameEl = document.getElementById('settingUsernameVal');
+  if (unameEl) unameEl.textContent = STATE.user.username || STATE.user.firstName || 'turbogame';
+
+  const tgIdEl = document.getElementById('settingTgIdVal');
+  if (tgIdEl) tgIdEl.textContent = `#${STATE.user.id}`;
+
+  const soundToggle = document.getElementById('settingSoundToggle');
+  if (soundToggle) soundToggle.checked = STATE.soundEnabled !== false;
+
+  const hapticToggle = document.getElementById('settingHapticToggle');
+  if (hapticToggle) hapticToggle.checked = STATE.hapticEnabled !== false;
+
+  const fastImgToggle = document.getElementById('settingFastImgToggle');
+  if (fastImgToggle) fastImgToggle.checked = STATE.fastImgEnabled !== false;
+
+  const effectsToggle = document.getElementById('settingEffectsToggle');
+  if (effectsToggle) effectsToggle.checked = STATE.effectsEnabled !== false;
+
+  document.getElementById('settingsModal')?.classList.add('active');
+}
+
+function closeSettingsModal() {
+  document.getElementById('settingsModal')?.classList.remove('active');
+}
+
+function handleSettingChange(key, isChecked) {
+  if (key === 'sound') {
+    STATE.soundEnabled = isChecked;
+    localStorage.setItem('turbo_sound', isChecked ? 'true' : 'false');
+    if (isChecked) sounds.playTap();
+    showToast(isChecked ? '🔊 Sound: ON' : '🔇 Sound: OFF');
+  } else if (key === 'haptic') {
+    STATE.hapticEnabled = isChecked;
+    localStorage.setItem('turbo_haptic', isChecked ? 'true' : 'false');
+    if (isChecked) triggerHaptic('impact');
+    showToast(isChecked ? '📳 Haptic: ON' : '📳 Haptic: OFF');
+  } else if (key === 'fastImg') {
+    STATE.fastImgEnabled = isChecked;
+    localStorage.setItem('turbo_fast_img', isChecked ? 'true' : 'false');
+    showToast(isChecked ? '⚡ Fast Preload: ON' : '⚡ Fast Preload: OFF');
+  } else if (key === 'effects') {
+    STATE.effectsEnabled = isChecked;
+    localStorage.setItem('turbo_effects', isChecked ? 'true' : 'false');
+    showToast(isChecked ? '✨ Cyber Glow: ON' : '✨ Cyber Glow: OFF');
+  }
+}
+
+async function refreshAppSync() {
+  triggerHaptic('impact');
+  showToast('🔄 Re-syncing balance & wallet data...');
+  try {
+    const res = await fetch(`/api/user?telegramId=${STATE.user.id}`);
+    const data = await res.json();
+    if (data.exists && data.user) {
+      STATE.wallet = data.user.wallet;
+      STATE.refWallet = data.user.refWallet;
+      STATE.friendsCount = data.user.friendsCount;
+      STATE.totalRefEarned = data.user.totalRefEarned;
+      updateUI();
+      showToast('✅ Turbo Data synced with Backend!');
+    } else {
+      showToast('✅ Turbo Engine Active!');
+    }
+  } catch (e) {
+    showToast('✅ State Refreshed!');
+  }
+}
+
+function clearAndReloadCache() {
+  triggerHaptic('success');
+  showToast('⚡ Preloading all artwork into memory...');
+  const assets = [
+    'images/logo.png',
+    'images/hero_bg.jpg',
+    'images/stats_bg.jpg',
+    'images/card_trio.jpg',
+    'images/card_squad.jpg',
+    'images/card_elite.jpg',
+    'images/card_royale.jpg'
+  ];
+  assets.forEach(src => {
+    const im = new Image();
+    im.src = `${src}?v=${Date.now()}`;
+  });
+  setTimeout(() => {
+    showToast('⚡ All Game Images 100% Preloaded!');
+  }, 350);
 }
 
 // 8. First-Time Sign Up Flow

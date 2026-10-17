@@ -234,9 +234,17 @@ const server = http.createServer((req, res) => {
         res.end(`Server Error: ${err.code}`);
       }
     } else {
+      let cacheControl = 'no-cache';
+      if (['.png', '.jpg', '.jpeg', '.svg', '.ico', '.webp'].includes(ext)) {
+        // High-speed caching for images - loads instantly from phone memory
+        cacheControl = 'public, max-age=604800, stale-while-revalidate=86400';
+      } else if (['.css', '.js'].includes(ext)) {
+        cacheControl = 'public, max-age=300, must-revalidate';
+      }
+
       res.writeHead(200, {
         'Content-Type': contentType,
-        'Cache-Control': 'no-cache'
+        'Cache-Control': cacheControl
       });
       res.end(content);
     }

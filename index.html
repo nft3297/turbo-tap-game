@@ -16,8 +16,37 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
   <link rel="stylesheet" href="style.css">
+
+  <!-- Instant High-Speed Preload for All Game & Background Images -->
+  <link rel="preload" as="image" href="images/logo.png">
+  <link rel="preload" as="image" href="images/hero_bg.jpg">
+  <link rel="preload" as="image" href="images/stats_bg.jpg">
+  <link rel="preload" as="image" href="images/card_trio.jpg">
+  <link rel="preload" as="image" href="images/card_squad.jpg">
+  <link rel="preload" as="image" href="images/card_elite.jpg">
+  <link rel="preload" as="image" href="images/card_royale.jpg">
 </head>
 <body>
+  <script>
+    // Memory Cache Preloader: Forces immediate bitmap decoding in RAM/GPU
+    (function() {
+      const assets = [
+        'images/logo.png',
+        'images/hero_bg.jpg',
+        'images/stats_bg.jpg',
+        'images/card_trio.jpg',
+        'images/card_squad.jpg',
+        'images/card_elite.jpg',
+        'images/card_royale.jpg'
+      ];
+      window.__GAME_IMAGES = [];
+      assets.forEach(function(src) {
+        var im = new Image();
+        im.src = src;
+        window.__GAME_IMAGES.push(im);
+      });
+    })();
+  </script>
   <div id="app" class="app-container">
     
     <!-- ================= 1. TOP BRAND HEADER: TURBO TAP GAME WITH OFFICIAL LOGO ================= -->
@@ -740,9 +769,142 @@
         </div>
       </div>
 
+      <!-- ================= MODAL: SETTINGS & PREFERENCES ================= -->
+      <div id="settingsModal" class="app-modal">
+        <div class="modal-backdrop" onclick="closeSettingsModal()"></div>
+        <div class="modal-content settings-modal-content">
+          <div class="modal-header">
+            <div class="modal-title-wrap">
+              <i class="fa-solid fa-gear text-cyan"></i>
+              <h3>GAME SETTINGS</h3>
+            </div>
+            <button class="modal-close-btn" onclick="closeSettingsModal()" title="Close Settings">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <p class="modal-sub">Audio, instant image graphics & network preferences</p>
+
+          <div class="settings-scroll-body">
+            <!-- Group 1: Sound & Feedback -->
+            <div class="settings-group">
+              <div class="settings-group-title">
+                <i class="fa-solid fa-volume-high text-cyan"></i> SOUND & FEEDBACK
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-title">Sound Effects (SFX)</span>
+                  <span class="setting-desc">Battle clicks, taps & victory sounds</span>
+                </div>
+                <label class="setting-switch">
+                  <input type="checkbox" id="settingSoundToggle" checked onchange="handleSettingChange('sound', this.checked)">
+                  <span class="setting-slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-title">Haptic Vibration</span>
+                  <span class="setting-desc">Tactile phone vibration on every tap</span>
+                </div>
+                <label class="setting-switch">
+                  <input type="checkbox" id="settingHapticToggle" checked onchange="handleSettingChange('haptic', this.checked)">
+                  <span class="setting-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Group 2: Graphics & Loading Speed -->
+            <div class="settings-group">
+              <div class="settings-group-title">
+                <i class="fa-solid fa-bolt-lightning text-gold"></i> GRAPHICS & FAST LOAD
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-title">Instant Image Preload</span>
+                  <span class="setting-desc">Keep all game images cached in phone memory</span>
+                </div>
+                <label class="setting-switch">
+                  <input type="checkbox" id="settingFastImgToggle" checked onchange="handleSettingChange('fastImg', this.checked)">
+                  <span class="setting-slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-title">Cyber Lighting Effects</span>
+                  <span class="setting-desc">Neon glow, radar pulses & match animations</span>
+                </div>
+                <label class="setting-switch">
+                  <input type="checkbox" id="settingEffectsToggle" checked onchange="handleSettingChange('effects', this.checked)">
+                  <span class="setting-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Group 3: Account & BSC BEP-20 Network -->
+            <div class="settings-group">
+              <div class="settings-group-title">
+                <i class="fa-solid fa-shield-halved text-purple"></i> NETWORK & IDENTITY
+              </div>
+              
+              <div class="setting-data-card">
+                <div class="setting-data-row">
+                  <span class="data-row-label"><i class="fa-solid fa-network-wired text-gold"></i> Network</span>
+                  <span class="data-row-val text-green"><i class="fa-solid fa-circle text-green live-dot"></i> BSC BEP-20 (Mainnet 56)</span>
+                </div>
+                <div class="setting-data-row">
+                  <span class="data-row-label"><i class="fa-solid fa-user-astronaut text-cyan"></i> Username</span>
+                  <span class="data-row-val" id="settingUsernameVal">@You</span>
+                </div>
+                <div class="setting-data-row">
+                  <span class="data-row-label"><i class="fa-solid fa-fingerprint text-amber"></i> Telegram ID</span>
+                  <span class="data-row-val mono" id="settingTgIdVal">8893603750</span>
+                </div>
+                <div class="setting-data-row">
+                  <span class="data-row-label"><i class="fa-solid fa-wallet text-gold"></i> Deposit Address</span>
+                  <button class="setting-mini-copy-btn" onclick="copyDepositAddress()">
+                    <i class="fa-solid fa-copy"></i> Copy BSC Address
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 4: Quick Actions -->
+            <div class="settings-group">
+              <div class="settings-group-title">
+                <i class="fa-solid fa-wrench text-cyan"></i> APP TOOLS
+              </div>
+              <div class="settings-actions-grid">
+                <button class="set-action-btn set-refresh-btn" onclick="refreshAppSync()">
+                  <i class="fa-solid fa-rotate"></i>
+                  <span>Refresh & Sync Data</span>
+                </button>
+                <button class="set-action-btn set-cache-btn" onclick="clearAndReloadCache()">
+                  <i class="fa-solid fa-broom"></i>
+                  <span>Reload Images & Cache</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Footer Badge -->
+            <div class="settings-footer">
+              <div class="settings-version-badge">
+                <i class="fa-solid fa-gamepad text-gold"></i>
+                <span>Turbo Tap Game • <b>v1.2.0 Ultra Fast</b></span>
+              </div>
+              <div class="settings-render-status">
+                <i class="fa-solid fa-server text-green"></i> 24/7 Render Keep-Alive Active
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
 
-    <!-- Bottom Navigation Bar (4 Main Sections) -->
+    <!-- Bottom Navigation Bar (5 Main Sections) -->
     <nav class="bottom-nav">
       <button class="nav-btn active" id="navArenaBtn" onclick="navigateTo('screenLobby')">
         <i class="fa-solid fa-gamepad"></i>
@@ -759,6 +921,10 @@
       <button class="nav-btn" onclick="openDepositModal()">
         <i class="fa-solid fa-circle-down"></i>
         <span>Deposit</span>
+      </button>
+      <button class="nav-btn" id="navSettingsBtn" onclick="openSettingsModal()">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
       </button>
     </nav>
 

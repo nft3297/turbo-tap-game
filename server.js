@@ -60,6 +60,12 @@ const server = http.createServer((req, res) => {
 
   const [reqPath, queryString] = req.url.split('?');
 
+  // Lightweight Ping / Health Check for Keep-Alive Monitors (prevents Render sleep)
+  if (reqPath === '/health' || reqPath === '/ping' || reqPath === '/api/ping') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ status: 'ok', time: new Date().toISOString() }));
+  }
+
   // ================= API ROUTES =================
   if (reqPath.startsWith('/api/')) {
 

@@ -1151,6 +1151,18 @@ function shareTelegramScore() {
   else window.open(url, '_blank');
 }
 
+// 16b. Join Official Telegram Community Group
+function joinTelegramGroup(e) {
+  if (e) e.preventDefault();
+  triggerHaptic('impact');
+  const groupUrl = 'https://t.me/turbotapgame_2nd';
+  if (tg?.openTelegramLink) {
+    tg.openTelegramLink(groupUrl);
+  } else {
+    window.open(groupUrl, '_blank');
+  }
+}
+
 // 17. Confetti Effect
 function createConfetti() {
   const container = document.getElementById('confettiContainer');

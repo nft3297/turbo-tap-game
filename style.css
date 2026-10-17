@@ -2948,10 +2948,19 @@ body {
   gap: 6px;
 }
 
-.settings-render-status {
-  font-size: 0.65rem;
-  color: var(--green);
-  font-weight: 600;
+.settings-copyright {
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.2px;
+}
+
+.settings-copyright i {
+  font-size: 0.72rem;
+  color: var(--cyan);
 }
 
 .live-dot {

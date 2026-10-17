@@ -44,5 +44,6 @@
     }
   },
   "withdrawals": [],
-  "deposits": []
+  "deposits": [],
+  "creditedDeposits": {}
 }

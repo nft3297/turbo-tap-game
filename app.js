@@ -634,20 +634,98 @@ async function simulateFriendJoined() {
   showToast(`🎉 New friend joined! +$25.00 added to Referral Wallet!`);
 }
 
-// 10. Deposit & Dedicated Address System with QR Code (Strictly BSC BEP-20)
-function openDepositModal() {
+// 10. Deposit & Dedicated Address System with QR Code (NOWPayments Strictly BSC BEP-20)
+let currentDepositPaymentId = null;
+let depositPollInterval = null;
+let isFetchingDepositAddress = false;
+
+async function openDepositModal() {
   triggerHaptic('impact');
   document.getElementById('depositModal').classList.add('active');
-  renderDepositAddressAndQR();
+  
+  // Clear any existing polling
+  if (depositPollInterval) {
+    clearInterval(depositPollInterval);
+    depositPollInterval = null;
+  }
+
+  // Initial loader state in QR box
+  const qrBox = document.getElementById('depositQRCode');
+  qrBox.innerHTML = `
+    <div class="qr-loader-placeholder">
+      <i class="fa-solid fa-circle-notch fa-spin text-cyan"></i>
+      <span>Loading BEP-20 QR...</span>
+    </div>`;
+  const addrInput = document.getElementById('modalDepositAddressInput');
+  if (addrInput) addrInput.value = 'Connecting to NOWPayments gateway...';
+  const statusTxt = document.getElementById('depositStatusText');
+  if (statusTxt) statusTxt.textContent = 'Fetching dedicated BEP-20 address...';
+
+  await fetchAndRenderDepositAddress();
+
+  // Start automatic polling every 7 seconds while modal is open
+  depositPollInterval = setInterval(() => {
+    checkCurrentDepositStatus(false);
+  }, 7000);
 }
 
 function closeDepositModal() {
   document.getElementById('depositModal').classList.remove('active');
+  if (depositPollInterval) {
+    clearInterval(depositPollInterval);
+    depositPollInterval = null;
+  }
 }
 
-function renderDepositAddressAndQR() {
-  const address = STATE.user.bscAddress;
-  document.getElementById('modalDepositAddressInput').value = address;
+async function fetchAndRenderDepositAddress() {
+  if (isFetchingDepositAddress) return;
+  isFetchingDepositAddress = true;
+
+  try {
+    const res = await fetch(`/api/nowpayments/deposit-address?telegramId=${STATE.user.id}`);
+    const data = await res.json();
+
+    if (data.success && data.pay_address) {
+      currentDepositPaymentId = data.payment_id;
+      STATE.user.bscAddress = data.pay_address;
+
+      const addrInput = document.getElementById('modalDepositAddressInput');
+      if (addrInput) addrInput.value = data.pay_address;
+
+      const dedicatedBox = document.getElementById('userDedicatedAddress');
+      if (dedicatedBox) dedicatedBox.textContent = data.pay_address;
+
+      // Render live QR Code
+      const qrBox = document.getElementById('depositQRCode');
+      qrBox.innerHTML = '';
+      if (window.QRCode) {
+        new QRCode(qrBox, {
+          text: data.pay_address,
+          width: 140,
+          height: 140,
+          colorDark: '#0a0c14',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+
+      const statusTxt = document.getElementById('depositStatusText');
+      if (statusTxt) statusTxt.textContent = 'Listening for incoming BEP-20 transfer...';
+    } else {
+      renderDepositAddressAndQR(STATE.user.bscAddress);
+    }
+  } catch (err) {
+    console.error('Failed to fetch NOWPayments address:', err);
+    renderDepositAddressAndQR(STATE.user.bscAddress);
+  } finally {
+    isFetchingDepositAddress = false;
+  }
+}
+
+function renderDepositAddressAndQR(fallbackAddress) {
+  const address = fallbackAddress || STATE.user.bscAddress;
+  const input = document.getElementById('modalDepositAddressInput');
+  if (input) input.value = address;
 
   const qrBox = document.getElementById('depositQRCode');
   qrBox.innerHTML = '';
@@ -663,6 +741,63 @@ function renderDepositAddressAndQR() {
   }
 }
 
+async function checkCurrentDepositStatus(isManual = false) {
+  if (!currentDepositPaymentId && !STATE.user.id) return;
+
+  const btn = document.getElementById('checkDepositStatusBtn');
+  const statusTxt = document.getElementById('depositStatusText');
+
+  if (isManual && btn) {
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Checking...`;
+    btn.disabled = true;
+  }
+
+  try {
+    const res = await fetch(`/api/nowpayments/check?telegramId=${STATE.user.id}&paymentId=${currentDepositPaymentId || ''}`);
+    const data = await res.json();
+
+    if (data.credited) {
+      if (depositPollInterval) {
+        clearInterval(depositPollInterval);
+        depositPollInterval = null;
+      }
+
+      sounds.playVictory();
+      triggerHaptic('success');
+      createConfetti();
+
+      STATE.wallet = data.wallet;
+      updateAllBalances();
+      addTransaction(`Deposit (USDT BSC BEP-20)`, `+$${parseFloat(data.amount).toFixed(2)}`, 'text-green');
+
+      closeDepositModal();
+      showToast(`🎉 +$${parseFloat(data.amount).toFixed(2)} USDT credited to Game Wallet! Ready to play!`);
+
+      // Switch to arena to play immediately
+      switchTab('home');
+      return;
+    }
+
+    if (isManual) {
+      if (data.status === 'waiting') {
+        if (statusTxt) statusTxt.textContent = 'Waiting for BEP-20 blockchain transfer...';
+        showToast('⏳ No transfer detected yet. Send USDT BEP-20 to the QR/Address.');
+      } else {
+        if (statusTxt) statusTxt.textContent = `Status: ${data.status.toUpperCase()} (Processing...)`;
+        showToast(`Transaction Status: ${data.status.toUpperCase()}`);
+      }
+    }
+  } catch (err) {
+    console.error('Check status error:', err);
+    if (isManual) showToast('Network check error. Retrying...');
+  } finally {
+    if (isManual && btn) {
+      btn.innerHTML = `<i class="fa-solid fa-rotate"></i> Check Status`;
+      btn.disabled = false;
+    }
+  }
+}
+
 function copyDepositAddress() {
   navigator.clipboard.writeText(STATE.user.bscAddress);
   triggerHaptic('success');
@@ -671,10 +806,16 @@ function copyDepositAddress() {
 
 function copyDepositAddressModal() {
   const input = document.getElementById('modalDepositAddressInput');
-  if (input) {
+  const btn = document.getElementById('copyDepositBtn');
+  if (input && input.value && !input.value.includes('...')) {
     navigator.clipboard.writeText(input.value);
     triggerHaptic('success');
-    showToast('Copied BSC BEP-20 Address!');
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-check"></i> COPIED!`;
+      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    }
+    showToast('Copied BSC BEP-20 Address to clipboard!');
   }
 }
 

@@ -46,11 +46,19 @@ const mimeTypes = {
   '.ico': 'image/x-icon'
 };
 
+const NOWPAYMENTS = {
+  apiKey: 'MQG8HTE-JCFMPDQ-HJWHJZQ-498VAM5',
+  publicKey: '6e4d94cc-3799-430e-80c2-7569eeb326d4',
+  baseUrl: 'https://api.nowpayments.io/v1',
+  payCurrency: 'usdtbsc', // Strictly BEP-20 USDT on Binance Smart Chain
+  ipnUrl: 'https://turbo-tap-game.onrender.com/api/nowpayments/ipn'
+};
+
 const server = http.createServer((req, res) => {
   // CORS Headers for Telegram Webview
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
@@ -91,6 +99,178 @@ const server = http.createServer((req, res) => {
       }
     }
 
+    // 2. NOWPAYMENTS: GET /api/nowpayments/deposit-address?telegramId=123
+    if (req.method === 'GET' && reqPath === '/api/nowpayments/deposit-address') {
+      const urlParams = new URLSearchParams(queryString);
+      const telegramId = urlParams.get('telegramId');
+
+      if (!telegramId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'telegramId is required' }));
+      }
+
+      const db = readDB();
+      let user = db.users[telegramId];
+      if (!user) {
+        user = {
+          telegramId: String(telegramId),
+          username: 'Gamer_' + String(telegramId).slice(-4),
+          wallet: 0,
+          profitWallet: 0,
+          withdrawWallet: 0,
+          refWallet: 0,
+          friendsCount: 0,
+          totalRefEarned: 0,
+          createdAt: new Date().toISOString()
+        };
+        db.users[telegramId] = user;
+      }
+
+      // If user already has an active NOWPayments address valid for at least another 2 hours AND not already credited, reuse it!
+      const now = Date.now();
+      db.creditedDeposits = db.creditedDeposits || {};
+      if (
+        user.nowpaymentsDeposit &&
+        user.nowpaymentsDeposit.pay_address &&
+        !db.creditedDeposits[String(user.nowpaymentsDeposit.payment_id)] &&
+        new Date(user.nowpaymentsDeposit.valid_until).getTime() > now + 7200000
+      ) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({
+          success: true,
+          pay_address: user.nowpaymentsDeposit.pay_address,
+          payment_id: user.nowpaymentsDeposit.payment_id,
+          currency: 'USDT',
+          network: 'BSC (BEP-20)',
+          min_amount: 1,
+          valid_until: user.nowpaymentsDeposit.valid_until
+        }));
+      }
+
+
+      // Generate real BEP-20 address via NOWPayments API
+      fetch(`${NOWPAYMENTS.baseUrl}/payment`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': NOWPAYMENTS.apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          price_amount: 1, // Standard minimum placeholder
+          price_currency: 'usd',
+          pay_currency: NOWPAYMENTS.payCurrency, // 'usdtbsc' strictly BEP-20
+          ipn_callback_url: NOWPAYMENTS.ipnUrl,
+          order_id: `dep_${telegramId}_${Date.now()}`,
+          order_description: `Turbo Tap BEP-20 Deposit user ${telegramId}`
+        })
+      })
+      .then(r => r.json())
+      .then(payment => {
+        if (!payment || !payment.pay_address) {
+          console.error('[NOWPayments] Create payment failed:', payment);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Could not generate NOWPayments address', details: payment }));
+        }
+
+        user.nowpaymentsDeposit = {
+          payment_id: String(payment.payment_id),
+          pay_address: payment.pay_address,
+          valid_until: payment.valid_until || new Date(Date.now() + 7 * 86400000).toISOString(),
+          created_at: new Date().toISOString()
+        };
+        user.bscAddress = payment.pay_address;
+        writeDB(db);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({
+          success: true,
+          pay_address: payment.pay_address,
+          payment_id: payment.payment_id,
+          currency: 'USDT',
+          network: 'BSC (BEP-20)',
+          min_amount: 1,
+          valid_until: user.nowpaymentsDeposit.valid_until
+        }));
+      })
+      .catch(err => {
+        console.error('[NOWPayments] Fetch error:', err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'NOWPayments connection error', message: err.message }));
+      });
+      return;
+    }
+
+    // 3. NOWPAYMENTS: Check Deposit Status GET /api/nowpayments/check?telegramId=123&paymentId=456
+    if (req.method === 'GET' && reqPath === '/api/nowpayments/check') {
+      const urlParams = new URLSearchParams(queryString);
+      const telegramId = urlParams.get('telegramId');
+      let paymentId = urlParams.get('paymentId');
+
+      const db = readDB();
+      const user = db.users[telegramId];
+      if (!paymentId && user?.nowpaymentsDeposit?.payment_id) {
+        paymentId = user.nowpaymentsDeposit.payment_id;
+      }
+
+      if (!paymentId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'paymentId is required' }));
+      }
+
+      fetch(`${NOWPAYMENTS.baseUrl}/payment/${paymentId}`, {
+        headers: { 'x-api-key': NOWPAYMENTS.apiKey }
+      })
+      .then(r => r.json())
+      .then(data => {
+        db.creditedDeposits = db.creditedDeposits || {};
+        const isPaid = ['finished', 'confirmed', 'partially_paid'].includes(data.payment_status);
+        const paidAmount = parseFloat(data.actually_paid || data.outcome_amount || 0);
+
+        if (isPaid && paidAmount > 0 && user) {
+          if (!db.creditedDeposits[String(paymentId)]) {
+            db.creditedDeposits[String(paymentId)] = {
+              amount: paidAmount,
+              telegramId,
+              date: new Date().toISOString()
+            };
+            // Credit directly to Game Wallet!
+            user.wallet = (user.wallet || 0) + paidAmount;
+            db.deposits.push({
+              id: 'dep_' + paymentId,
+              telegramId,
+              amount: paidAmount,
+              network: 'BSC-BEP20',
+              txHash: data.payin_hash || null,
+              timestamp: new Date().toISOString()
+            });
+            writeDB(db);
+            console.log(`[NOWPayments Check] Successfully credited $${paidAmount} to user ${telegramId}`);
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({
+            status: data.payment_status,
+            credited: true,
+            amount: paidAmount,
+            wallet: user.wallet,
+            message: `Deposit of $${paidAmount.toFixed(2)} USDT credited to Game Wallet!`
+          }));
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({
+          status: data.payment_status || 'waiting',
+          credited: false,
+          actually_paid: paidAmount
+        }));
+      })
+      .catch(err => {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      });
+      return;
+    }
+
     // Helper for POST body parsing
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -99,6 +279,65 @@ const server = http.createServer((req, res) => {
       try {
         if (body) data = JSON.parse(body);
       } catch (err) {}
+
+      // 1. NOWPAYMENTS IPN WEBHOOK: POST /api/nowpayments/ipn
+      if (req.method === 'POST' && reqPath === '/api/nowpayments/ipn') {
+        console.log('[NOWPayments IPN] Callback received:', JSON.stringify(data));
+        const paymentId = data.payment_id;
+        const status = data.payment_status;
+        const actuallyPaid = parseFloat(data.actually_paid || data.outcome_amount || (status === 'finished' || status === 'confirmed' ? data.pay_amount : 0) || 0);
+        const orderId = data.order_id || '';
+        const payAddress = data.pay_address;
+
+        const db = readDB();
+        db.creditedDeposits = db.creditedDeposits || {};
+
+        let targetUser = null;
+        if (orderId && orderId.startsWith('dep_')) {
+          const parts = orderId.split('_');
+          const tId = parts[1];
+          if (db.users[tId]) targetUser = db.users[tId];
+        }
+
+        if (!targetUser) {
+          for (const uid in db.users) {
+            const u = db.users[uid];
+            if (
+              (u.nowpaymentsDeposit && String(u.nowpaymentsDeposit.payment_id) === String(paymentId)) ||
+              u.bscAddress === payAddress ||
+              (u.nowpaymentsDeposit && u.nowpaymentsDeposit.pay_address === payAddress)
+            ) {
+              targetUser = u;
+              break;
+            }
+          }
+        }
+
+        const isPaid = ['finished', 'confirmed', 'partially_paid', 'sending'].includes(status);
+        if (isPaid && actuallyPaid > 0 && targetUser) {
+          if (!db.creditedDeposits[String(paymentId)]) {
+            db.creditedDeposits[String(paymentId)] = {
+              amount: actuallyPaid,
+              telegramId: targetUser.telegramId,
+              date: new Date().toISOString()
+            };
+            targetUser.wallet = (targetUser.wallet || 0) + actuallyPaid;
+            db.deposits.push({
+              id: 'dep_' + paymentId,
+              telegramId: targetUser.telegramId,
+              amount: actuallyPaid,
+              network: 'BSC-BEP20',
+              txHash: data.payin_hash || null,
+              timestamp: new Date().toISOString()
+            });
+            writeDB(db);
+            console.log(`[NOWPayments IPN] Auto-credited $${actuallyPaid} USDT to Game Wallet of user ${targetUser.telegramId}`);
+          }
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true }));
+      }
 
       // 2. 1st Time Sign Up: POST /api/register
       if (req.method === 'POST' && reqPath === '/api/register') {

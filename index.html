@@ -558,7 +558,7 @@
       <!-- ================= MODAL: DEPOSIT WITH QR CODE (STRICTLY BSC BEP-20) ================= -->
       <div id="depositModal" class="app-modal">
         <div class="modal-backdrop" onclick="closeDepositModal()"></div>
-        <div class="modal-content">
+        <div class="modal-content deposit-modal-content">
           <div class="modal-header">
             <h3><i class="fa-solid fa-qrcode text-cyan"></i> BSC BEP-20 Deposit</h3>
             <button class="modal-close-btn" onclick="closeDepositModal()"><i class="fa-solid fa-xmark"></i></button>
@@ -568,25 +568,66 @@
             <!-- Network Fixed Banner -->
             <div class="bsc-single-banner">
               <i class="fa-solid fa-cube text-gold"></i>
-              <span>Network: <b>Binance Smart Chain (BSC BEP-20)</b></span>
+              <span>Network: <b>Binance Smart Chain (BSC BEP-20) Only</b></span>
             </div>
 
             <!-- QR Code Render Container -->
             <div class="qr-container-box">
-              <div id="depositQRCode" class="qr-code"></div>
+              <div id="depositQRCode" class="qr-code">
+                <div class="qr-loader-placeholder">
+                  <i class="fa-solid fa-circle-notch fa-spin text-cyan"></i>
+                  <span>Generating Secure QR...</span>
+                </div>
+              </div>
             </div>
 
             <!-- Address Copy Box -->
             <div class="deposit-address-container">
-              <span class="deposit-lbl">Your Dedicated USDT (BSC BEP-20) Address:</span>
+              <span class="deposit-lbl">Your Dedicated USDT (BSC BEP-20) Deposit Address:</span>
               <div class="deposit-input-wrap">
-                <input type="text" id="modalDepositAddressInput" readonly value="0x71Ca...b89A">
-                <button class="copy-btn-primary" onclick="copyDepositAddressModal()"><i class="fa-solid fa-copy"></i> COPY</button>
+                <input type="text" id="modalDepositAddressInput" readonly value="Generating address...">
+                <button class="copy-btn-primary" id="copyDepositBtn" onclick="copyDepositAddressModal()"><i class="fa-solid fa-copy"></i> COPY</button>
               </div>
             </div>
 
-            <div class="deposit-notice">
-              <i class="fa-solid fa-triangle-exclamation text-amber"></i> Send only <b>USDT (BEP-20)</b> on <b>Binance Smart Chain</b> to this address. Funds will reflect after 1 block confirmation!
+            <!-- Live Blockchain Monitoring Status & Manual Refresh -->
+            <div class="deposit-live-monitor">
+              <div class="monitor-status">
+                <span class="pulse-dot"></span>
+                <span id="depositStatusText">Listening for incoming BEP-20 transfer...</span>
+              </div>
+              <button class="check-deposit-status-btn" id="checkDepositStatusBtn" onclick="checkCurrentDepositStatus(true)">
+                <i class="fa-solid fa-rotate"></i> Check Status
+              </button>
+            </div>
+
+            <!-- OFFICIAL DEPOSIT RULES SECTION -->
+            <div class="deposit-rules-card">
+              <div class="rules-header">
+                <i class="fa-solid fa-shield-halved text-cyan"></i> OFFICIAL DEPOSIT RULES
+              </div>
+              <ul class="rules-list">
+                <li>
+                  <span class="rule-icon text-cyan"><i class="fa-solid fa-link"></i></span>
+                  <div class="rule-txt"><b>Strictly BEP-20 Only:</b> Send only USDT on Binance Smart Chain (BEP-20). Any other network (TRC20, ERC20, Polygon) cannot be credited.</div>
+                </li>
+                <li>
+                  <span class="rule-icon text-gold"><i class="fa-solid fa-infinity"></i></span>
+                  <div class="rule-txt"><b>No Amount Limit:</b> Send any amount you wish to this QR or address. No manual amount entry needed!</div>
+                </li>
+                <li>
+                  <span class="rule-icon text-green"><i class="fa-solid fa-bolt"></i></span>
+                  <div class="rule-txt"><b>Instant Auto-Credit:</b> As soon as 1 block is confirmed on BSC, funds automatically reflect in your <b>Game Wallet</b>.</div>
+                </li>
+                <li>
+                  <span class="rule-icon text-cyan"><i class="fa-solid fa-gamepad"></i></span>
+                  <div class="rule-txt"><b>Play Immediately:</b> Once funds arrive in Game Wallet, you can immediately join 1v1 battles and win cash!</div>
+                </li>
+                <li>
+                  <span class="rule-icon text-purple"><i class="fa-solid fa-lock"></i></span>
+                  <div class="rule-txt"><b>24/7 Automated Gateway:</b> Protected & verified by NOWPayments institutional crypto gateway.</div>
+                </li>
+              </ul>
             </div>
 
             <!-- Quick Add Demo Funds button for testing -->

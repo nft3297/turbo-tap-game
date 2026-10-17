@@ -1526,16 +1526,156 @@ body {
   cursor: pointer;
 }
 
-.deposit-notice {
-  font-size: 0.68rem;
+.deposit-modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.qr-loader-placeholder {
+  width: 140px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #0f172a;
   color: #94a3b8;
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  padding: 8px 10px;
+  font-size: 0.72rem;
   border-radius: var(--radius-sm);
+}
+
+.qr-loader-placeholder i {
+  font-size: 1.5rem;
+}
+
+/* Live Blockchain Monitoring Bar */
+.deposit-live-monitor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  margin-bottom: 14px;
+}
+
+.monitor-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  color: #e2e8f0;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.pulse-dot {
+  width: 9px;
+  height: 9px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #10b981;
+  display: inline-block;
+  flex-shrink: 0;
+  animation: pulseGlow 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.6;
+    box-shadow: 0 0 4px #10b981;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+    box-shadow: 0 0 12px #10b981;
+  }
+}
+
+.check-deposit-status-btn {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.check-deposit-status-btn:active {
+  transform: scale(0.96);
+  background: var(--cyan);
+  color: #000;
+}
+
+/* Deposit Rules Section */
+.deposit-rules-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: var(--radius-md);
+  padding: 12px;
   margin-bottom: 14px;
   text-align: left;
 }
+
+.rules-header {
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 6px;
+}
+
+.rules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rules-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.rule-icon {
+  font-size: 0.76rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+}
+
+.rule-txt {
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: #cbd5e1;
+}
+
+.rule-txt b {
+  color: #fff;
+}
+
 
 .test-deposit-btn {
   width: 100%;

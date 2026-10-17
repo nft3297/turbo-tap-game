@@ -415,30 +415,26 @@ body {
 }
 
 .wallet-icon-ring {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--cyan), #2563eb);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #04101e;
-  font-size: 0.78rem;
-  flex-shrink: 0;
+  background: #0d1322;
 }
 
-.ref-ring {
-  background: linear-gradient(135deg, #ffd700, #f59e0b) !important;
-}
-
-.profit-ring {
-  background: linear-gradient(135deg, #10b981, #059669) !important;
-  color: #ffffff !important;
-}
-
-.withdraw-ring {
-  background: linear-gradient(135deg, #a855f7, #7c3aed) !important;
-  color: #ffffff !important;
+.wallet-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  display: block;
 }
 
 .profit-icon {
@@ -707,52 +703,57 @@ body {
   background-size: cover;
   background-position: center;
   border-radius: var(--radius-lg);
-  padding: 16px 14px;
+  padding: 18px 14px 14px;
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
-  /* NO BLUR - Crisp 100% sharp image */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  min-height: 175px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .room-card:active {
   transform: scale(0.98);
 }
 
-/* 90% Vivid Artwork Visible (Minimal dark vignette only for contrast) */
+/* 100% Vivid Crystal-Clear Artwork (Zero Blur, High Contrast) */
 .room-card.room-trio {
   background-image: 
-    linear-gradient(180deg, rgba(5, 10, 20, 0.18) 0%, rgba(5, 10, 20, 0.35) 40%, rgba(4, 8, 16, 0.82) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(4, 8, 16, 0.8) 100%),
     url('images/card_trio.jpg');
-  border: 1.5px solid rgba(0, 240, 255, 0.55);
-  box-shadow: 0 0 22px rgba(0, 240, 255, 0.22), 0 8px 24px rgba(0, 0, 0, 0.7);
+  border: 1.5px solid rgba(0, 240, 255, 0.65);
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.25), 0 8px 24px rgba(0, 0, 0, 0.7);
 }
 
 .room-card.room-squad {
   background-image: 
-    linear-gradient(180deg, rgba(14, 8, 24, 0.18) 0%, rgba(14, 8, 24, 0.35) 40%, rgba(10, 5, 18, 0.82) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(10, 5, 18, 0.8) 100%),
     url('images/card_squad.jpg');
-  border: 1.5px solid rgba(168, 85, 247, 0.6);
-  box-shadow: 0 0 22px rgba(168, 85, 247, 0.25), 0 8px 24px rgba(0, 0, 0, 0.7);
+  border: 1.5px solid rgba(168, 85, 247, 0.7);
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.3), 0 8px 24px rgba(0, 0, 0, 0.7);
 }
 
 .room-card.room-elite {
   background-image: 
-    linear-gradient(180deg, rgba(20, 12, 6, 0.18) 0%, rgba(20, 12, 6, 0.35) 40%, rgba(14, 8, 4, 0.82) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(14, 8, 4, 0.8) 100%),
     url('images/card_elite.jpg');
-  border: 1.5px solid rgba(245, 158, 11, 0.6);
-  box-shadow: 0 0 22px rgba(245, 158, 11, 0.25), 0 8px 24px rgba(0, 0, 0, 0.7);
+  border: 1.5px solid rgba(245, 158, 11, 0.7);
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.3), 0 8px 24px rgba(0, 0, 0, 0.7);
 }
 
 .room-card.room-royale {
   background-image: 
-    linear-gradient(180deg, rgba(22, 16, 4, 0.18) 0%, rgba(22, 16, 4, 0.35) 40%, rgba(15, 11, 3, 0.82) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(15, 11, 3, 0.8) 100%),
     url('images/card_royale.jpg');
-  border: 1.5px solid rgba(255, 215, 0, 0.7);
-  box-shadow: 0 0 25px rgba(255, 215, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.7);
+  border: 1.5px solid rgba(255, 215, 0, 0.8);
+  box-shadow: 0 0 28px rgba(255, 215, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.7);
 }
 
 .room-glow {
-  display: none; /* Removed heavy blur glow */
+  display: none;
 }
 
 .featured-ribbon {

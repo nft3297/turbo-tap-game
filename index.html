@@ -32,6 +32,10 @@
     (function() {
       const assets = [
         'images/logo.png',
+        'images/wallet_game.jpg',
+        'images/wallet_ref.jpg',
+        'images/wallet_profit.jpg',
+        'images/wallet_withdraw.jpg',
         'images/hero_bg.jpg',
         'images/stats_bg.jpg',
         'images/card_trio.jpg',
@@ -51,20 +55,18 @@
     
     <!-- ================= 1. TOP BRAND HEADER: TURBO TAP GAME WITH OFFICIAL LOGO ================= -->
     <div class="top-brand-bar">
-      <!-- Official Logo on Left (as indicated in red circle) -->
+      <!-- Official Logo on Left -->
       <div class="brand-logo-wrap" onclick="openProfileModal()" title="Turbo Tap Official Logo">
         <img src="images/logo.png" alt="Turbo Tap Logo" class="brand-top-logo">
       </div>
 
-      <!-- Turbo Tap Game Brand Box -->
+      <!-- Turbo Tap Game Brand Box (Cross icons removed) -->
       <div class="brand-box">
         <div class="brand-shine"></div>
-        <div class="brand-spark left-spark"><i class="fa-solid fa-bolt-lightning text-gold"></i></div>
         <div class="brand-title-wrap">
           <span class="brand-tag"><i class="fa-solid fa-gamepad"></i> OFFICIAL MINI APP</span>
           <span class="brand-text">TURBO TAP GAME</span>
         </div>
-        <div class="brand-spark right-spark"><i class="fa-solid fa-crown text-gold"></i></div>
       </div>
     </div>
 
@@ -90,19 +92,18 @@
         </div>
       </div>
 
-      <!-- Interactive Click Indicator -->
+      <!-- Interactive Click Indicator (DETAILS text removed as requested) -->
       <div class="user-profile-cta">
-        <span class="cta-label">DETAILS</span>
         <div class="cta-arrow-ring"><i class="fa-solid fa-chevron-right"></i></div>
       </div>
     </div>
 
-    <!-- ================= 3. 4-WAY WALLETS BAR (GAME, REF, PROFIT, WITHDRAW) ================= -->
+    <!-- ================= 3. 4-WAY WALLETS BAR (PREMIUM 3D IMAGES IN EVERY BOX) ================= -->
     <header class="top-nav">
       <div class="header-wallets-full">
-        <!-- 1. Main Game Wallet (Starts at $0, credits on deposit) -->
+        <!-- 1. Main Game Wallet -->
         <div class="wallet-pill game-pill" onclick="openDepositModal()" title="Deposit BSC BEP-20 (Game Balance)">
-          <div class="wallet-icon-ring"><i class="fa-solid fa-gamepad"></i></div>
+          <div class="wallet-icon-ring"><img src="images/wallet_game.jpg" class="wallet-thumb-img" alt="Game Wallet"></div>
           <div class="wallet-details">
             <span class="w-label">GAME WALLET</span>
             <div class="wallet-amount">$<span id="walletBalance">0.00</span></div>
@@ -110,9 +111,9 @@
           <button class="wallet-action-icon" title="Deposit BSC BEP-20"><i class="fa-solid fa-plus"></i></button>
         </div>
 
-        <!-- 2. Referral Bonus Wallet (Credits on friend invite) -->
+        <!-- 2. Referral Bonus Wallet -->
         <div class="wallet-pill ref-pill" onclick="navigateTo('screenReferral')" title="Referral Bonus Wallet ($25/friend)">
-          <div class="wallet-icon-ring ref-ring"><i class="fa-solid fa-gift"></i></div>
+          <div class="wallet-icon-ring ref-ring"><img src="images/wallet_ref.jpg" class="wallet-thumb-img" alt="Ref Bonus"></div>
           <div class="wallet-details">
             <span class="w-label">REF BONUS (+$25)</span>
             <div class="wallet-amount text-gold">$<span id="headerRefBalance">0.00</span></div>
@@ -120,9 +121,9 @@
           <div class="wallet-action-icon ref-share" title="Share Referral Link"><i class="fa-solid fa-share-nodes"></i></div>
         </div>
 
-        <!-- 3. Profit Wallet (Game Winnings / Battle Wins) -->
+        <!-- 3. Profit Wallet -->
         <div class="wallet-pill profit-pill" onclick="openWithdrawModal('profit')" title="Profit Wallet (Match Wins & Cash Rewards)">
-          <div class="wallet-icon-ring profit-ring"><i class="fa-solid fa-trophy"></i></div>
+          <div class="wallet-icon-ring profit-ring"><img src="images/wallet_profit.jpg" class="wallet-thumb-img" alt="Profit Wallet"></div>
           <div class="wallet-details">
             <span class="w-label">PROFIT WALLET</span>
             <div class="wallet-amount text-green">$<span id="profitBalance">0.00</span></div>
@@ -130,9 +131,9 @@
           <div class="wallet-action-icon profit-icon" title="Game Profits"><i class="fa-solid fa-arrow-trend-up"></i></div>
         </div>
 
-        <!-- 4. Withdrawal Wallet (Instant BSC Cashout) -->
+        <!-- 4. Withdrawal Wallet -->
         <div class="wallet-pill withdraw-pill" onclick="openWithdrawModal('withdraw')" title="Withdrawal Wallet (Instant BSC BEP-20 Payout)">
-          <div class="wallet-icon-ring withdraw-ring"><i class="fa-solid fa-money-bill-transfer"></i></div>
+          <div class="wallet-icon-ring withdraw-ring"><img src="images/wallet_withdraw.jpg" class="wallet-thumb-img" alt="Withdraw Wallet"></div>
           <div class="wallet-details">
             <span class="w-label">WITHDRAW WALLET</span>
             <div class="wallet-amount text-purple">$<span id="withdrawWalletBalance">0.00</span></div>

@@ -123,7 +123,9 @@ const server = http.createServer((req, res) => {
           username: username.trim(),
           email: email.trim().toLowerCase(),
           bscAddress: bscAddress,
-          wallet: 25.00, // $25 Welcome Game Bonus
+          wallet: 0.00, // Game Wallet (Starts at $0, gets funds from deposit)
+          profitWallet: 0.00, // Profit Wallet (Game winnings / Battle rewards)
+          withdrawWallet: 0.00, // Withdrawal Wallet
           refWallet: 0.00, // Referral Bonus Wallet
           friendsCount: 0,
           totalRefEarned: 0.00,
@@ -146,7 +148,7 @@ const server = http.createServer((req, res) => {
         return res.end(JSON.stringify({ success: true, user: newUser }));
       }
 
-      // 3. Update Balance / Win: POST /api/wallet/update
+      // 3. Update Balance / Win / Deposit: POST /api/wallet/update
       if (req.method === 'POST' && reqPath === '/api/wallet/update') {
         const { telegramId, amount, type } = data;
         const db = readDB();
@@ -156,10 +158,16 @@ const server = http.createServer((req, res) => {
           return res.end(JSON.stringify({ error: 'User not found' }));
         }
 
+        const delta = parseFloat(amount);
         if (type === 'ref') {
-          db.users[telegramId].refWallet += parseFloat(amount);
+          db.users[telegramId].refWallet = Math.max(0, (db.users[telegramId].refWallet || 0) + delta);
+        } else if (type === 'profit') {
+          db.users[telegramId].profitWallet = Math.max(0, (db.users[telegramId].profitWallet || 0) + delta);
+        } else if (type === 'withdraw') {
+          db.users[telegramId].withdrawWallet = Math.max(0, (db.users[telegramId].withdrawWallet || 0) + delta);
         } else {
-          db.users[telegramId].wallet += parseFloat(amount);
+          // Default: Game Wallet (deposits or entry fees)
+          db.users[telegramId].wallet = Math.max(0, (db.users[telegramId].wallet || 0) + delta);
         }
 
         writeDB(db);
@@ -179,16 +187,29 @@ const server = http.createServer((req, res) => {
         }
 
         const amt = parseFloat(amount);
-        const avail = source === 'referral' ? user.refWallet : user.wallet;
+        let avail = 0;
+        if (source === 'referral') {
+          avail = user.refWallet || 0;
+        } else if (source === 'profit') {
+          avail = user.profitWallet || 0;
+        } else if (source === 'withdraw') {
+          avail = user.withdrawWallet || 0;
+        } else {
+          avail = user.wallet || 0;
+        }
 
         if (amt > avail || amt < 5) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: 'Invalid withdrawal amount' }));
         }
 
-        // Deduct balance
+        // Deduct balance from chosen source
         if (source === 'referral') {
           user.refWallet -= amt;
+        } else if (source === 'profit') {
+          user.profitWallet -= amt;
+        } else if (source === 'withdraw') {
+          user.withdrawWallet -= amt;
         } else {
           user.wallet -= amt;
         }

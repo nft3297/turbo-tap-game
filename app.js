@@ -27,6 +27,15 @@ localStorage.setItem('turbo_uid', rawUserId.toString());
 
 const userBscAddress = generateBscAddress(rawUserId);
 
+// Clean migration: Zero starting balance for game, profit, withdraw and ref wallets
+if (localStorage.getItem('turbo_wallet_v4_zero') !== 'true') {
+  localStorage.setItem('turbo_wallet_v4_zero', 'true');
+  localStorage.setItem('turbo_wallet', '0.00');
+  localStorage.setItem('turbo_profit_wallet', '0.00');
+  localStorage.setItem('turbo_withdraw_wallet', '0.00');
+  localStorage.setItem('turbo_ref_wallet', '0.00');
+}
+
 const STATE = {
   user: {
     id: rawUserId,
@@ -38,13 +47,15 @@ const STATE = {
     startParam: tg?.initDataUnsafe?.start_param || ''
   },
   isRegistered: false,
-  wallet: parseFloat(localStorage.getItem('turbo_wallet') || '25.00'),
-  refWallet: parseFloat(localStorage.getItem('turbo_ref_wallet') || '0.00'),
+  wallet: parseFloat(localStorage.getItem('turbo_wallet') || '0.00'), // Game Wallet: 0.00 (credits on deposit)
+  profitWallet: parseFloat(localStorage.getItem('turbo_profit_wallet') || '0.00'), // Profit Wallet: 0.00 (credits on battle wins)
+  withdrawWallet: parseFloat(localStorage.getItem('turbo_withdraw_wallet') || '0.00'), // Withdrawal Wallet
+  refWallet: parseFloat(localStorage.getItem('turbo_ref_wallet') || '0.00'), // Referral Wallet: 0.00
   friendsCount: parseInt(localStorage.getItem('turbo_friends_count') || '0'),
   totalRefEarned: parseFloat(localStorage.getItem('turbo_total_ref_earned') || '0.00'),
   transactions: JSON.parse(localStorage.getItem('turbo_txs') || '[]'),
 
-  withdrawSource: 'game',
+  withdrawSource: 'profit',
   qrCodeInstance: null,
 
   soundEnabled: localStorage.getItem('turbo_sound') !== 'false',
@@ -227,10 +238,12 @@ async function initApp() {
       STATE.user.username = data.user.username;
       STATE.user.email = data.user.email;
       STATE.user.bscAddress = data.user.bscAddress || STATE.user.bscAddress;
-      STATE.wallet = data.user.wallet;
-      STATE.refWallet = data.user.refWallet;
-      STATE.friendsCount = data.user.friendsCount;
-      STATE.totalRefEarned = data.user.totalRefEarned;
+      STATE.wallet = parseFloat(data.user.wallet || 0);
+      STATE.profitWallet = parseFloat(data.user.profitWallet || 0);
+      STATE.withdrawWallet = parseFloat(data.user.withdrawWallet || 0);
+      STATE.refWallet = parseFloat(data.user.refWallet || 0);
+      STATE.friendsCount = data.user.friendsCount || 0;
+      STATE.totalRefEarned = parseFloat(data.user.totalRefEarned || 0);
       localStorage.setItem(`turbo_reg_${STATE.user.id}`, 'true');
     } else {
       // 1st time user! Check if registered locally
@@ -304,6 +317,12 @@ function openProfileModal() {
 
   const profGame = document.getElementById('profGameBal');
   if (profGame) profGame.textContent = `$${STATE.wallet.toFixed(2)}`;
+
+  const profProfit = document.getElementById('profProfitBal');
+  if (profProfit) profProfit.textContent = `$${STATE.profitWallet.toFixed(2)}`;
+
+  const profWithdraw = document.getElementById('profWithdrawBal');
+  if (profWithdraw) profWithdraw.textContent = `$${STATE.withdrawWallet.toFixed(2)}`;
 
   const profRef = document.getElementById('profRefBal');
   if (profRef) profRef.textContent = `$${STATE.refWallet.toFixed(2)}`;
@@ -499,29 +518,69 @@ async function handleRegistrationSubmit(e) {
   createConfetti();
   updateHeaderAndDisplays();
   updateAllBalances();
-  showToast(`🎉 Welcome ${username}! $25.00 Welcome Bonus credited!`);
+  showToast(`🎉 Welcome ${username}! Account activated on BSC BEP-20!`);
 }
 
 function updateAllBalances() {
-  const gameFormatted = STATE.wallet.toFixed(2);
-  const refFormatted = STATE.refWallet.toFixed(2);
+  const gameFormatted = (STATE.wallet || 0).toFixed(2);
+  const refFormatted = (STATE.refWallet || 0).toFixed(2);
+  const profitFormatted = (STATE.profitWallet || 0).toFixed(2);
+  const withdrawFormatted = (STATE.withdrawWallet || 0).toFixed(2);
 
-  document.getElementById('walletBalance').textContent = gameFormatted;
-  document.getElementById('headerRefBalance').textContent = refFormatted;
+  const walletBalEl = document.getElementById('walletBalance');
+  if (walletBalEl) walletBalEl.textContent = gameFormatted;
 
-  document.getElementById('refWalletBalance').textContent = refFormatted;
-  document.getElementById('totalFriendsCount').textContent = STATE.friendsCount;
-  document.getElementById('totalEarnedRef').textContent = `$${STATE.totalRefEarned.toFixed(2)}`;
+  const refBalEl = document.getElementById('headerRefBalance');
+  if (refBalEl) refBalEl.textContent = refFormatted;
 
-  document.getElementById('financeWalletVal').textContent = gameFormatted;
+  const profitBalEl = document.getElementById('profitBalance');
+  if (profitBalEl) profitBalEl.textContent = profitFormatted;
 
-  document.getElementById('withdrawAvailGame').textContent = gameFormatted;
-  document.getElementById('withdrawAvailRef').textContent = refFormatted;
+  const withdrawBalEl = document.getElementById('withdrawWalletBalance');
+  if (withdrawBalEl) withdrawBalEl.textContent = withdrawFormatted;
 
-  localStorage.setItem('turbo_wallet', STATE.wallet.toString());
-  localStorage.setItem('turbo_ref_wallet', STATE.refWallet.toString());
-  localStorage.setItem('turbo_friends_count', STATE.friendsCount.toString());
-  localStorage.setItem('turbo_total_ref_earned', STATE.totalRefEarned.toString());
+  const refScreenBal = document.getElementById('refWalletBalance');
+  if (refScreenBal) refScreenBal.textContent = refFormatted;
+
+  const friendsCountEl = document.getElementById('totalFriendsCount');
+  if (friendsCountEl) friendsCountEl.textContent = STATE.friendsCount;
+
+  const totalEarnedRefEl = document.getElementById('totalEarnedRef');
+  if (totalEarnedRefEl) totalEarnedRefEl.textContent = `$${(STATE.totalRefEarned || 0).toFixed(2)}`;
+
+  const finWalletEl = document.getElementById('financeWalletVal');
+  if (finWalletEl) finWalletEl.textContent = gameFormatted;
+
+  const wAvailGame = document.getElementById('withdrawAvailGame');
+  if (wAvailGame) wAvailGame.textContent = gameFormatted;
+
+  const wAvailRef = document.getElementById('withdrawAvailRef');
+  if (wAvailRef) wAvailRef.textContent = refFormatted;
+
+  const wAvailProfit = document.getElementById('withdrawAvailProfit');
+  if (wAvailProfit) wAvailProfit.textContent = profitFormatted;
+
+  const wAvailWithdraw = document.getElementById('withdrawAvailWithdraw');
+  if (wAvailWithdraw) wAvailWithdraw.textContent = withdrawFormatted;
+
+  const profGame = document.getElementById('profGameBal');
+  if (profGame) profGame.textContent = `$${gameFormatted}`;
+
+  const profProfit = document.getElementById('profProfitBal');
+  if (profProfit) profProfit.textContent = `$${profitFormatted}`;
+
+  const profWithdraw = document.getElementById('profWithdrawBal');
+  if (profWithdraw) profWithdraw.textContent = `$${withdrawFormatted}`;
+
+  const profRef = document.getElementById('profRefBal');
+  if (profRef) profRef.textContent = `$${refFormatted}`;
+
+  localStorage.setItem('turbo_wallet', (STATE.wallet || 0).toString());
+  localStorage.setItem('turbo_profit_wallet', (STATE.profitWallet || 0).toString());
+  localStorage.setItem('turbo_withdraw_wallet', (STATE.withdrawWallet || 0).toString());
+  localStorage.setItem('turbo_ref_wallet', (STATE.refWallet || 0).toString());
+  localStorage.setItem('turbo_friends_count', (STATE.friendsCount || 0).toString());
+  localStorage.setItem('turbo_total_ref_earned', (STATE.totalRefEarned || 0).toString());
 }
 
 // 9. Referral System ($25 Bonus per Friend)
@@ -643,7 +702,7 @@ async function testInstantDeposit(amount) {
 }
 
 // 11. Withdrawal System (Strictly BSC BEP-20)
-function openWithdrawModal(source = 'game') {
+function openWithdrawModal(source = 'profit') {
   triggerHaptic('impact');
   selectWithdrawWallet(source);
   document.getElementById('withdrawModal').classList.add('active');
@@ -656,22 +715,30 @@ function closeWithdrawModal() {
 function selectWithdrawWallet(source) {
   triggerHaptic('light');
   STATE.withdrawSource = source;
-  const gameCard = document.getElementById('selGameWallet');
-  const refCard = document.getElementById('selRefWallet');
 
-  if (source === 'game') {
-    gameCard.classList.add('active');
-    refCard.classList.remove('active');
-  } else {
-    refCard.classList.add('active');
-    gameCard.classList.remove('active');
-  }
+  const profitCard = document.getElementById('selProfitWallet');
+  const withdrawCard = document.getElementById('selWithdrawWallet');
+  const refCard = document.getElementById('selRefWallet');
+  const gameCard = document.getElementById('selGameWallet');
+
+  [profitCard, withdrawCard, refCard, gameCard].forEach(c => c?.classList.remove('active'));
+
+  if (source === 'profit') profitCard?.classList.add('active');
+  else if (source === 'withdraw') withdrawCard?.classList.add('active');
+  else if (source === 'referral') refCard?.classList.add('active');
+  else if (source === 'game') gameCard?.classList.add('active');
+
   updateWithdrawCalculation();
 }
 
 function setMaxWithdraw() {
   triggerHaptic('light');
-  const maxBal = STATE.withdrawSource === 'game' ? STATE.wallet : STATE.refWallet;
+  let maxBal = 0;
+  if (STATE.withdrawSource === 'profit') maxBal = STATE.profitWallet || 0;
+  else if (STATE.withdrawSource === 'withdraw') maxBal = STATE.withdrawWallet || 0;
+  else if (STATE.withdrawSource === 'referral') maxBal = STATE.refWallet || 0;
+  else maxBal = STATE.wallet || 0;
+
   document.getElementById('withdrawAmountInput').value = Math.floor(maxBal);
   updateWithdrawCalculation();
 }
@@ -710,10 +777,25 @@ async function processWithdrawalSubmit() {
     return;
   }
 
-  const currentAvailable = STATE.withdrawSource === 'game' ? STATE.wallet : STATE.refWallet;
+  let currentAvailable = 0;
+  let sourceName = 'Profit Wallet';
+  if (STATE.withdrawSource === 'profit') {
+    currentAvailable = STATE.profitWallet || 0;
+    sourceName = 'Profit Wallet';
+  } else if (STATE.withdrawSource === 'withdraw') {
+    currentAvailable = STATE.withdrawWallet || 0;
+    sourceName = 'Withdraw Wallet';
+  } else if (STATE.withdrawSource === 'referral') {
+    currentAvailable = STATE.refWallet || 0;
+    sourceName = 'Referral Wallet';
+  } else {
+    currentAvailable = STATE.wallet || 0;
+    sourceName = 'Game Wallet';
+  }
+
   if (amount > currentAvailable) {
     triggerHaptic('warning');
-    showToast(`⚠️ Insufficient balance in ${STATE.withdrawSource === 'game' ? 'Game' : 'Referral'} Wallet!`);
+    showToast(`⚠️ Insufficient balance in ${sourceName}!`);
     return;
   }
 
@@ -731,17 +813,21 @@ async function processWithdrawalSubmit() {
     });
   } catch (err) {}
 
-  if (STATE.withdrawSource === 'game') {
-    STATE.wallet -= amount;
+  if (STATE.withdrawSource === 'profit') {
+    STATE.profitWallet = Math.max(0, (STATE.profitWallet || 0) - amount);
+    STATE.withdrawWallet = Math.max(0, (STATE.withdrawWallet || 0) - amount);
+  } else if (STATE.withdrawSource === 'withdraw') {
+    STATE.withdrawWallet = Math.max(0, (STATE.withdrawWallet || 0) - amount);
+  } else if (STATE.withdrawSource === 'referral') {
+    STATE.refWallet = Math.max(0, (STATE.refWallet || 0) - amount);
   } else {
-    STATE.refWallet -= amount;
+    STATE.wallet = Math.max(0, (STATE.wallet || 0) - amount);
   }
 
   updateAllBalances();
   sounds.playVictory();
   triggerHaptic('success');
 
-  const sourceName = STATE.withdrawSource === 'game' ? 'Game Wallet' : 'Referral Wallet';
   addTransaction(`Withdrawal to ${address.substring(0, 6)}... (BSC BEP-20, ${sourceName})`, `-$${amount.toFixed(2)}`, 'text-amber');
 
   addressInput.value = '';
@@ -799,6 +885,31 @@ function renderHistoryList() {
 
 // 13. Arena Matchmaking Logic (3, 5, 8, 12 Teams)
 function startMatchmaking(playerCount, prizeAmount, roomTitle) {
+  // Check if user has sufficient deposit in Game Wallet
+  if ((STATE.wallet || 0) < prizeAmount) {
+    triggerHaptic('warning');
+    showToast(`⚠️ Insufficient Game Wallet ($${(STATE.wallet || 0).toFixed(2)})! Deposit $${prizeAmount.toFixed(2)} to play.`);
+    openDepositModal();
+    return;
+  }
+
+  // Deduct entry fee from Game Wallet (deposited funds)
+  STATE.wallet = Math.max(0, (STATE.wallet || 0) - prizeAmount);
+  updateAllBalances();
+  addTransaction(`Arena Entry: ${roomTitle}`, `-$${prizeAmount.toFixed(2)}`, 'text-amber');
+
+  try {
+    fetch('/api/wallet/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        telegramId: STATE.user.id,
+        amount: -prizeAmount,
+        type: 'game'
+      })
+    });
+  } catch (err) {}
+
   sounds.init();
   triggerHaptic('impact');
 
@@ -1101,7 +1212,9 @@ async function finishBattle() {
     rewardBox.style.display = 'block';
     iconWrap.innerHTML = `<div class="result-trophy-ring"><i class="fa-solid fa-crown text-gold"></i></div>`;
     
-    STATE.wallet += STATE.currentRoom.prize;
+    // Battle Winnings credit directly to PROFIT WALLET!
+    STATE.profitWallet = (STATE.profitWallet || 0) + STATE.currentRoom.prize;
+    STATE.withdrawWallet = (STATE.withdrawWallet || 0) + STATE.currentRoom.prize;
 
     try {
       await fetch('/api/wallet/update', {
@@ -1110,13 +1223,13 @@ async function finishBattle() {
         body: JSON.stringify({
           telegramId: STATE.user.id,
           amount: STATE.currentRoom.prize,
-          type: 'game'
+          type: 'profit'
         })
       });
     } catch (err) {}
 
     updateAllBalances();
-    addTransaction(`Won ${STATE.currentRoom.title} (BSC BEP-20)`, `+$${STATE.currentRoom.prize.toFixed(2)}`, 'text-gold');
+    addTransaction(`Won ${STATE.currentRoom.title} (Profit Wallet)`, `+$${STATE.currentRoom.prize.toFixed(2)}`, 'text-green');
     createConfetti();
   } else {
     triggerHaptic('warning');

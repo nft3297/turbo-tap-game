@@ -404,6 +404,16 @@ body {
   box-shadow: 0 2px 14px rgba(255, 215, 0, 0.22);
 }
 
+.profit-pill {
+  border-color: rgba(16, 185, 129, 0.65);
+  box-shadow: 0 2px 14px rgba(16, 185, 129, 0.22);
+}
+
+.withdraw-pill {
+  border-color: rgba(168, 85, 247, 0.65);
+  box-shadow: 0 2px 14px rgba(168, 85, 247, 0.22);
+}
+
 .wallet-icon-ring {
   width: 28px;
   height: 28px;
@@ -419,6 +429,26 @@ body {
 
 .ref-ring {
   background: linear-gradient(135deg, #ffd700, #f59e0b) !important;
+}
+
+.profit-ring {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #ffffff !important;
+}
+
+.withdraw-ring {
+  background: linear-gradient(135deg, #a855f7, #7c3aed) !important;
+  color: #ffffff !important;
+}
+
+.profit-icon {
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #34d399 !important;
+}
+
+.withdraw-action-icon {
+  background: rgba(168, 85, 247, 0.25) !important;
+  color: #c084fc !important;
 }
 
 .wallet-details {

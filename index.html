@@ -97,20 +97,20 @@
       </div>
     </div>
 
-    <!-- ================= 3. DUAL WALLETS BAR (GAME & REFERRAL) ================= -->
+    <!-- ================= 3. 4-WAY WALLETS BAR (GAME, REF, PROFIT, WITHDRAW) ================= -->
     <header class="top-nav">
       <div class="header-wallets-full">
-        <!-- Main Game Wallet -->
-        <div class="wallet-pill game-pill" onclick="openDepositModal()" title="Deposit BSC BEP-20">
+        <!-- 1. Main Game Wallet (Starts at $0, credits on deposit) -->
+        <div class="wallet-pill game-pill" onclick="openDepositModal()" title="Deposit BSC BEP-20 (Game Balance)">
           <div class="wallet-icon-ring"><i class="fa-solid fa-gamepad"></i></div>
           <div class="wallet-details">
             <span class="w-label">GAME WALLET</span>
-            <div class="wallet-amount">$<span id="walletBalance">25.00</span></div>
+            <div class="wallet-amount">$<span id="walletBalance">0.00</span></div>
           </div>
           <button class="wallet-action-icon" title="Deposit BSC BEP-20"><i class="fa-solid fa-plus"></i></button>
         </div>
 
-        <!-- Referral Bonus Wallet -->
+        <!-- 2. Referral Bonus Wallet (Credits on friend invite) -->
         <div class="wallet-pill ref-pill" onclick="navigateTo('screenReferral')" title="Referral Bonus Wallet ($25/friend)">
           <div class="wallet-icon-ring ref-ring"><i class="fa-solid fa-gift"></i></div>
           <div class="wallet-details">
@@ -118,6 +118,26 @@
             <div class="wallet-amount text-gold">$<span id="headerRefBalance">0.00</span></div>
           </div>
           <div class="wallet-action-icon ref-share" title="Share Referral Link"><i class="fa-solid fa-share-nodes"></i></div>
+        </div>
+
+        <!-- 3. Profit Wallet (Game Winnings / Battle Wins) -->
+        <div class="wallet-pill profit-pill" onclick="openWithdrawModal('profit')" title="Profit Wallet (Match Wins & Cash Rewards)">
+          <div class="wallet-icon-ring profit-ring"><i class="fa-solid fa-trophy"></i></div>
+          <div class="wallet-details">
+            <span class="w-label">PROFIT WALLET</span>
+            <div class="wallet-amount text-green">$<span id="profitBalance">0.00</span></div>
+          </div>
+          <div class="wallet-action-icon profit-icon" title="Game Profits"><i class="fa-solid fa-arrow-trend-up"></i></div>
+        </div>
+
+        <!-- 4. Withdrawal Wallet (Instant BSC Cashout) -->
+        <div class="wallet-pill withdraw-pill" onclick="openWithdrawModal('withdraw')" title="Withdrawal Wallet (Instant BSC BEP-20 Payout)">
+          <div class="wallet-icon-ring withdraw-ring"><i class="fa-solid fa-money-bill-transfer"></i></div>
+          <div class="wallet-details">
+            <span class="w-label">WITHDRAW WALLET</span>
+            <div class="wallet-amount text-purple">$<span id="withdrawWalletBalance">0.00</span></div>
+          </div>
+          <button class="wallet-action-icon withdraw-action-icon" title="Request Payout"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
         </div>
       </div>
     </header>
@@ -487,8 +507,8 @@
         <div class="finance-card">
           <div class="finance-header-row">
             <div>
-              <span class="finance-sub">MAIN GAME BALANCE</span>
-              <div class="finance-main-val">$<span id="financeWalletVal">25.00</span></div>
+              <span class="finance-sub">MAIN GAME BALANCE (DEPOSITS)</span>
+              <div class="finance-main-val">$<span id="financeWalletVal">0.00</span></div>
             </div>
             <div class="network-badge"><i class="fa-solid fa-circle-nodes text-gold"></i> BSC BEP-20 (BNB Smart Chain)</div>
           </div>
@@ -498,7 +518,7 @@
               <i class="fa-solid fa-arrow-down-long"></i>
               <span>DEPOSIT</span>
             </button>
-            <button class="w-cta-btn withdraw-btn" onclick="openWithdrawModal('game')">
+            <button class="w-cta-btn withdraw-btn" onclick="openWithdrawModal('profit')">
               <i class="fa-solid fa-arrow-up-long"></i>
               <span>WITHDRAW</span>
             </button>
@@ -526,10 +546,10 @@
           <div class="history-list" id="globalHistoryList">
             <div class="h-row">
               <div class="h-info">
-                <span class="h-title"><i class="fa-solid fa-gift text-gold"></i> Welcome Starter Pack</span>
-                <span class="h-date">Today, 12:00</span>
+                <span class="h-title"><i class="fa-solid fa-shield-halved text-cyan"></i> Account Activated (BSC BEP-20)</span>
+                <span class="h-date">Today, Active</span>
               </div>
-              <span class="h-amt text-green">+$25.00</span>
+              <span class="h-amt text-green">$0.00</span>
             </div>
           </div>
         </div>
@@ -591,14 +611,22 @@
             <!-- Source Wallet Selector -->
             <div class="withdraw-source-box">
               <label>Select Balance to Withdraw:</label>
-              <div class="wallet-select-grid">
-                <div class="wallet-sel-card active" id="selGameWallet" onclick="selectWithdrawWallet('game')">
-                  <span class="w-name">Game Wallet</span>
-                  <span class="w-bal text-cyan">$<span id="withdrawAvailGame">25.00</span></span>
+              <div class="wallet-select-grid four-grid">
+                <div class="wallet-sel-card active" id="selProfitWallet" onclick="selectWithdrawWallet('profit')">
+                  <span class="w-name">Profit Wallet</span>
+                  <span class="w-bal text-green">$<span id="withdrawAvailProfit">0.00</span></span>
+                </div>
+                <div class="wallet-sel-card" id="selWithdrawWallet" onclick="selectWithdrawWallet('withdraw')">
+                  <span class="w-name">Withdraw Wallet</span>
+                  <span class="w-bal text-purple">$<span id="withdrawAvailWithdraw">0.00</span></span>
                 </div>
                 <div class="wallet-sel-card" id="selRefWallet" onclick="selectWithdrawWallet('referral')">
-                  <span class="w-name">Referral Wallet</span>
+                  <span class="w-name">Referral Bonus</span>
                   <span class="w-bal text-gold">$<span id="withdrawAvailRef">0.00</span></span>
+                </div>
+                <div class="wallet-sel-card" id="selGameWallet" onclick="selectWithdrawWallet('game')">
+                  <span class="w-name">Game Wallet</span>
+                  <span class="w-bal text-cyan">$<span id="withdrawAvailGame">0.00</span></span>
                 </div>
               </div>
             </div>
@@ -692,8 +720,18 @@
               </div>
 
               <div class="prof-detail-row">
-                <div class="prof-label"><i class="fa-solid fa-gamepad text-green"></i> Game Wallet:</div>
-                <div class="prof-val text-green" id="profGameBal">$25.00</div>
+                <div class="prof-label"><i class="fa-solid fa-gamepad text-cyan"></i> Game Wallet (Deposit):</div>
+                <div class="prof-val text-cyan" id="profGameBal">$0.00</div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-trophy text-green"></i> Profit Wallet (Wins):</div>
+                <div class="prof-val text-green" id="profProfitBal">$0.00</div>
+              </div>
+
+              <div class="prof-detail-row">
+                <div class="prof-label"><i class="fa-solid fa-money-bill-transfer text-purple"></i> Withdrawal Wallet:</div>
+                <div class="prof-val text-purple" id="profWithdrawBal">$0.00</div>
               </div>
 
               <div class="prof-detail-row">
@@ -744,8 +782,8 @@
           <p class="signup-sub">Create your gamer identity once. Your Telegram ID will automatically keep you logged in forever!</p>
 
           <div class="signup-bonus-chip">
-            <i class="fa-solid fa-gift text-gold"></i>
-            <span>Includes <b>$25.00</b> Free Game Bonus!</span>
+            <i class="fa-solid fa-shield-halved text-cyan"></i>
+            <span>Instant Zero Password 1-Click BSC Identity</span>
           </div>
 
           <form id="signupForm" onsubmit="handleRegistrationSubmit(event)">

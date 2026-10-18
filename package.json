@@ -15,5 +15,8 @@
     "web3"
   ],
   "author": "onlinetoonline123",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0"
+  }
 }

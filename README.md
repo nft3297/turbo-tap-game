@@ -9,7 +9,7 @@ Official Telegram WebApp for **Turbo Tap Game** featuring real-time team battle 
   - Main Game Wallet ($25 welcome bonus)
   - Referral Bonus Wallet ($25/friend with 1-click invite link)
 - **Dedicated BSC BEP-20 Deposit Address:** Deterministic, auto-generated deposit address with live QR Code.
-- **Instant Withdrawals:** Minimum $5 withdrawal with automated BSC BEP-20 42-char address validation.
+- **Instant Withdrawals:** Minimum $20 withdrawal (3% platform fee) with automated BSC BEP-20 42-char address validation.
 - **Zero Password 1-Time Sign Up:** Auto-authenticates via Telegram WebApp `initDataUnsafe`.
 
 ## 🛠️ Run Locally

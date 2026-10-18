@@ -728,13 +728,13 @@
                 <label for="withdrawAmountInput">Amount to Withdraw ($ USD):</label>
                 <span class="max-btn" onclick="setMaxWithdraw()">MAX</span>
               </div>
-              <input type="number" id="withdrawAmountInput" class="form-input" placeholder="Min. $5.00" min="5" step="1">
+              <input type="number" id="withdrawAmountInput" class="form-input" placeholder="Min. $20.00" min="20" step="1">
             </div>
 
             <div class="withdraw-fee-summary">
               <div class="fee-row"><span>Withdrawal Amount:</span> <span id="feeAmountDisplay">$0.00</span></div>
               <div class="fee-row"><span>Network:</span> <span class="text-gold">BSC BEP-20</span></div>
-              <div class="fee-row"><span>BSC Gas Fee:</span> <span class="text-green">FREE ($0.00)</span></div>
+              <div class="fee-row"><span>Platform Fee (3%):</span> <span class="text-cyan" id="feeDeductDisplay">-$0.00</span></div>
               <div class="fee-row total"><span>You Receive (USDT BEP-20):</span> <b class="text-gold" id="feeReceiveDisplay">$0.00</b></div>
             </div>
 

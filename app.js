@@ -1046,9 +1046,15 @@ document.addEventListener('input', (e) => {
 function updateWithdrawCalculation() {
   const inputVal = parseFloat(document.getElementById('withdrawAmountInput')?.value || '0');
   const feeDisplay = document.getElementById('feeAmountDisplay');
+  const feeDeductDisplay = document.getElementById('feeDeductDisplay');
   const receiveDisplay = document.getElementById('feeReceiveDisplay');
+
+  const fee = inputVal > 0 ? (inputVal * 0.03) : 0;
+  const receiveAmount = Math.max(0, inputVal - fee);
+
   if (feeDisplay) feeDisplay.textContent = `$${inputVal.toFixed(2)}`;
-  if (receiveDisplay) receiveDisplay.textContent = `$${inputVal.toFixed(2)}`;
+  if (feeDeductDisplay) feeDeductDisplay.textContent = `-$${fee.toFixed(2)}`;
+  if (receiveDisplay) receiveDisplay.textContent = `$${receiveAmount.toFixed(2)}`;
 }
 
 async function processWithdrawalSubmit() {
@@ -1065,9 +1071,9 @@ async function processWithdrawalSubmit() {
     return;
   }
 
-  if (isNaN(amount) || amount < 5) {
+  if (isNaN(amount) || amount < 20) {
     triggerHaptic('warning');
-    showToast('⚠️ Minimum withdrawal amount is $5.00 USD!');
+    showToast('⚠️ Minimum withdrawal amount is $20.00 USD!');
     return;
   }
 
@@ -1078,6 +1084,9 @@ async function processWithdrawalSubmit() {
     return;
   }
 
+  const fee = amount * 0.03;
+  const netAmount = Math.max(0, amount - fee);
+
   // Send withdrawal request to backend
   try {
     await fetch('/api/withdraw', {
@@ -1087,6 +1096,8 @@ async function processWithdrawalSubmit() {
         telegramId: STATE.user.id,
         address,
         amount,
+        fee,
+        netAmount,
         source: 'withdraw'
       })
     });
@@ -1098,13 +1109,13 @@ async function processWithdrawalSubmit() {
   sounds.playVictory();
   triggerHaptic('success');
 
-  addTransaction(`Withdrawal to ${address.substring(0, 6)}... (BSC BEP-20)`, `-$${amount.toFixed(2)}`, 'text-amber');
+  addTransaction(`Withdrawal to ${address.substring(0, 6)}... (Net: $${netAmount.toFixed(2)})`, `-$${amount.toFixed(2)}`, 'text-amber');
 
   addressInput.value = '';
   amountInput.value = '';
   closeWithdrawModal();
 
-  showToast(`🚀 Withdrawal of $${amount.toFixed(2)} USDT (BEP-20) submitted! Processing payout.`);
+  showToast(`🚀 Withdrawal of $${amount.toFixed(2)} USDT submitted! (Net: $${netAmount.toFixed(2)} after 3% fee).`);
 }
 
 // 12. Transaction History Tracker

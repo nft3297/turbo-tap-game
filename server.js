@@ -857,9 +857,9 @@ const server = http.createServer(async (req, res) => {
         }
 
         const amt = parseFloat(amount);
-        if (isNaN(amt) || !Number.isFinite(amt) || amt < 5) {
+        if (isNaN(amt) || !Number.isFinite(amt) || amt < 20) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'Invalid withdrawal amount (Minimum $5 required)' }));
+          return res.end(JSON.stringify({ error: 'Invalid withdrawal amount (Minimum $20 required)' }));
         }
 
         const cleanAddress = String(address || '').trim();
@@ -892,10 +892,14 @@ const server = http.createServer(async (req, res) => {
           fieldToDeduct = 'wallet';
         }
 
-        if (amt > avail || amt < 5) {
+        if (amt > avail || amt < 20) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'Invalid withdrawal amount (Minimum $5, or insufficient balance)' }));
+          return res.end(JSON.stringify({ error: 'Invalid withdrawal amount (Minimum $20 required, or insufficient balance)' }));
         }
+
+        // Calculate 3% fee deduction
+        const fee = amt * 0.03;
+        const netAmount = Math.max(0, amt - fee);
 
         // Deduct balance in Supabase
         const newBalance = Math.max(0, avail - amt);
@@ -915,6 +919,8 @@ const server = http.createServer(async (req, res) => {
           telegram_id: String(telegramId),
           wallet_type: source,
           amount: amt,
+          fee: fee,
+          net_amount: netAmount,
           bsc_address: address,
           status: 'pending',
           created_at: new Date().toISOString()

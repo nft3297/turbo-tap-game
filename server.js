@@ -501,35 +501,85 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify({ ok: true }));
       }
 
-      // 2. 1st Time Sign Up: POST /api/register
+      // 2. 1st Time Sign Up / Auto Register: POST /api/register
       if (req.method === 'POST' && reqPath === '/api/register') {
         const { telegramId, username, email, referrerId } = data;
 
-        if (!telegramId || !username || !email) {
+        if (!telegramId) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'telegramId, username, and email are required' }));
+          return res.end(JSON.stringify({ error: 'telegramId is required' }));
         }
 
+        let referrer = null;
+        if (referrerId && String(referrerId).trim() !== String(telegramId).trim()) {
+          const rawRef = String(referrerId).trim();
+          const strippedRef = rawRef.startsWith('ref_') ? rawRef.slice(4).trim() : rawRef;
+          referrer = await getSupabaseUser(strippedRef);
+          if (!referrer && strippedRef !== rawRef) {
+            referrer = await getSupabaseUser(rawRef);
+          }
+        }
+        const validReferrer = referrer ? referrer.telegram_id : null;
+
         // Check if user already exists in Supabase
-        const existing = await getSupabaseUser(telegramId);
+        let existing = await getSupabaseUser(telegramId);
         if (existing) {
+          // If existing user doesn't have a referrer yet and opens via a valid referral link:
+          if (validReferrer && !existing.referred_by && referrer) {
+            // 1. Award +$25 to Referrer
+            await supabase.from('users').update({
+              ref_wallet: parseFloat(referrer.ref_wallet || 0) + 25.00,
+              total_ref_earned: parseFloat(referrer.total_ref_earned || 0) + 25.00,
+              friends_count: parseInt(referrer.friends_count || 0) + 1,
+              updated_at: new Date().toISOString()
+            }).eq('telegram_id', String(validReferrer));
+
+            // 2. Award +$25 to the Referred User
+            const newRefBal = parseFloat(existing.ref_wallet || 0) + 25.00;
+            const { data: updatedSelf } = await supabase.from('users').update({
+              referred_by: String(validReferrer),
+              ref_wallet: newRefBal,
+              updated_at: new Date().toISOString()
+            }).eq('telegram_id', String(telegramId)).select().single();
+
+            if (updatedSelf) existing = updatedSelf;
+            console.log(`[Referral Success] Existing User ${telegramId} linked to ${validReferrer}. Both awarded +$25!`);
+          }
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ success: true, user: formatUser(existing), message: 'User already exists' }));
+          return res.end(JSON.stringify({ success: true, user: formatUser(existing), message: 'User updated' }));
         }
 
         const bscAddress = generateBscAddress(telegramId);
+        let initialRefWallet = 0.00;
+
+        // If new user joined via a valid Referrer:
+        if (validReferrer && referrer) {
+          // 1. Award +$25.00 to the Referrer in Supabase!
+          await supabase.from('users').update({
+            ref_wallet: parseFloat(referrer.ref_wallet || 0) + 25.00,
+            total_ref_earned: parseFloat(referrer.total_ref_earned || 0) + 25.00,
+            friends_count: parseInt(referrer.friends_count || 0) + 1,
+            updated_at: new Date().toISOString()
+          }).eq('telegram_id', String(validReferrer));
+
+          // 2. Award +$25.00 Welcome Starter Bonus to the Referred User!
+          initialRefWallet = 25.00;
+          console.log(`[Referral Success] New User ${telegramId} joined via ${validReferrer}! Both received +$25 in Referral Wallet!`);
+        }
+
         const newUserRow = {
           telegram_id: String(telegramId),
-          username: username.trim(),
-          email: email.trim().toLowerCase(),
+          username: (username || 'Gamer_' + String(telegramId).slice(-4)).trim(),
+          email: (email || `user_${telegramId}@telegram.org`).trim().toLowerCase(),
           bsc_address: bscAddress,
           wallet: 0.00,
           profit_wallet: 0.00,
           withdraw_wallet: 0.00,
-          ref_wallet: 0.00,
+          ref_wallet: initialRefWallet, // $25 if referred!
           friends_count: 0,
           total_ref_earned: 0.00,
-          referred_by: referrerId ? String(referrerId) : null,
+          referred_by: validReferrer,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -544,19 +594,6 @@ const server = http.createServer(async (req, res) => {
           console.error('[Supabase] Register insert error:', insErr);
         }
 
-        // If joined via a valid Referrer: Award +$25 to the Referrer in Supabase!
-        if (referrerId) {
-          const referrer = await getSupabaseUser(referrerId);
-          if (referrer) {
-            await supabase.from('users').update({
-              ref_wallet: parseFloat(referrer.ref_wallet || 0) + 25.00,
-              total_ref_earned: parseFloat(referrer.total_ref_earned || 0) + 25.00,
-              friends_count: parseInt(referrer.friends_count || 0) + 1,
-              updated_at: new Date().toISOString()
-            }).eq('telegram_id', String(referrerId));
-          }
-        }
-
         // Sync local DB backup
         const localDB = readDB();
         localDB.users[telegramId] = formatUser(createdUser || newUserRow);
@@ -566,7 +603,7 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify({ success: true, user: formatUser(createdUser || newUserRow) }));
       }
 
-      // 3. Update Balance / Win / Entry Fee: POST /api/wallet/update
+      // 3. Update Balance / Win / Entry Fee / Referral Bonus: POST /api/wallet/update
       if (req.method === 'POST' && reqPath === '/api/wallet/update') {
         const { telegramId, amount, type } = data;
         let userRow = await getSupabaseUser(telegramId);
@@ -577,29 +614,26 @@ const server = http.createServer(async (req, res) => {
         }
 
         const delta = parseFloat(amount);
-        let updateField = 'wallet';
-        let newVal = 0;
+        let updateData = { updated_at: new Date().toISOString() };
 
         if (type === 'ref') {
-          updateField = 'ref_wallet';
-          newVal = Math.max(0, parseFloat(userRow.ref_wallet || 0) + delta);
+          const newRefBal = Math.max(0, parseFloat(userRow.ref_wallet || 0) + delta);
+          updateData.ref_wallet = newRefBal;
+          if (delta > 0) {
+            updateData.total_ref_earned = parseFloat(userRow.total_ref_earned || 0) + delta;
+            updateData.friends_count = parseInt(userRow.friends_count || 0) + 1;
+          }
         } else if (type === 'profit') {
-          updateField = 'profit_wallet';
-          newVal = Math.max(0, parseFloat(userRow.profit_wallet || 0) + delta);
+          updateData.profit_wallet = Math.max(0, parseFloat(userRow.profit_wallet || 0) + delta);
         } else if (type === 'withdraw') {
-          updateField = 'withdraw_wallet';
-          newVal = Math.max(0, parseFloat(userRow.withdraw_wallet || 0) + delta);
+          updateData.withdraw_wallet = Math.max(0, parseFloat(userRow.withdraw_wallet || 0) + delta);
         } else {
-          updateField = 'wallet';
-          newVal = Math.max(0, parseFloat(userRow.wallet || 0) + delta);
+          updateData.wallet = Math.max(0, parseFloat(userRow.wallet || 0) + delta);
         }
 
         const { data: updatedUser, error: updErr } = await supabase
           .from('users')
-          .update({
-            [updateField]: newVal,
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('telegram_id', String(telegramId))
           .select()
           .single();

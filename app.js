@@ -22,6 +22,19 @@ function generateBscAddress(userId) {
 }
 
 // 3. User Identity & State Management
+const urlParams = new URLSearchParams(window.location.search);
+const rawStartParam = tg?.initDataUnsafe?.start_param || 
+                      urlParams.get('startapp') || 
+                      urlParams.get('tgWebAppStartParam') || 
+                      urlParams.get('ref') || 
+                      urlParams.get('start') || 
+                      localStorage.getItem('turbo_ref_id') || '';
+
+if (rawStartParam) {
+  const cleanRef = rawStartParam.replace('ref_', '').trim();
+  if (cleanRef) localStorage.setItem('turbo_ref_id', cleanRef);
+}
+
 const rawUserId = tg?.initDataUnsafe?.user?.id || parseInt(localStorage.getItem('turbo_uid') || Math.floor(100000 + Math.random() * 900000).toString());
 localStorage.setItem('turbo_uid', rawUserId.toString());
 
@@ -44,7 +57,7 @@ const STATE = {
     username: tg?.initDataUnsafe?.user?.username ? '@' + tg.initDataUnsafe.user.username : '@You',
     email: '',
     photoUrl: tg?.initDataUnsafe?.user?.photo_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${rawUserId}`,
-    startParam: tg?.initDataUnsafe?.start_param || ''
+    startParam: rawStartParam
   },
   isRegistered: false,
   wallet: parseFloat(localStorage.getItem('turbo_wallet') || '0.00'), // Game Wallet: 0.00 (credits on deposit)
@@ -227,7 +240,9 @@ function navigateTo(screenId) {
 
 // 7. Initialize User and Backend Authentication
 async function initApp() {
-  // Check Backend to see if user is already registered
+  const cleanRef = (STATE.user.startParam || localStorage.getItem('turbo_ref_id') || '').replace('ref_', '').trim();
+  const validReferrer = (cleanRef && cleanRef !== String(STATE.user.id)) ? cleanRef : null;
+
   try {
     const res = await fetch(`/api/user?telegramId=${STATE.user.id}`);
     const data = await res.json();
@@ -235,8 +250,8 @@ async function initApp() {
     if (data.exists && data.user) {
       // User already signed up previously!
       STATE.isRegistered = true;
-      STATE.user.username = data.user.username;
-      STATE.user.email = data.user.email;
+      STATE.user.username = data.user.username || STATE.user.username;
+      STATE.user.email = data.user.email || STATE.user.email;
       STATE.user.bscAddress = data.user.bscAddress || STATE.user.bscAddress;
       STATE.wallet = parseFloat(data.user.wallet || 0);
       STATE.profitWallet = parseFloat(data.user.profitWallet || 0);
@@ -245,17 +260,70 @@ async function initApp() {
       STATE.friendsCount = data.user.friendsCount || 0;
       STATE.totalRefEarned = parseFloat(data.user.totalRefEarned || 0);
       localStorage.setItem(`turbo_reg_${STATE.user.id}`, 'true');
+
+      // If user had no referrer yet, but opened via referral link now, link and credit bonus!
+      if (!data.user.referredBy && validReferrer) {
+        try {
+          const linkRes = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              telegramId: STATE.user.id,
+              username: STATE.user.username,
+              email: STATE.user.email,
+              referrerId: validReferrer
+            })
+          });
+          const linkData = await linkRes.json();
+          if (linkData.success && linkData.user) {
+            STATE.refWallet = parseFloat(linkData.user.refWallet || 0);
+            STATE.friendsCount = linkData.user.friendsCount || 0;
+            STATE.totalRefEarned = parseFloat(linkData.user.totalRefEarned || 0);
+            showToast('🎁 Referral link activated! +$25.00 added to your Referral Wallet!');
+            createConfetti();
+          }
+        } catch (e) {}
+      }
     } else {
-      // 1st time user! Check if registered locally
-      const localReg = localStorage.getItem(`turbo_reg_${STATE.user.id}`);
-      if (!localReg) {
+      // 1st time user! Auto-register immediately on backend with referral parameter
+      try {
+        const regRes = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegramId: STATE.user.id,
+            username: STATE.user.username?.replace('@', '') || STATE.user.firstName || `Player_${STATE.user.id}`,
+            email: STATE.user.email || `user_${STATE.user.id}@telegram.org`,
+            referrerId: validReferrer
+          })
+        });
+        const regData = await regRes.json();
+        if (regData.success && regData.user) {
+          STATE.isRegistered = true;
+          STATE.user.bscAddress = regData.user.bscAddress || STATE.user.bscAddress;
+          STATE.wallet = parseFloat(regData.user.wallet || 0);
+          STATE.profitWallet = parseFloat(regData.user.profitWallet || 0);
+          STATE.withdrawWallet = parseFloat(regData.user.withdrawWallet || 0);
+          STATE.refWallet = parseFloat(regData.user.refWallet || 0);
+          STATE.friendsCount = regData.user.friendsCount || 0;
+          STATE.totalRefEarned = parseFloat(regData.user.totalRefEarned || 0);
+          localStorage.setItem(`turbo_reg_${STATE.user.id}`, 'true');
+
+          if (validReferrer && STATE.refWallet >= 25.00) {
+            setTimeout(() => {
+              showToast('🎁 Welcome! +$25.00 Referral Bonus added to your Referral Wallet!');
+              createConfetti();
+              sounds.playVictory();
+            }, 600);
+          }
+        }
+      } catch (err) {
+        console.warn('[Auto-reg] Error, falling back to local modal:', err.message);
         showSignupModal();
-      } else {
-        STATE.isRegistered = true;
       }
     }
   } catch (err) {
-    // Local fallback if offline
+    console.warn('[Init] Offline / local mode:', err.message);
     const localReg = localStorage.getItem(`turbo_reg_${STATE.user.id}`);
     if (!localReg) {
       showSignupModal();
@@ -617,7 +685,7 @@ async function simulateFriendJoined() {
 
   // Sync with backend
   try {
-    await fetch('/api/wallet/update', {
+    const res = await fetch('/api/wallet/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -626,6 +694,12 @@ async function simulateFriendJoined() {
         type: 'ref'
       })
     });
+    const result = await res.json();
+    if (result.success && result.user) {
+      STATE.refWallet = parseFloat(result.user.refWallet || STATE.refWallet);
+      STATE.friendsCount = result.user.friendsCount || STATE.friendsCount;
+      STATE.totalRefEarned = parseFloat(result.user.totalRefEarned || STATE.totalRefEarned);
+    }
   } catch (err) {}
 
   addTransaction(`Referral Bonus (Friend #${STATE.friendsCount})`, `+$${bonus.toFixed(2)}`, 'text-gold');

@@ -150,12 +150,11 @@ const mimeTypes = {
   '.ttf': 'font/ttf'
 };
 
-const NOWPAYMENTS = {
-  apiKey: 'MQG8HTE-JCFMPDQ-HJWHJZQ-498VAM5',
-  publicKey: '6e4d94cc-3799-430e-80c2-7569eeb326d4',
-  baseUrl: 'https://api.nowpayments.io/v1',
-  payCurrency: 'usdtbsc', // Strictly BEP-20 USDT on Binance Smart Chain
-  ipnUrl: 'https://turbo-tap-game.onrender.com/api/nowpayments/ipn'
+const PLISIO = {
+  secretKey: process.env.PLISIO_SECRET_KEY || 'i1yF7lDXacUvZjI1q37KEqcFDKrTBJIXS0whbdGqmB8tHz6yhJqNKHTaLwpzsmZs',
+  baseUrl: 'https://api.plisio.net/api/v1',
+  currency: 'USDT_BSC', // Strictly BEP-20 USDT on Binance Smart Chain
+  callbackUrl: 'https://turbo-tap-game.onrender.com/api/plisio/callback'
 };
 
 // ================= ANTI-HACKER RATE LIMITING ENGINE =================
@@ -279,8 +278,8 @@ const server = http.createServer(async (req, res) => {
       return res.end(JSON.stringify({ exists: false }));
     }
 
-    // 2. NOWPAYMENTS: GET /api/nowpayments/deposit-address?telegramId=123
-    if (req.method === 'GET' && reqPath === '/api/nowpayments/deposit-address') {
+    // 2. PLISIO: GET /api/plisio/deposit-address?telegramId=123 (with /api/nowpayments/deposit-address alias)
+    if (req.method === 'GET' && (reqPath === '/api/plisio/deposit-address' || reqPath === '/api/nowpayments/deposit-address')) {
       const urlParams = new URLSearchParams(queryString);
       const telegramId = urlParams.get('telegramId');
 
@@ -306,111 +305,147 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      // Check if user already has an active deposit waiting in Supabase
+      // 1. Strict Dedicated Address Rule: Check if this user ALREADY has a dedicated Plisio address
+      let dedicatedAddress = null;
+      let paymentId = null;
+
       try {
-        const { data: activeDep } = await supabase
+        const { data: existingDep } = await supabase
           .from('deposits')
           .select('*')
           .eq('telegram_id', String(telegramId))
-          .eq('status', 'waiting')
+          .not('pay_address', 'is', null)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (activeDep && activeDep.pay_address) {
-          const createdAt = new Date(activeDep.created_at).getTime();
-          // Valid for 24 hours
-          if (Date.now() - createdAt < 86400000) {
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({
-              success: true,
-              pay_address: activeDep.pay_address,
-              payment_id: activeDep.payment_id,
-              currency: 'USDT',
-              network: 'BSC (BEP-20)',
-              min_amount: 1,
-              valid_until: new Date(createdAt + 86400000).toISOString()
-            }));
-          }
+        if (existingDep && existingDep.pay_address) {
+          dedicatedAddress = existingDep.pay_address;
+          paymentId = existingDep.payment_id;
         }
       } catch (e) {
         console.warn('[Supabase] Active deposit lookup warning:', e.message);
       }
 
-      // Generate real BEP-20 address via NOWPayments API
-      fetch(`${NOWPAYMENTS.baseUrl}/payment`, {
-        method: 'POST',
-        headers: {
-          'x-api-key': NOWPAYMENTS.apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          price_amount: 1,
-          price_currency: 'usd',
-          pay_currency: NOWPAYMENTS.payCurrency, // 'usdtbsc' strictly BEP-20
-          ipn_callback_url: NOWPAYMENTS.ipnUrl,
-          order_id: `dep_${telegramId}_${Date.now()}`,
-          order_description: `Turbo Tap BEP-20 Deposit user ${telegramId}`
-        })
-      })
-      .then(r => r.json())
-      .then(async payment => {
-        if (!payment || !payment.pay_address) {
-          console.error('[NOWPayments] Create payment failed:', payment);
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'Could not generate NOWPayments address', details: payment }));
-        }
-
-        // Save deposit in Supabase
-        await supabase.from('deposits').upsert({
-          id: 'dep_' + payment.payment_id,
-          payment_id: String(payment.payment_id),
-          telegram_id: String(telegramId),
-          amount: 1,
-          network: 'BSC-BEP20',
-          pay_address: payment.pay_address,
-          status: 'waiting',
-          created_at: new Date().toISOString()
-        });
-
-        // Also sync local backup
+      // Also check local database fallback
+      if (!dedicatedAddress) {
         const localDB = readDB();
-        localDB.users[telegramId] = localDB.users[telegramId] || formatUser(userRow);
-        localDB.users[telegramId].nowpaymentsDeposit = {
-          payment_id: String(payment.payment_id),
-          pay_address: payment.pay_address,
-          valid_until: payment.valid_until || new Date(Date.now() + 7 * 86400000).toISOString(),
-          created_at: new Date().toISOString()
-        };
-        writeDB(localDB);
+        if (localDB.users[telegramId]?.plisioDeposit?.pay_address) {
+          dedicatedAddress = localDB.users[telegramId].plisioDeposit.pay_address;
+          paymentId = localDB.users[telegramId].plisioDeposit.payment_id;
+        } else if (localDB.users[telegramId]?.nowpaymentsDeposit?.pay_address) {
+          dedicatedAddress = localDB.users[telegramId].nowpaymentsDeposit.pay_address;
+          paymentId = localDB.users[telegramId].nowpaymentsDeposit.payment_id;
+        }
+      }
 
+      // If user already has a dedicated address, return it immediately (1 user = 1 permanent address & QR)
+      if (dedicatedAddress) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({
           success: true,
-          pay_address: payment.pay_address,
-          payment_id: payment.payment_id,
+          pay_address: dedicatedAddress,
+          payment_id: paymentId,
           currency: 'USDT',
           network: 'BSC (BEP-20)',
-          min_amount: 1,
-          valid_until: payment.valid_until || new Date(Date.now() + 7 * 86400000).toISOString()
+          gateway: 'Plisio'
         }));
-      })
-      .catch(err => {
-        console.error('[NOWPayments] Fetch error:', err);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'NOWPayments connection error', message: err.message }));
-      });
+      }
+
+      // Otherwise, generate a dedicated White-Label BEP-20 deposit address via Plisio API
+      const orderNumber = `dep_${telegramId}_${Date.now()}`;
+      const orderName = `TurboTap Deposit User ${telegramId}`;
+      const plisioUrl = `${PLISIO.baseUrl}/invoices/new?api_key=${PLISIO.secretKey}&currency=${PLISIO.currency}&order_number=${encodeURIComponent(orderNumber)}&order_name=${encodeURIComponent(orderName)}&source_currency=USD&source_amount=1&callback_url=${encodeURIComponent(PLISIO.callbackUrl + '?json=true')}`;
+
+      fetch(plisioUrl)
+        .then(r => r.json())
+        .then(async result => {
+          if (!result || result.status !== 'success' || !result.data) {
+            console.error('[Plisio] Create invoice failed:', result);
+            const fallbackAddr = userRow?.bsc_address || generateBscAddress(telegramId);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({
+              success: true,
+              pay_address: fallbackAddr,
+              payment_id: 'local_' + telegramId,
+              currency: 'USDT',
+              network: 'BSC (BEP-20)',
+              gateway: 'Fallback'
+            }));
+          }
+
+          const invoice = result.data;
+          const assignedAddress = invoice.wallet_hash || invoice.invoice_url;
+          const txnId = invoice.txn_id;
+
+          // Save dedicated deposit record in Supabase
+          try {
+            await supabase.from('deposits').upsert({
+              id: 'plisio_' + txnId,
+              payment_id: String(txnId),
+              telegram_id: String(telegramId),
+              amount: 1,
+              network: 'BSC-BEP20',
+              pay_address: assignedAddress,
+              status: 'waiting',
+              created_at: new Date().toISOString()
+            });
+
+            // Update user profile bsc_address
+            await supabase.from('users').update({
+              bsc_address: assignedAddress,
+              updated_at: new Date().toISOString()
+            }).eq('telegram_id', String(telegramId));
+          } catch (err) {
+            console.warn('[Supabase] Plisio deposit record error:', err.message);
+          }
+
+          // Sync local DB backup
+          const localDB = readDB();
+          localDB.users[telegramId] = localDB.users[telegramId] || formatUser(userRow);
+          localDB.users[telegramId].plisioDeposit = {
+            payment_id: String(txnId),
+            pay_address: assignedAddress,
+            created_at: new Date().toISOString()
+          };
+          localDB.users[telegramId].bscAddress = assignedAddress;
+          writeDB(localDB);
+
+          console.log(`[Plisio] Generated dedicated BEP-20 address for user ${telegramId}: ${assignedAddress}`);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({
+            success: true,
+            pay_address: assignedAddress,
+            payment_id: txnId,
+            currency: 'USDT',
+            network: 'BSC (BEP-20)',
+            gateway: 'Plisio'
+          }));
+        })
+        .catch(err => {
+          console.error('[Plisio] Connection error:', err);
+          const fallbackAddr = userRow?.bsc_address || generateBscAddress(telegramId);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            pay_address: fallbackAddr,
+            payment_id: 'local_' + telegramId,
+            currency: 'USDT',
+            network: 'BSC (BEP-20)',
+            gateway: 'Fallback'
+          }));
+        });
       return;
     }
 
-    // 3. NOWPAYMENTS: Check Deposit Status GET /api/nowpayments/check?telegramId=123&paymentId=456
-    if (req.method === 'GET' && reqPath === '/api/nowpayments/check') {
+    // 3. PLISIO: Check Deposit Status GET /api/plisio/check?telegramId=123&paymentId=456 (with /api/nowpayments/check alias)
+    if (req.method === 'GET' && (reqPath === '/api/plisio/check' || reqPath === '/api/nowpayments/check')) {
       const urlParams = new URLSearchParams(queryString);
       const telegramId = urlParams.get('telegramId');
       let paymentId = urlParams.get('paymentId');
 
       if (!paymentId) {
-        // Lookup latest waiting deposit for user
         const { data: latestDep } = await supabase
           .from('deposits')
           .select('payment_id')
@@ -427,38 +462,56 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify({ error: 'paymentId is required' }));
       }
 
-      fetch(`${NOWPAYMENTS.baseUrl}/payment/${paymentId}`, {
-        headers: { 'x-api-key': NOWPAYMENTS.apiKey }
-      })
-      .then(r => r.json())
-      .then(async data => {
-        const isPaid = ['finished', 'confirmed', 'partially_paid'].includes(data.payment_status);
-        const paidAmount = parseFloat(data.actually_paid || data.outcome_amount || 0);
+      // Check if already finished in Supabase
+      try {
+        const { data: depRecord } = await supabase
+          .from('deposits')
+          .select('*')
+          .eq('payment_id', String(paymentId))
+          .maybeSingle();
 
-        if (isPaid && paidAmount > 0) {
-          // Check if already finished in Supabase
-          const { data: depRecord } = await supabase
-            .from('deposits')
-            .select('status')
-            .eq('payment_id', String(paymentId))
-            .maybeSingle();
+        if (depRecord?.status === 'finished') {
+          const userRow = await getSupabaseUser(telegramId);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({
+            status: 'completed',
+            credited: true,
+            amount: parseFloat(depRecord.amount || 0),
+            wallet: parseFloat(userRow?.wallet || 0),
+            message: `Deposit of $${parseFloat(depRecord.amount || 0).toFixed(2)} USDT credited to Game Wallet!`
+          }));
+        }
+      } catch (err) {}
 
-          let userRow = await getSupabaseUser(telegramId);
+      // Query Plisio API for status
+      fetch(`${PLISIO.baseUrl}/invoices/${paymentId}?api_key=${PLISIO.secretKey}`)
+        .then(r => r.json())
+        .then(async resData => {
+          if (!resData || resData.status !== 'success' || !resData.data) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ status: 'waiting', credited: false }));
+          }
 
-          if (depRecord?.status !== 'finished') {
-            // Update deposit record to finished in Supabase
+          const invoice = resData.data;
+          const status = invoice.status;
+          const isPaid = ['completed', 'mismatch', 'finished'].includes(status);
+          const paidAmount = parseFloat(invoice.amount || invoice.pending_amount || invoice.source_sum || 0);
+
+          if (isPaid && paidAmount > 0) {
+            // Update Supabase deposit record
             await supabase.from('deposits').upsert({
-              id: 'dep_' + paymentId,
+              id: 'plisio_' + paymentId,
               payment_id: String(paymentId),
               telegram_id: String(telegramId),
               amount: paidAmount,
               network: 'BSC-BEP20',
-              tx_hash: data.payin_hash || null,
+              tx_hash: invoice.tx_urls || invoice.txn_id || null,
               status: 'finished',
               created_at: new Date().toISOString()
             });
 
             // Credit directly to Game Wallet in Supabase
+            const userRow = await getSupabaseUser(telegramId);
             const updatedWallet = parseFloat(userRow?.wallet || 0) + paidAmount;
             await supabase.from('users').update({
               wallet: updatedWallet,
@@ -472,11 +525,11 @@ const server = http.createServer(async (req, res) => {
             if (localDB.users[telegramId]) localDB.users[telegramId].wallet = updatedWallet;
             writeDB(localDB);
 
-            console.log(`[NOWPayments Check] Successfully credited $${paidAmount} to user ${telegramId} in Supabase!`);
+            console.log(`[Plisio Check] Successfully credited $${paidAmount} USDT to user ${telegramId} in Supabase!`);
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({
-              status: data.payment_status,
+              status: 'completed',
               credited: true,
               amount: paidAmount,
               wallet: updatedWallet,
@@ -486,27 +539,18 @@ const server = http.createServer(async (req, res) => {
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({
-            status: data.payment_status,
-            credited: true,
-            amount: paidAmount,
-            wallet: parseFloat(userRow?.wallet || 0),
-            message: `Deposit already credited!`
+            status: status || 'waiting',
+            credited: false,
+            actually_paid: paidAmount
           }));
-        }
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({
-          status: data.payment_status || 'waiting',
-          credited: false,
-          actually_paid: paidAmount
-        }));
-      })
-      .catch(err => {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message }));
-      });
+        })
+        .catch(err => {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'waiting', credited: false, error: err.message }));
+        });
       return;
     }
+
 
     // ================= ANTI-DOS PAYLOAD SIZE GUARD (50KB MAX) =================
     let body = '';
@@ -532,20 +576,28 @@ const server = http.createServer(async (req, res) => {
       if (isPayloadOversized) return;
       let data = {};
       try {
-        if (body) data = JSON.parse(body);
+        if (body) {
+          const trimmed = body.trim();
+          if (trimmed.startsWith('{')) {
+            data = JSON.parse(body);
+          } else {
+            const params = new URLSearchParams(body);
+            data = Object.fromEntries(params.entries());
+          }
+        }
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ error: 'Invalid JSON request payload' }));
       }
 
-      // 1. NOWPAYMENTS IPN WEBHOOK: POST /api/nowpayments/ipn
-      if (req.method === 'POST' && reqPath === '/api/nowpayments/ipn') {
-        console.log('[NOWPayments IPN] Callback received:', JSON.stringify(data));
-        const paymentId = data.payment_id;
-        const status = data.payment_status;
-        const actuallyPaid = parseFloat(data.actually_paid || data.outcome_amount || (status === 'finished' || status === 'confirmed' ? data.pay_amount : 0) || 0);
-        const orderId = data.order_id || '';
-        const payAddress = data.pay_address;
+      // 1. PLISIO IPN CALLBACK: POST /api/plisio/callback (with /api/nowpayments/ipn fallback alias)
+      if (req.method === 'POST' && (reqPath === '/api/plisio/callback' || reqPath === '/api/nowpayments/ipn')) {
+        console.log('[Plisio Callback] Webhook received:', JSON.stringify(data));
+        const paymentId = data.txn_id || data.payment_id;
+        const status = data.status || data.payment_status;
+        const actuallyPaid = parseFloat(data.amount || data.source_sum || data.pending_amount || data.actually_paid || 0);
+        const orderId = data.order_number || data.order_id || '';
+        const payAddress = data.wallet_hash || data.pay_address;
 
         let targetTelegramId = null;
         if (orderId && orderId.startsWith('dep_')) {
@@ -558,7 +610,12 @@ const server = http.createServer(async (req, res) => {
           if (u) targetTelegramId = u.telegram_id;
         }
 
-        const isPaid = ['finished', 'confirmed', 'partially_paid', 'sending'].includes(status);
+        if (!targetTelegramId && paymentId) {
+          const { data: d } = await supabase.from('deposits').select('telegram_id').eq('payment_id', String(paymentId)).maybeSingle();
+          if (d) targetTelegramId = d.telegram_id;
+        }
+
+        const isPaid = ['completed', 'mismatch', 'finished', 'confirmed', 'partially_paid'].includes(status);
         if (isPaid && actuallyPaid > 0 && targetTelegramId) {
           const { data: depRecord } = await supabase
             .from('deposits')
@@ -568,12 +625,12 @@ const server = http.createServer(async (req, res) => {
 
           if (depRecord?.status !== 'finished') {
             await supabase.from('deposits').upsert({
-              id: 'dep_' + paymentId,
+              id: 'plisio_' + paymentId,
               payment_id: String(paymentId),
               telegram_id: String(targetTelegramId),
               amount: actuallyPaid,
               network: 'BSC-BEP20',
-              tx_hash: data.payin_hash || null,
+              tx_hash: data.tx_urls || data.txn_id || data.payin_hash || null,
               status: 'finished',
               created_at: new Date().toISOString()
             });
@@ -585,12 +642,19 @@ const server = http.createServer(async (req, res) => {
               updated_at: new Date().toISOString()
             }).eq('telegram_id', String(targetTelegramId));
 
-            console.log(`[NOWPayments IPN] Auto-credited $${actuallyPaid} USDT to Game Wallet of user ${targetTelegramId} in Supabase!`);
+            // Sync local DB backup
+            const localDB = readDB();
+            localDB.creditedDeposits = localDB.creditedDeposits || {};
+            localDB.creditedDeposits[String(paymentId)] = { amount: actuallyPaid, telegramId: targetTelegramId, date: new Date().toISOString() };
+            if (localDB.users[targetTelegramId]) localDB.users[targetTelegramId].wallet = newBal;
+            writeDB(localDB);
+
+            console.log(`[Plisio Callback] Auto-credited $${actuallyPaid} USDT to Game Wallet of user ${targetTelegramId} in Supabase!`);
           }
         }
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ ok: true }));
+        return res.end(JSON.stringify({ ok: true, status: 'success' }));
       }
 
       // 2. 1st Time Sign Up / Auto Register: POST /api/register

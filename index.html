@@ -501,11 +501,6 @@
             </div>
           </div>
 
-          <div class="demo-invite-test">
-            <button class="test-invite-btn" onclick="simulateFriendJoined()">
-              <i class="fa-solid fa-user-plus"></i> Simulate 1 Friend Join (+$25 Bonus Test)
-            </button>
-          </div>
         </div>
       </section>
 
@@ -632,6 +627,64 @@
                 </li>
               </ul>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= MODAL: DEPOSIT SUCCESSFUL (CENTER SCREEN POPUP) ================= -->
+      <div id="depositSuccessModal" class="app-modal center-modal">
+        <div class="modal-backdrop" onclick="closeDepositSuccessModal()"></div>
+        <div class="modal-content success-popup-card">
+          <!-- Top Bar with Close Button -->
+          <div class="success-top-header">
+            <span class="success-network-badge">
+              <i class="fa-solid fa-shield-halved text-green"></i> BSC BEP-20 Verified
+            </span>
+            <button class="modal-close-btn success-top-close" onclick="closeDepositSuccessModal()" title="Close popup">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- Centered Body -->
+          <div class="success-center-body">
+            <!-- Pulsing Success Animated Icon -->
+            <div class="success-glow-ring">
+              <div class="success-icon-core">
+                <i class="fa-solid fa-check"></i>
+              </div>
+            </div>
+
+            <h2 class="success-popup-title">Deposit Successfully!</h2>
+            <p class="success-popup-subtitle">Your USDT deposit has been confirmed on blockchain.</p>
+
+            <!-- Dynamic Amount Display -->
+            <div class="success-amount-card">
+              <span class="success-amount-lbl">AMOUNT CREDITED</span>
+              <div class="success-amount-val">
+                +<span id="depositSuccessAmount">0.00</span> <span class="success-currency-tag">USDT</span>
+              </div>
+            </div>
+
+            <!-- Details List -->
+            <div class="success-meta-list">
+              <div class="success-meta-item">
+                <span class="meta-label"><i class="fa-solid fa-cube text-gold"></i> Network:</span>
+                <span class="meta-value">Binance Smart Chain (BEP-20)</span>
+              </div>
+              <div class="success-meta-item">
+                <span class="meta-label"><i class="fa-solid fa-wallet text-cyan"></i> Credited To:</span>
+                <span class="meta-value text-cyan"><b>Game Wallet</b></span>
+              </div>
+              <div class="success-meta-item">
+                <span class="meta-label"><i class="fa-solid fa-bolt text-green"></i> Status:</span>
+                <span class="meta-value text-green"><b>Instant Auto-Credit Complete</b></span>
+              </div>
+            </div>
+
+            <!-- Action Button -->
+            <button class="success-action-btn" onclick="closeDepositSuccessModal()">
+              <i class="fa-solid fa-gamepad"></i> Play Now
+            </button>
           </div>
         </div>
       </div>

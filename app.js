@@ -396,6 +396,29 @@ async function initApp() {
   updateHeaderAndDisplays();
   updateAllBalances();
   renderHistoryList();
+
+  // Live Background Deposit Monitor (pops up centered modal whenever deposit arrives)
+  setInterval(async () => {
+    if (!STATE.user?.id) return;
+    try {
+      const res = await fetch(`/api/user?telegramId=${STATE.user.id}`);
+      const data = await res.json();
+      if (data.exists && data.user) {
+        const newWallet = parseFloat(data.user.wallet || 0);
+        const oldWallet = parseFloat(STATE.wallet || 0);
+        if (newWallet > oldWallet) {
+          const diff = newWallet - oldWallet;
+          STATE.wallet = newWallet;
+          STATE.profitWallet = parseFloat(data.user.profitWallet || STATE.profitWallet);
+          STATE.withdrawWallet = parseFloat(data.user.withdrawWallet || STATE.withdrawWallet);
+          STATE.refWallet = parseFloat(data.user.refWallet || STATE.refWallet);
+          updateAllBalances();
+          addTransaction(`Deposit (USDT BSC BEP-20)`, `+$${diff.toFixed(2)}`, 'text-green');
+          showDepositSuccessModal(diff);
+        }
+      }
+    } catch (e) {}
+  }, 8000);
 }
 
 function updateHeaderAndDisplays() {
@@ -769,7 +792,7 @@ async function simulateFriendJoined() {
   showToast(`🎉 New friend joined! +$25.00 added to Referral Wallet!`);
 }
 
-// 10. Deposit & Dedicated Address System with QR Code (NOWPayments Strictly BSC BEP-20)
+// 10. Deposit & Dedicated Address System with QR Code (Plisio Strictly BSC BEP-20)
 let currentDepositPaymentId = null;
 let depositPollInterval = null;
 let isFetchingDepositAddress = false;
@@ -792,7 +815,7 @@ async function openDepositModal() {
       <span>Loading BEP-20 QR...</span>
     </div>`;
   const addrInput = document.getElementById('modalDepositAddressInput');
-  if (addrInput) addrInput.value = 'Connecting to NOWPayments gateway...';
+  if (addrInput) addrInput.value = 'Connecting to Plisio gateway...';
   const statusTxt = document.getElementById('depositStatusText');
   if (statusTxt) statusTxt.textContent = 'Fetching dedicated BEP-20 address...';
 
@@ -817,7 +840,7 @@ async function fetchAndRenderDepositAddress() {
   isFetchingDepositAddress = true;
 
   try {
-    const res = await fetch(`/api/nowpayments/deposit-address?telegramId=${STATE.user.id}`);
+    const res = await fetch(`/api/plisio/deposit-address?telegramId=${STATE.user.id}`);
     const data = await res.json();
 
     if (data.success && data.pay_address) {
@@ -850,7 +873,7 @@ async function fetchAndRenderDepositAddress() {
       renderDepositAddressAndQR(STATE.user.bscAddress);
     }
   } catch (err) {
-    console.error('Failed to fetch NOWPayments address:', err);
+    console.error('Failed to fetch Plisio address:', err);
     renderDepositAddressAndQR(STATE.user.bscAddress);
   } finally {
     isFetchingDepositAddress = false;
@@ -888,7 +911,7 @@ async function checkCurrentDepositStatus(isManual = false) {
   }
 
   try {
-    const res = await fetch(`/api/nowpayments/check?telegramId=${STATE.user.id}&paymentId=${currentDepositPaymentId || ''}`);
+    const res = await fetch(`/api/plisio/check?telegramId=${STATE.user.id}&paymentId=${currentDepositPaymentId || ''}`);
     const data = await res.json();
 
     if (data.credited) {
@@ -906,10 +929,7 @@ async function checkCurrentDepositStatus(isManual = false) {
       addTransaction(`Deposit (USDT BSC BEP-20)`, `+$${parseFloat(data.amount).toFixed(2)}`, 'text-green');
 
       closeDepositModal();
-      showToast(`🎉 +$${parseFloat(data.amount).toFixed(2)} USDT credited to Game Wallet! Ready to play!`);
-
-      // Switch to arena to play immediately
-      switchTab('home');
+      showDepositSuccessModal(data.amount);
       return;
     }
 
@@ -931,6 +951,27 @@ async function checkCurrentDepositStatus(isManual = false) {
       btn.disabled = false;
     }
   }
+}
+
+// ================= CENTERED DEPOSIT SUCCESSFUL MODAL =================
+function showDepositSuccessModal(amount) {
+  const num = parseFloat(amount || 0);
+  const amtEl = document.getElementById('depositSuccessAmount');
+  if (amtEl) amtEl.textContent = num.toFixed(2);
+
+  const modal = document.getElementById('depositSuccessModal');
+  if (modal) {
+    modal.classList.add('active');
+    triggerHaptic('success');
+    sounds.playVictory();
+    createConfetti();
+  }
+}
+
+function closeDepositSuccessModal() {
+  const modal = document.getElementById('depositSuccessModal');
+  if (modal) modal.classList.remove('active');
+  if (typeof switchTab === 'function') switchTab('home');
 }
 
 function copyDepositAddress() {

@@ -1026,16 +1026,20 @@ body {
 }
 
 /* ================= SCREEN 6: DEDICATED REFERRAL WALLET ================= */
+/* 1. Box 1: Referral Bonus Header Card (4D Cyber Gold Vault) */
 .ref-wallet-header {
   position: relative;
-  background: linear-gradient(160deg, #1f1b2e, #131220);
-  border: 1px solid rgba(255, 215, 0, 0.35);
+  background: 
+    linear-gradient(160deg, rgba(22, 16, 36, 0.74) 0%, rgba(8, 10, 22, 0.88) 100%),
+    url('images/ref_banner_4d.jpg') center/cover no-repeat;
+  border: 1.5px solid rgba(255, 215, 0, 0.6);
   border-radius: var(--radius-lg);
-  padding: 20px 16px;
+  padding: 22px 16px;
   text-align: center;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8), 0 0 24px rgba(255, 215, 0, 0.22);
   margin-bottom: 16px;
+  backdrop-filter: blur(5px);
 }
 
 .ref-card-glow {
@@ -1043,11 +1047,11 @@ body {
   top: -30px;
   left: 50%;
   transform: translateX(-50%);
-  width: 150px;
+  width: 160px;
   height: 100px;
   background: var(--gold);
   filter: blur(50px);
-  opacity: 0.2;
+  opacity: 0.25;
   pointer-events: none;
 }
 
@@ -1056,55 +1060,61 @@ body {
   align-items: center;
   gap: 6px;
   font-family: var(--font-display);
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 800;
   color: var(--gold);
-  background: rgba(255, 215, 0, 0.12);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  padding: 4px 10px;
+  background: rgba(10, 12, 26, 0.75);
+  border: 1px solid rgba(255, 215, 0, 0.45);
+  padding: 5px 12px;
   border-radius: var(--radius-full);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 .ref-balance-title {
   font-size: 0.72rem;
-  color: #94a3b8;
+  color: #e2e8f0;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .ref-balance-big {
   font-family: var(--font-display);
-  font-size: 2.4rem;
+  font-size: 2.5rem;
   font-weight: 900;
   color: var(--gold);
-  text-shadow: 0 0 20px var(--gold-glow);
+  text-shadow: 0 0 24px var(--gold-glow), 0 2px 10px rgba(0, 0, 0, 0.9);
   margin: 4px 0 6px;
 }
 
 .ref-balance-big small {
   font-size: 1rem;
-  color: #cbd5e1;
+  color: #e2e8f0;
 }
 
 .ref-reward-highlight {
-  font-size: 0.8rem;
-  color: #e2e8f0;
+  font-size: 0.82rem;
+  color: #f1f5f9;
   margin-bottom: 16px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .ref-reward-highlight b {
-  color: var(--green);
+  color: #34d399;
+  text-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
 }
 
 .ref-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
-  background: rgba(10, 13, 23, 0.8);
+  background: rgba(6, 9, 22, 0.82);
   border-radius: var(--radius-md);
-  padding: 10px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px 6px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
 }
 
 .ref-stat-box {
@@ -1115,27 +1125,35 @@ body {
 
 .rs-num {
   font-family: var(--font-display);
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 800;
   color: #fff;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.7);
 }
 
 .rs-lbl {
-  font-size: 0.6rem;
-  color: #64748b;
+  font-size: 0.62rem;
+  color: #94a3b8;
   margin-top: 2px;
+  font-weight: 600;
 }
 
-/* Link Card */
-.ref-link-card, .how-it-works-card, .deposit-preview-card, .history-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+/* 2. Box 2: Share Invite Link Card (4D Cyber Cyan Network) */
+.ref-link-card {
+  position: relative;
+  background: 
+    linear-gradient(150deg, rgba(5, 14, 32, 0.76) 0%, rgba(4, 10, 24, 0.88) 100%),
+    url('images/ref_link_4d.jpg') center/cover no-repeat;
+  border: 1.5px solid rgba(0, 240, 255, 0.55);
   border-radius: var(--radius-lg);
-  padding: 16px 14px;
+  padding: 18px 15px;
   margin-bottom: 16px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75), 0 0 22px rgba(0, 240, 255, 0.22);
+  backdrop-filter: blur(5px);
+  overflow: hidden;
 }
 
-.card-title {
+.ref-link-card .card-title {
   font-family: var(--font-display);
   font-size: 0.85rem;
   font-weight: 800;
@@ -1143,38 +1161,41 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: #fff;
+  color: #ffffff;
   margin-bottom: 6px;
+  text-shadow: 0 2px 10px rgba(0, 240, 255, 0.6);
 }
 
-.card-desc {
-  font-size: 0.74rem;
-  color: #94a3b8;
-  line-height: 1.35;
-  margin-bottom: 12px;
+.ref-link-card .card-desc {
+  font-size: 0.75rem;
+  color: #e2e8f0;
+  line-height: 1.4;
+  margin-bottom: 14px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .link-input-group {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .link-input-group input {
   flex: 1;
-  background: rgba(10, 13, 23, 0.8);
-  border: 1px solid var(--border-color);
+  background: rgba(4, 9, 24, 0.9);
+  border: 1.5px solid rgba(0, 240, 255, 0.45);
   border-radius: var(--radius-md);
   padding: 10px 12px;
   color: var(--cyan);
   font-family: monospace;
   font-size: 0.72rem;
   outline: none;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
 .copy-link-btn {
-  background: rgba(0, 240, 255, 0.15);
-  border: 1px solid rgba(0, 240, 255, 0.35);
+  background: rgba(0, 240, 255, 0.2);
+  border: 1px solid rgba(0, 240, 255, 0.5);
   color: var(--cyan);
   font-family: var(--font-display);
   font-size: 0.72rem;
@@ -1185,6 +1206,13 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.copy-link-btn:active {
+  background: var(--cyan);
+  color: #000;
+  transform: scale(0.96);
 }
 
 .share-actions-row {
@@ -1207,12 +1235,17 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 4px 15px rgba(0, 136, 204, 0.35);
+  box-shadow: 0 4px 18px rgba(0, 136, 204, 0.45);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tg-share-btn:active {
+  transform: scale(0.97);
 }
 
 .claim-btn {
   background: rgba(255, 215, 0, 0.15);
-  border: 1px solid rgba(255, 215, 0, 0.4);
+  border: 1px solid rgba(255, 215, 0, 0.45);
   color: var(--gold);
   font-family: var(--font-display);
   font-size: 0.82rem;
@@ -1224,41 +1257,94 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  transition: all 0.2s ease;
 }
 
-/* Steps list */
+.claim-btn:active {
+  background: var(--gold);
+  color: #000;
+  transform: scale(0.97);
+}
+
+/* 3. Box 3: How Referrals Work Card (4D Cyber Purple Portal) */
+.how-it-works-card {
+  position: relative;
+  background: 
+    linear-gradient(150deg, rgba(22, 10, 38, 0.78) 0%, rgba(7, 5, 20, 0.9) 100%),
+    url('images/ref_steps_4d.jpg') center/cover no-repeat;
+  border: 1.5px solid rgba(168, 85, 247, 0.55);
+  border-radius: var(--radius-lg);
+  padding: 18px 15px;
+  margin-bottom: 16px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.75), 0 0 22px rgba(168, 85, 247, 0.22);
+  backdrop-filter: blur(5px);
+  overflow: hidden;
+}
+
+.how-it-works-card .card-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #ffffff;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 10px rgba(168, 85, 247, 0.6);
+}
+
 .steps-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 6px;
 }
 
 .step-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  background: rgba(10, 7, 26, 0.75);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
 }
 
 .step-dot {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: rgba(168, 85, 247, 0.2);
-  border: 1px solid rgba(168, 85, 247, 0.4);
-  color: var(--purple);
+  background: rgba(168, 85, 247, 0.35);
+  border: 1.5px solid var(--purple);
+  color: #ffffff;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
 }
 
 .step-txt {
   font-size: 0.75rem;
-  color: #cbd5e1;
+  color: #e2e8f0;
+  font-weight: 500;
+  line-height: 1.35;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* Generic Fallback for other cards */
+.deposit-preview-card, .history-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px 14px;
+  margin-bottom: 16px;
 }
 
 .test-invite-btn {

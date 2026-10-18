@@ -33,10 +33,13 @@
   <link rel="preload" as="image" href="images/ref_banner_4d.jpg">
   <link rel="preload" as="image" href="images/ref_link_4d.jpg">
   <link rel="preload" as="image" href="images/ref_steps_4d.jpg">
+  <link rel="preload" as="image" href="images/deposit_bg_4d.jpg">
+  <link rel="preload" as="image" href="images/deposit_amt_4d.jpg">
+  <link rel="preload" as="image" href="images/deposit_meta_4d.jpg">
 </head>
 <body>
   <script>
-    // Memory Cache Preloader: Forces immediate bitmap decoding in RAM/GPU
+    // Memory Cache Preloader: Forces immediate bitmap decoding in RAM/GPU for instant modal popup
     (function() {
       const assets = [
         'images/logo.png',
@@ -50,7 +53,10 @@
         'images/card_trio.jpg',
         'images/card_squad.jpg',
         'images/card_elite.jpg',
-        'images/card_royale.jpg'
+        'images/card_royale.jpg',
+        'images/deposit_bg_4d.jpg',
+        'images/deposit_amt_4d.jpg',
+        'images/deposit_meta_4d.jpg'
       ];
       window.__GAME_IMAGES = [];
       assets.forEach(function(src) {

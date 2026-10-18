@@ -587,7 +587,10 @@ function clearAndReloadCache() {
     'images/card_trio.jpg',
     'images/card_squad.jpg',
     'images/card_elite.jpg',
-    'images/card_royale.jpg'
+    'images/card_royale.jpg',
+    'images/deposit_bg_4d.jpg',
+    'images/deposit_amt_4d.jpg',
+    'images/deposit_meta_4d.jpg'
   ];
   assets.forEach(src => {
     const im = new Image();

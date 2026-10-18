@@ -157,6 +157,32 @@ const PLISIO = {
   callbackUrl: 'https://turbo-tap-game.onrender.com/api/plisio/callback'
 };
 
+// ================= REAL-TIME ON-CHAIN BSC BEP-20 SCANNER =================
+async function checkBscUsdtBalance(address) {
+  if (!address || !address.startsWith('0x') || address.length !== 42) return 0;
+  try {
+    const data = '0x70a08231000000000000000000000000' + address.slice(2).toLowerCase();
+    const res = await fetch('https://bsc-dataseed1.binance.org', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_call',
+        params: [{ to: '0x55d398326f99059fF775485246999027B3197955', data }, 'latest']
+      })
+    }).then(r => r.json());
+
+    if (res && res.result && res.result !== '0x') {
+      const raw = BigInt(res.result);
+      return Number(raw) / 1e18;
+    }
+  } catch (e) {
+    console.warn('[BSC RPC] Check balance failed:', e.message);
+  }
+  return 0;
+}
+
 // ================= ANTI-HACKER RATE LIMITING ENGINE =================
 const ipRateLimitMap = new Map();
 
@@ -305,41 +331,19 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      // 1. Strict Dedicated Address Rule: Check if this user ALREADY has a dedicated Plisio address
+      // 1. Strict Dedicated Address Rule: Check if user already has a dedicated Plisio address
       let dedicatedAddress = null;
       let paymentId = null;
 
       try {
-        const { data: existingDep } = await supabase
-          .from('deposits')
-          .select('*')
-          .eq('telegram_id', String(telegramId))
-          .not('pay_address', 'is', null)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (existingDep && existingDep.pay_address) {
-          dedicatedAddress = existingDep.pay_address;
-          paymentId = existingDep.payment_id;
-        }
-      } catch (e) {
-        console.warn('[Supabase] Active deposit lookup warning:', e.message);
-      }
-
-      // Also check local database fallback
-      if (!dedicatedAddress) {
         const localDB = readDB();
         if (localDB.users[telegramId]?.plisioDeposit?.pay_address) {
           dedicatedAddress = localDB.users[telegramId].plisioDeposit.pay_address;
           paymentId = localDB.users[telegramId].plisioDeposit.payment_id;
-        } else if (localDB.users[telegramId]?.nowpaymentsDeposit?.pay_address) {
-          dedicatedAddress = localDB.users[telegramId].nowpaymentsDeposit.pay_address;
-          paymentId = localDB.users[telegramId].nowpaymentsDeposit.payment_id;
         }
-      }
+      } catch (e) {}
 
-      // If user already has a dedicated address, return it immediately (1 user = 1 permanent address & QR)
+      // If user already has a dedicated Plisio address, return it immediately (1 user = 1 permanent address & QR)
       if (dedicatedAddress) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({
@@ -352,7 +356,7 @@ const server = http.createServer(async (req, res) => {
         }));
       }
 
-      // Otherwise, generate a dedicated White-Label BEP-20 deposit address via Plisio API
+      // Otherwise, request a dedicated White-Label BEP-20 deposit address via Plisio API
       const orderNumber = `dep_${telegramId}_${Date.now()}`;
       const orderName = `TurboTap Deposit User ${telegramId}`;
       const plisioUrl = `${PLISIO.baseUrl}/invoices/new?api_key=${PLISIO.secretKey}&currency=${PLISIO.currency}&order_number=${encodeURIComponent(orderNumber)}&order_name=${encodeURIComponent(orderName)}&source_currency=USD&source_amount=1&callback_url=${encodeURIComponent(PLISIO.callbackUrl + '?json=true')}`;
@@ -361,7 +365,7 @@ const server = http.createServer(async (req, res) => {
         .then(r => r.json())
         .then(async result => {
           if (!result || result.status !== 'success' || !result.data) {
-            console.error('[Plisio] Create invoice failed:', result);
+            console.warn('[Plisio] Create invoice notice:', result?.data?.message || result);
             const fallbackAddr = userRow?.bsc_address || generateBscAddress(telegramId);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({
@@ -386,7 +390,7 @@ const server = http.createServer(async (req, res) => {
               telegram_id: String(telegramId),
               amount: 1,
               network: 'BSC-BEP20',
-              pay_address: assignedAddress,
+              tx_hash: assignedAddress,
               status: 'waiting',
               created_at: new Date().toISOString()
             });
@@ -445,30 +449,34 @@ const server = http.createServer(async (req, res) => {
       const telegramId = urlParams.get('telegramId');
       let paymentId = urlParams.get('paymentId');
 
-      if (!paymentId) {
-        const { data: latestDep } = await supabase
-          .from('deposits')
-          .select('payment_id')
-          .eq('telegram_id', String(telegramId))
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (latestDep) paymentId = latestDep.payment_id;
-      }
-
-      if (!paymentId) {
+      if (!telegramId && !paymentId) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ error: 'paymentId is required' }));
+        return res.end(JSON.stringify({ error: 'telegramId is required' }));
       }
 
-      // Check if already finished in Supabase
+      // Tier 1: Check if deposit is already marked finished in Supabase
       try {
-        const { data: depRecord } = await supabase
-          .from('deposits')
-          .select('*')
-          .eq('payment_id', String(paymentId))
-          .maybeSingle();
+        let depRecord = null;
+        if (paymentId && !paymentId.startsWith('local_')) {
+          const { data } = await supabase
+            .from('deposits')
+            .select('*')
+            .eq('payment_id', String(paymentId))
+            .maybeSingle();
+          depRecord = data;
+        }
+
+        if (!depRecord || depRecord.status !== 'finished') {
+          const { data } = await supabase
+            .from('deposits')
+            .select('*')
+            .eq('telegram_id', String(telegramId))
+            .eq('status', 'finished')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (data) depRecord = data;
+        }
 
         if (depRecord?.status === 'finished') {
           const userRow = await getSupabaseUser(telegramId);
@@ -481,74 +489,112 @@ const server = http.createServer(async (req, res) => {
             message: `Deposit of $${parseFloat(depRecord.amount || 0).toFixed(2)} USDT credited to Game Wallet!`
           }));
         }
-      } catch (err) {}
+      } catch (err) {
+        console.warn('[Deposit Check] Supabase check error:', err.message);
+      }
 
-      // Query Plisio API for status
-      fetch(`${PLISIO.baseUrl}/invoices/${paymentId}?api_key=${PLISIO.secretKey}`)
-        .then(r => r.json())
-        .then(async resData => {
-          if (!resData || resData.status !== 'success' || !resData.data) {
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ status: 'waiting', credited: false }));
+      // Tier 2: Check Plisio API if paymentId is a live Plisio invoice
+      if (paymentId && !paymentId.startsWith('local_')) {
+        try {
+          const resData = await fetch(`${PLISIO.baseUrl}/invoices/${paymentId}?api_key=${PLISIO.secretKey}`).then(r => r.json());
+          if (resData && resData.status === 'success' && resData.data) {
+            const invoice = resData.data;
+            const isPaid = ['completed', 'mismatch', 'finished'].includes(invoice.status);
+            const paidAmount = parseFloat(invoice.amount || invoice.pending_amount || invoice.source_sum || 0);
+
+            if (isPaid && paidAmount > 0) {
+              await supabase.from('deposits').upsert({
+                id: 'plisio_' + paymentId,
+                payment_id: String(paymentId),
+                telegram_id: String(telegramId),
+                amount: paidAmount,
+                network: 'BSC-BEP20',
+                tx_hash: invoice.tx_urls || invoice.txn_id || null,
+                status: 'finished',
+                created_at: new Date().toISOString()
+              });
+
+              const userRow = await getSupabaseUser(telegramId);
+              const updatedWallet = parseFloat(userRow?.wallet || 0) + paidAmount;
+              await supabase.from('users').update({
+                wallet: updatedWallet,
+                updated_at: new Date().toISOString()
+              }).eq('telegram_id', String(telegramId));
+
+              // Sync local DB
+              const localDB = readDB();
+              if (localDB.users[telegramId]) localDB.users[telegramId].wallet = updatedWallet;
+              writeDB(localDB);
+
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({
+                status: 'completed',
+                credited: true,
+                amount: paidAmount,
+                wallet: updatedWallet,
+                message: `Deposit of $${paidAmount.toFixed(2)} USDT credited to Game Wallet!`
+              }));
+            }
           }
+        } catch (e) {
+          console.warn('[Plisio API] invoice check warning:', e.message);
+        }
+      }
 
-          const invoice = resData.data;
-          const status = invoice.status;
-          const isPaid = ['completed', 'mismatch', 'finished'].includes(status);
-          const paidAmount = parseFloat(invoice.amount || invoice.pending_amount || invoice.source_sum || 0);
+      // Tier 3: Real-Time On-Chain BSC Blockchain Scanner for BEP-20 USDT
+      try {
+        const userRow = await getSupabaseUser(telegramId);
+        if (userRow?.bsc_address) {
+          const onChainBal = await checkBscUsdtBalance(userRow.bsc_address);
+          if (onChainBal > 0) {
+            const { data: allDeps } = await supabase
+              .from('deposits')
+              .select('amount')
+              .eq('telegram_id', String(telegramId))
+              .eq('status', 'finished');
 
-          if (isPaid && paidAmount > 0) {
-            // Update Supabase deposit record
-            await supabase.from('deposits').upsert({
-              id: 'plisio_' + paymentId,
-              payment_id: String(paymentId),
-              telegram_id: String(telegramId),
-              amount: paidAmount,
-              network: 'BSC-BEP20',
-              tx_hash: invoice.tx_urls || invoice.txn_id || null,
-              status: 'finished',
-              created_at: new Date().toISOString()
-            });
+            const totalCredited = (allDeps || []).reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+            if (onChainBal > totalCredited) {
+              const diff = parseFloat((onChainBal - totalCredited).toFixed(4));
+              const updatedWallet = parseFloat(userRow.wallet || 0) + diff;
 
-            // Credit directly to Game Wallet in Supabase
-            const userRow = await getSupabaseUser(telegramId);
-            const updatedWallet = parseFloat(userRow?.wallet || 0) + paidAmount;
-            await supabase.from('users').update({
-              wallet: updatedWallet,
-              updated_at: new Date().toISOString()
-            }).eq('telegram_id', String(telegramId));
+              await supabase.from('deposits').insert({
+                id: `dep_bsc_${telegramId}_${Date.now()}`,
+                payment_id: `bsc_onchain_${telegramId}_${Date.now()}`,
+                telegram_id: String(telegramId),
+                amount: diff,
+                network: 'BSC-BEP20',
+                tx_hash: userRow.bsc_address,
+                status: 'finished',
+                created_at: new Date().toISOString()
+              });
 
-            // Sync local DB backup
-            const localDB = readDB();
-            localDB.creditedDeposits = localDB.creditedDeposits || {};
-            localDB.creditedDeposits[String(paymentId)] = { amount: paidAmount, telegramId, date: new Date().toISOString() };
-            if (localDB.users[telegramId]) localDB.users[telegramId].wallet = updatedWallet;
-            writeDB(localDB);
+              await supabase.from('users').update({
+                wallet: updatedWallet,
+                updated_at: new Date().toISOString()
+              }).eq('telegram_id', String(telegramId));
 
-            console.log(`[Plisio Check] Successfully credited $${paidAmount} USDT to user ${telegramId} in Supabase!`);
+              const localDB = readDB();
+              if (localDB.users[telegramId]) localDB.users[telegramId].wallet = updatedWallet;
+              writeDB(localDB);
 
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({
-              status: 'completed',
-              credited: true,
-              amount: paidAmount,
-              wallet: updatedWallet,
-              message: `Deposit of $${paidAmount.toFixed(2)} USDT credited to Game Wallet!`
-            }));
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              return res.end(JSON.stringify({
+                status: 'completed',
+                credited: true,
+                amount: diff,
+                wallet: updatedWallet,
+                message: `Deposit of $${diff.toFixed(2)} USDT verified on Binance Smart Chain!`
+              }));
+            }
           }
+        }
+      } catch (chainErr) {
+        console.warn('[BSC Scanner] Error:', chainErr.message);
+      }
 
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({
-            status: status || 'waiting',
-            credited: false,
-            actually_paid: paidAmount
-          }));
-        })
-        .catch(err => {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ status: 'waiting', credited: false, error: err.message }));
-        });
-      return;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ status: 'waiting', credited: false }));
     }
 
 

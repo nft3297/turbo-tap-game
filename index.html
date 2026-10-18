@@ -19,6 +19,11 @@
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
+  <link rel="preload" as="image" href="images/profile_bg.jpg">
+  <link rel="preload" as="image" href="images/wallet_game.jpg">
+  <link rel="preload" as="image" href="images/wallet_ref.jpg">
+  <link rel="preload" as="image" href="images/wallet_profit.jpg">
+  <link rel="preload" as="image" href="images/wallet_withdraw.jpg">
   <link rel="preload" as="image" href="images/hero_bg.jpg">
   <link rel="preload" as="image" href="images/stats_bg.jpg">
   <link rel="preload" as="image" href="images/card_trio.jpg">
@@ -32,6 +37,7 @@
     (function() {
       const assets = [
         'images/logo.png',
+        'images/profile_bg.jpg',
         'images/wallet_game.jpg',
         'images/wallet_ref.jpg',
         'images/wallet_profit.jpg',
@@ -98,12 +104,12 @@
       </div>
     </div>
 
-    <!-- ================= 3. 4-WAY WALLETS BAR (PREMIUM 3D IMAGES IN EVERY BOX) ================= -->
+    <!-- ================= 3. 4-WAY WALLETS BAR (PREMIUM 3D BACKGROUND ARTWORK) ================= -->
     <header class="top-nav">
       <div class="header-wallets-full">
         <!-- 1. Main Game Wallet -->
         <div class="wallet-pill game-pill" onclick="openDepositModal()" title="Deposit BSC BEP-20 (Game Balance)">
-          <div class="wallet-icon-ring"><img src="images/wallet_game.jpg" class="wallet-thumb-img" alt="Game Wallet"></div>
+          <div class="wallet-icon-ring"><i class="fa-solid fa-gamepad"></i></div>
           <div class="wallet-details">
             <span class="w-label">GAME WALLET</span>
             <div class="wallet-amount">$<span id="walletBalance">0.00</span></div>
@@ -113,7 +119,7 @@
 
         <!-- 2. Referral Bonus Wallet -->
         <div class="wallet-pill ref-pill" onclick="navigateTo('screenReferral')" title="Referral Bonus Wallet ($25/friend)">
-          <div class="wallet-icon-ring ref-ring"><img src="images/wallet_ref.jpg" class="wallet-thumb-img" alt="Ref Bonus"></div>
+          <div class="wallet-icon-ring ref-ring"><i class="fa-solid fa-gift"></i></div>
           <div class="wallet-details">
             <span class="w-label">REF BONUS (+$25)</span>
             <div class="wallet-amount text-gold">$<span id="headerRefBalance">0.00</span></div>
@@ -123,7 +129,7 @@
 
         <!-- 3. Profit Wallet -->
         <div class="wallet-pill profit-pill" onclick="openWithdrawModal('profit')" title="Profit Wallet (Match Wins & Cash Rewards)">
-          <div class="wallet-icon-ring profit-ring"><img src="images/wallet_profit.jpg" class="wallet-thumb-img" alt="Profit Wallet"></div>
+          <div class="wallet-icon-ring profit-ring"><i class="fa-solid fa-trophy"></i></div>
           <div class="wallet-details">
             <span class="w-label">PROFIT WALLET</span>
             <div class="wallet-amount text-green">$<span id="profitBalance">0.00</span></div>
@@ -133,7 +139,7 @@
 
         <!-- 4. Withdrawal Wallet -->
         <div class="wallet-pill withdraw-pill" onclick="openWithdrawModal('withdraw')" title="Withdrawal Wallet (Instant BSC BEP-20 Payout)">
-          <div class="wallet-icon-ring withdraw-ring"><img src="images/wallet_withdraw.jpg" class="wallet-thumb-img" alt="Withdraw Wallet"></div>
+          <div class="wallet-icon-ring withdraw-ring"><i class="fa-solid fa-vault"></i></div>
           <div class="wallet-details">
             <span class="w-label">WITHDRAW WALLET</span>
             <div class="wallet-amount text-purple">$<span id="withdrawWalletBalance">0.00</span></div>

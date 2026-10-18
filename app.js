@@ -3,6 +3,67 @@
 // STRICT NETWORK: BINANCE SMART CHAIN (BSC BEP-20)
 // ============================================================
 
+// 0. ADVANCED ANTI-TAMPER & ANTI-REVERSE ENGINEERING ARMOR
+(function installAntiTamperArmor() {
+  'use strict';
+  
+  // A. Block Right-Click Context Menu
+  window.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  }, { capture: true });
+
+  // B. Block Inspection & DevTools Keyboard Shortcuts
+  window.addEventListener('keydown', function(e) {
+    // F12
+    if (e.keyCode === 123 || e.key === 'F12') {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools)
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U (View Source) & Ctrl+S (Save Page)
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      return false;
+    }
+  }, { capture: true });
+
+  // C. Anti-Dragging of Protected Media
+  window.addEventListener('dragstart', function(e) {
+    if (e.target && e.target.nodeName === 'IMG') {
+      e.preventDefault();
+    }
+  });
+
+  // D. Anti-Debugger / DevTools Timing Trap
+  setInterval(function() {
+    var before = performance.now();
+    /* eslint-disable no-debugger */
+    debugger;
+    /* eslint-enable no-debugger */
+    var after = performance.now();
+    if (after - before > 100) {
+      try {
+        console.clear();
+      } catch (err) {}
+    }
+  }, 2500);
+
+  // E. Silence Console Output in Production
+  if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+    try {
+      console.log = function() {};
+      console.warn = function() {};
+      console.info = function() {};
+      console.debug = function() {};
+    } catch (e) {}
+  }
+})();
+
 // 1. Initialize Telegram WebApp SDK
 const tg = window.Telegram?.WebApp;
 if (tg) {

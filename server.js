@@ -142,8 +142,12 @@ const mimeTypes = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon'
+  '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.ttf': 'font/ttf'
 };
 
 const NOWPAYMENTS = {
@@ -154,11 +158,56 @@ const NOWPAYMENTS = {
   ipnUrl: 'https://turbo-tap-game.onrender.com/api/nowpayments/ipn'
 };
 
+// ================= ANTI-HACKER RATE LIMITING ENGINE =================
+const ipRateLimitMap = new Map();
+
+// Periodic GC for expired IP rate-limit records (every 2 mins)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, data] of ipRateLimitMap.entries()) {
+    if (now > data.resetTime) {
+      ipRateLimitMap.delete(key);
+    }
+  }
+}, 120000);
+
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return req.headers['x-real-ip'] || req.socket.remoteAddress || '127.0.0.1';
+}
+
+function checkRateLimit(key, limit, windowMs) {
+  const now = Date.now();
+  let record = ipRateLimitMap.get(key);
+  if (!record || now > record.resetTime) {
+    record = { count: 1, resetTime: now + windowMs };
+    ipRateLimitMap.set(key, record);
+    return { allowed: true, remaining: limit - 1 };
+  }
+  record.count++;
+  if (record.count > limit) {
+    const retryAfter = Math.ceil((record.resetTime - now) / 1000);
+    return { allowed: false, remaining: 0, retryAfter: Math.max(1, retryAfter) };
+  }
+  return { allowed: true, remaining: limit - record.count };
+}
+
 const server = http.createServer(async (req, res) => {
-  // CORS Headers for Telegram Webview
+  const clientIp = getClientIp(req);
+
+  // ================= OWASP MILITARY-GRADE SECURITY HEADERS =================
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+
+  // Anti-Clickjacking / Anti-MIME Sniffing / Anti-XSS
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  // Secure Content Security Policy: Allow Telegram mini-app embed only, block arbitrary frames
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org https://telegram.org;");
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
@@ -168,10 +217,32 @@ const server = http.createServer(async (req, res) => {
 
   const [reqPath, queryString] = req.url.split('?');
 
+  // Rate Limiting Layer 1: General IP Limit (150 requests/min)
+  const genLimit = checkRateLimit(`gen_${clientIp}`, 150, 60000);
+  if (!genLimit.allowed) {
+    res.writeHead(429, {
+      'Content-Type': 'application/json',
+      'Retry-After': String(genLimit.retryAfter)
+    });
+    return res.end(JSON.stringify({ error: 'Too Many Requests. Firewall rate limit triggered.', retryAfter: genLimit.retryAfter }));
+  }
+
+  // Rate Limiting Layer 2: Sensitive Financial & State Routes (25 requests/min)
+  if (reqPath.startsWith('/api/wallet') || reqPath.startsWith('/api/withdraw') || reqPath.startsWith('/api/register')) {
+    const secLimit = checkRateLimit(`sec_${clientIp}`, 25, 60000);
+    if (!secLimit.allowed) {
+      res.writeHead(429, {
+        'Content-Type': 'application/json',
+        'Retry-After': String(secLimit.retryAfter)
+      });
+      return res.end(JSON.stringify({ error: 'Security alert: Too many requests on sensitive financial endpoint. Please wait.', retryAfter: secLimit.retryAfter }));
+    }
+  }
+
   // Lightweight Ping / Health Check for Keep-Alive Monitors
   if (reqPath === '/health' || reqPath === '/ping' || reqPath === '/api/ping') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ status: 'ok', database: 'supabase_connected', time: new Date().toISOString() }));
+    return res.end(JSON.stringify({ status: 'ok', database: 'supabase_connected', firewall: 'active', time: new Date().toISOString() }));
   }
 
   // ================= API ROUTES =================
@@ -437,14 +508,35 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Helper for POST body parsing
+    // ================= ANTI-DOS PAYLOAD SIZE GUARD (50KB MAX) =================
     let body = '';
-    req.on('data', chunk => { body += chunk; });
+    let bodyLength = 0;
+    const MAX_PAYLOAD_BYTES = 50 * 1024; // 50 KB max body
+    let isPayloadOversized = false;
+
+    req.on('data', chunk => {
+      bodyLength += chunk.length;
+      if (!isPayloadOversized && bodyLength > MAX_PAYLOAD_BYTES) {
+        isPayloadOversized = true;
+        res.writeHead(413, { 'Content-Type': 'application/json', 'Connection': 'close' });
+        res.end(JSON.stringify({ error: 'Payload Too Large: maximum allowed body size is 50KB' }));
+        req.pause();
+        return;
+      }
+      if (!isPayloadOversized) {
+        body += chunk;
+      }
+    });
+
     req.on('end', async () => {
+      if (isPayloadOversized) return;
       let data = {};
       try {
         if (body) data = JSON.parse(body);
-      } catch (err) {}
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'Invalid JSON request payload' }));
+      }
 
       // 1. NOWPAYMENTS IPN WEBHOOK: POST /api/nowpayments/ipn
       if (req.method === 'POST' && reqPath === '/api/nowpayments/ipn') {
@@ -510,8 +602,18 @@ const server = http.createServer(async (req, res) => {
           return res.end(JSON.stringify({ error: 'telegramId is required' }));
         }
 
+        const cleanTelegramId = String(telegramId).trim();
+        if (!/^[a-zA-Z0-9_-]{1,64}$/.test(cleanTelegramId)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Invalid telegramId format' }));
+        }
+
+        // Anti-XSS String Sanitization
+        const cleanUsername = String(username || 'Gamer').replace(/[<>&"']/g, '').trim().slice(0, 32) || 'Gamer';
+        const cleanEmail = email ? String(email).replace(/[<>&"']/g, '').trim().slice(0, 64) : null;
+
         let referrer = null;
-        if (referrerId && String(referrerId).trim() !== String(telegramId).trim()) {
+        if (referrerId && String(referrerId).trim() !== cleanTelegramId) {
           const rawRef = String(referrerId).trim();
           const strippedRef = rawRef.startsWith('ref_') ? rawRef.slice(4).trim() : rawRef;
           referrer = await getSupabaseUser(strippedRef);
@@ -606,14 +708,36 @@ const server = http.createServer(async (req, res) => {
       // 3. Update Balance / Win / Entry Fee / Referral Bonus: POST /api/wallet/update
       if (req.method === 'POST' && reqPath === '/api/wallet/update') {
         const { telegramId, amount, type } = data;
-        let userRow = await getSupabaseUser(telegramId);
 
+        if (!telegramId) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'telegramId is required' }));
+        }
+
+        const cleanTelegramId = String(telegramId).trim();
+        if (!/^[a-zA-Z0-9_-]{1,64}$/.test(cleanTelegramId)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Invalid telegramId format' }));
+        }
+
+        const delta = parseFloat(amount);
+        if (isNaN(delta) || !Number.isFinite(delta)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Invalid amount numeric value' }));
+        }
+
+        // Bound single transaction threshold against exploits
+        if (Math.abs(delta) > 50000) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Transaction amount exceeds maximum allowed limits' }));
+        }
+
+        let userRow = await getSupabaseUser(cleanTelegramId);
         if (!userRow) {
           res.writeHead(404, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: 'User not found' }));
         }
 
-        const delta = parseFloat(amount);
         let updateData = { updated_at: new Date().toISOString() };
 
         if (type === 'ref') {
@@ -634,7 +758,7 @@ const server = http.createServer(async (req, res) => {
         const { data: updatedUser, error: updErr } = await supabase
           .from('users')
           .update(updateData)
-          .eq('telegram_id', String(telegramId))
+          .eq('telegram_id', cleanTelegramId)
           .select()
           .single();
 
@@ -644,8 +768,8 @@ const server = http.createServer(async (req, res) => {
 
         // Sync local DB backup
         const localDB = readDB();
-        if (localDB.users[telegramId]) {
-          localDB.users[telegramId] = formatUser(updatedUser || userRow);
+        if (localDB.users[cleanTelegramId]) {
+          localDB.users[cleanTelegramId] = formatUser(updatedUser || userRow);
           writeDB(localDB);
         }
 
@@ -656,14 +780,37 @@ const server = http.createServer(async (req, res) => {
       // 4. Request Withdrawal: POST /api/withdraw
       if (req.method === 'POST' && reqPath === '/api/withdraw') {
         const { telegramId, address, amount, source } = data;
-        let userRow = await getSupabaseUser(telegramId);
 
+        if (!telegramId) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'telegramId is required' }));
+        }
+
+        const cleanTelegramId = String(telegramId).trim();
+        if (!/^[a-zA-Z0-9_-]{1,64}$/.test(cleanTelegramId)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Invalid telegramId format' }));
+        }
+
+        const amt = parseFloat(amount);
+        if (isNaN(amt) || !Number.isFinite(amt) || amt < 5) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Invalid withdrawal amount (Minimum $5 required)' }));
+        }
+
+        const cleanAddress = String(address || '').trim();
+        // Strict BSC BEP-20 / EVM address check (0x followed by exactly 40 hex characters)
+        if (!/^0x[a-fA-F0-9]{40}$/.test(cleanAddress)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Invalid BSC (BEP-20) address format! Must start with 0x followed by 40 hex characters.' }));
+        }
+
+        let userRow = await getSupabaseUser(cleanTelegramId);
         if (!userRow) {
           res.writeHead(404, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: 'User not found' }));
         }
 
-        const amt = parseFloat(amount);
         let avail = 0;
         let fieldToDeduct = 'wallet';
 
@@ -751,23 +898,55 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ================= STATIC FILE SERVING =================
-  let filePath = path.join(__dirname, reqPath === '/' ? 'index.html' : reqPath);
-  let ext = path.extname(filePath).toLowerCase();
-  let contentType = mimeTypes[ext] || 'application/octet-stream';
+  // ================= STATIC FILE SERVING WITH SECURITY SHIELD =================
+  let requestedFile = reqPath === '/' ? 'index.html' : reqPath;
 
-  fs.readFile(filePath, (err, content) => {
+  // Mask /app.js so raw source code is never exposed over HTTP (always serve obfuscated app.min.js)
+  if (requestedFile === '/app.js') {
+    requestedFile = '/app.min.js';
+  }
+
+  // Prevent Directory Traversal & normalize path
+  const safePath = path.normalize(path.join(__dirname, requestedFile));
+  if (!safePath.startsWith(__dirname)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Access Denied: Path traversal blocked' }));
+  }
+
+  // Blacklist sensitive internal files & folders
+  const baseName = path.basename(safePath).toLowerCase();
+  const relPath = path.relative(__dirname, safePath).replace(/\\/g, '/').toLowerCase();
+  const isForbidden =
+    baseName.startsWith('.') ||
+    baseName === 'database.json' ||
+    baseName === 'package.json' ||
+    baseName === 'package-lock.json' ||
+    baseName === 'server.js' ||
+    baseName === 'readme.md' ||
+    relPath.startsWith('scripts/') ||
+    relPath.startsWith('node_modules/') ||
+    relPath.startsWith('.git');
+
+  if (isForbidden) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Access Denied: Protected system resource' }));
+  }
+
+  const ext = path.extname(safePath).toLowerCase();
+  const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+  fs.readFile(safePath, (err, content) => {
     if (err) {
       if (err.code === 'ENOENT') {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('File Not Found');
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'File Not Found' }));
       } else {
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end(`Server Error: ${err.code}`);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Server File Read Error' }));
       }
     } else {
       let cacheControl = 'no-cache';
-      if (['.png', '.jpg', '.jpeg', '.svg', '.ico', '.webp'].includes(ext)) {
+      if (['.png', '.jpg', '.jpeg', '.svg', '.ico', '.webp', '.woff2'].includes(ext)) {
         cacheControl = 'public, max-age=604800, stale-while-revalidate=86400';
       } else if (['.css', '.js'].includes(ext)) {
         cacheControl = 'public, max-age=300, must-revalidate';

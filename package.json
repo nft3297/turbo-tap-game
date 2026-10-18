@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build": "node scripts/build-secure.js"
   },
   "keywords": [
     "telegram-mini-app",
@@ -18,5 +19,8 @@
   "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^5.9.0"
   }
 }

@@ -505,6 +505,63 @@ function copyUserId() {
   showToast(`✅ Copied User ID: #${STATE.user.id}`);
 }
 
+// ================= LOGOUT & SESSION RESET =================
+function handleLogout(e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+
+  triggerHaptic('warning');
+
+  try {
+    // Clear all game-specific storage and cached keys
+    const keysToRemove = [
+      'turbo_uid',
+      'turbo_wallet',
+      'turbo_profit_wallet',
+      'turbo_withdraw_wallet',
+      'turbo_ref_wallet',
+      'turbo_friends_count',
+      'turbo_total_ref_earned',
+      'turbo_txs',
+      'turbo_ref_id',
+      'turbo_wallet_v4_zero',
+      'turbo_reserved_locked_amt'
+    ];
+    keysToRemove.forEach(k => {
+      try { localStorage.removeItem(k); } catch (err) {}
+    });
+
+    // Also remove any turbo_reg_ keys
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('turbo_reg_') || k.startsWith('turbo_'))) {
+        try { localStorage.removeItem(k); } catch (err) {}
+      }
+    }
+    
+    sessionStorage.clear();
+  } catch (err) {
+    console.warn('[Logout] Storage clear error:', err);
+  }
+
+  showToast('👋 Logged out successfully!');
+
+  // If inside Telegram WebApp, attempt to close the mini app
+  if (window.Telegram?.WebApp && typeof window.Telegram.WebApp.close === 'function') {
+    try {
+      window.Telegram.WebApp.close();
+    } catch (err) {}
+  }
+
+  // Reload page to reset state immediately
+  setTimeout(() => {
+    window.location.reload();
+  }, 350);
+}
+window.handleLogout = handleLogout;
+
 // ================= SETTINGS & PREFERENCES FUNCTIONS =================
 function openSettingsModal() {
   triggerHaptic('impact');

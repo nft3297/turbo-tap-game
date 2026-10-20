@@ -153,6 +153,7 @@ body {
   align-items: center;
   text-align: center;
   flex: 1;
+  padding: 0 24px;
 }
 
 .brand-tag {
@@ -180,27 +181,53 @@ body {
   line-height: 1.1;
 }
 
-.brand-spark {
-  font-size: 1.05rem;
-  animation: sparkPulse 1.6s infinite alternate;
+/* Top Brand Bar Logout Action Button */
+.brand-logout-btn {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(239, 68, 68, 0.28) 0%, rgba(153, 27, 27, 0.45) 100%);
+  border: 1.5px solid rgba(239, 68, 68, 0.7);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4), inset 0 0 8px rgba(255, 100, 100, 0.22);
+  color: #ff6b6b;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.92rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 0;
+  outline: none;
 }
 
-.left-spark {
-  color: var(--gold);
-  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.8));
+.brand-logout-btn:hover {
+  background: radial-gradient(circle at 35% 35%, rgba(239, 68, 68, 0.55) 0%, rgba(220, 38, 38, 0.85) 100%);
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.85), inset 0 0 10px rgba(255, 255, 255, 0.4);
+  transform: translateY(-50%) scale(1.12);
 }
 
-.right-spark {
-  color: var(--gold);
-  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.8));
+.brand-logout-btn:active {
+  transform: translateY(-50%) scale(0.92);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
 }
 
-@keyframes sparkPulse {
-  from { transform: scale(0.95); }
-  to { transform: scale(1.18); filter: drop-shadow(0 0 10px var(--cyan)); }
+@media (max-width: 380px) {
+  .brand-logout-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 0.82rem;
+    right: 6px;
+  }
+  .brand-title-wrap {
+    padding: 0 20px;
+  }
 }
 
 /* ================= 2. USER PROFILE BAR (CLICKABLE BOX) ================= */

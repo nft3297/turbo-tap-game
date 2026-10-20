@@ -75,13 +75,17 @@
         <img src="images/logo.png" alt="Turbo Tap Logo" class="brand-top-logo">
       </div>
 
-      <!-- Turbo Tap Game Brand Box (Cross icons removed) -->
+      <!-- Turbo Tap Game Brand Box with Logout Action -->
       <div class="brand-box">
         <div class="brand-shine"></div>
         <div class="brand-title-wrap">
           <span class="brand-tag"><i class="fa-solid fa-gamepad"></i> OFFICIAL MINI APP</span>
           <span class="brand-text">TURBO TAP GAME</span>
         </div>
+        <!-- Logout Action Button -->
+        <button class="brand-logout-btn" id="headerLogoutBtn" onclick="handleLogout(event)" title="Logout / Exit" aria-label="Logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
       </div>
     </div>
 
@@ -856,6 +860,9 @@
               <button class="prof-action-btn prof-copy-id-btn" onclick="copyUserId()">
                 <i class="fa-solid fa-copy"></i> Copy ID
               </button>
+              <button class="prof-action-btn prof-logout-btn" onclick="closeProfileModal(); handleLogout(event);" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #ff6b6b;">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+              </button>
               <button class="prof-action-btn prof-close-btn" onclick="closeProfileModal()">
                 Close
               </button>
@@ -1015,6 +1022,10 @@
                 <button class="set-action-btn set-cache-btn" onclick="clearAndReloadCache()">
                   <i class="fa-solid fa-broom"></i>
                   <span>Reload Images & Cache</span>
+                </button>
+                <button class="set-action-btn set-logout-btn" onclick="closeSettingsModal(); handleLogout(event);" style="grid-column: 1 / -1; border-color: rgba(239, 68, 68, 0.45); color: #ff6b6b; background: rgba(239, 68, 68, 0.12);">
+                  <i class="fa-solid fa-right-from-bracket"></i>
+                  <span>Logout / Exit App</span>
                 </button>
               </div>
             </div>

@@ -303,10 +303,24 @@ let AT=null,cfg={},curPg='dashboard',uPage=1,euId=null,sbtype='info',dbt=null;
 const tg=window.Telegram?.WebApp;
 if(tg){tg.ready();tg.expand();}
 window.addEventListener('load',()=>{
-  const u=tg?.initDataUnsafe?.user;
-  if(u?.id){document.getElementById('ati').value=u.id;if(String(u.id)===AID)setTimeout(doLogin,400);}
+  // Check if opened via main app iframe (auto-login via URL param)
+  const urlP = new URLSearchParams(window.location.search);
+  const autoId = urlP.get('autologin');
+  if(autoId && autoId === AID) {
+    // Auto-login silently: skip login screen completely
+    document.getElementById('ati').value = autoId;
+    document.getElementById('ls').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    AT = autoId;
+    loadDash();
+  } else {
+    // Normal flow: check Telegram user
+    const u=tg?.initDataUnsafe?.user;
+    if(u?.id){document.getElementById('ati').value=u.id;if(String(u.id)===AID)setTimeout(doLogin,400);}
+  }
   setInterval(()=>{document.getElementById('clk').textContent=new Date().toLocaleTimeString('en-IN',{hour12:true});},1000);
 });
+
 async function ap(url,body){
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,adminId:AT||body?.telegramId})});
   return r.json();

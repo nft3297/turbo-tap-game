@@ -1007,6 +1007,619 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify({ success: true, withdrawals: wds || [] }));
       }
 
+      // ================= ADMIN PANEL API ROUTES =================
+      // STRICT ACCESS: Only Telegram ID 8291758870 allowed
+      const ADMIN_TELEGRAM_ID = '8291758870';
+
+      // Admin Auth Check: POST /api/admin/auth
+      if (req.method === 'POST' && reqPath === '/api/admin/auth') {
+        const { telegramId } = data;
+        if (String(telegramId) !== ADMIN_TELEGRAM_ID) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: 'Access Denied. Admin only.' }));
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, admin: true, message: 'Welcome, Admin!' }));
+      }
+
+      // Admin middleware check helper (inline for all admin routes)
+      function isAdmin(d) { return String(d?.adminId || d?.telegramId || '') === ADMIN_TELEGRAM_ID; }
+
+      // Admin Dashboard Stats: POST /api/admin/stats
+      if (req.method === 'POST' && reqPath === '/api/admin/stats') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        try {
+          const { count: userCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
+          const { data: walletSum } = await supabase.from('users').select('wallet, profit_wallet, ref_wallet, withdraw_wallet');
+          const { data: allWds } = await supabase.from('withdrawals').select('amount, status');
+          const { data: allDeps } = await supabase.from('deposits').select('amount, status');
+          const { data: recentUsers } = await supabase.from('users').select('telegram_id, username, wallet, profit_wallet, ref_wallet, created_at').order('created_at', { ascending: false }).limit(10);
+
+          const totalGameWallet = (walletSum || []).reduce((s, u) => s + parseFloat(u.wallet || 0), 0);
+          const totalProfitWallet = (walletSum || []).reduce((s, u) => s + parseFloat(u.profit_wallet || 0), 0);
+          const totalRefWallet = (walletSum || []).reduce((s, u) => s + parseFloat(u.ref_wallet || 0), 0);
+          const totalWithdrawWallet = (walletSum || []).reduce((s, u) => s + parseFloat(u.withdraw_wallet || 0), 0);
+          const pendingWithdrawals = (allWds || []).filter(w => w.status === 'pending');
+          const completedWithdrawals = (allWds || []).filter(w => w.status === 'completed');
+          const totalDeposited = (allDeps || []).filter(d => d.status === 'finished').reduce((s, d) => s + parseFloat(d.amount || 0), 0);
+          const totalWithdrawn = completedWithdrawals.reduce((s, w) => s + parseFloat(w.amount || 0), 0);
+
+          const localDB = readDB();
+          const gameConfig = localDB.gameConfig || {};
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({
+            success: true,
+            stats: {
+              totalUsers: userCount || 0,
+              totalGameWallet: totalGameWallet.toFixed(2),
+              totalProfitWallet: totalProfitWallet.toFixed(2),
+              totalRefWallet: totalRefWallet.toFixed(2),
+              totalWithdrawWallet: totalWithdrawWallet.toFixed(2),
+              pendingWithdrawalsCount: pendingWithdrawals.length,
+              pendingWithdrawalsAmount: pendingWithdrawals.reduce((s, w) => s + parseFloat(w.amount || 0), 0).toFixed(2),
+              totalDeposited: totalDeposited.toFixed(2),
+              totalWithdrawn: totalWithdrawn.toFixed(2),
+              recentUsers: recentUsers || []
+            },
+            gameConfig
+          }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Get All Users: POST /api/admin/users
+      if (req.method === 'POST' && reqPath === '/api/admin/users') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        try {
+          const page = parseInt(data.page || 1);
+          const limit = parseInt(data.limit || 20);
+          const search = (data.search || '').trim();
+          const from = (page - 1) * limit;
+          const to = from + limit - 1;
+
+          let query = supabase.from('users').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to);
+          if (search) {
+            query = supabase.from('users').select('*', { count: 'exact' }).or(`telegram_id.ilike.%${search}%,username.ilike.%${search}%,email.ilike.%${search}%`).order('created_at', { ascending: false }).range(from, to);
+          }
+
+          const { data: users, count, error } = await query;
+          if (error) throw error;
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, users: (users || []).map(formatUser), total: count, page, limit }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Update User: POST /api/admin/user/update
+      if (req.method === 'POST' && reqPath === '/api/admin/user/update') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        const { targetTelegramId, field, value } = data;
+        if (!targetTelegramId || !field) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'targetTelegramId and field required' })); }
+
+        const allowedFields = { wallet: 'wallet', profitWallet: 'profit_wallet', refWallet: 'ref_wallet', withdrawWallet: 'withdraw_wallet', username: 'username', email: 'email', banned: 'banned', bscAddress: 'bsc_address' };
+        const dbField = allowedFields[field];
+        if (!dbField) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Invalid field' })); }
+
+        try {
+          const updateObj = { [dbField]: value, updated_at: new Date().toISOString() };
+          const { data: updated, error } = await supabase.from('users').update(updateObj).eq('telegram_id', String(targetTelegramId)).select().single();
+          if (error) throw error;
+
+          // Sync local DB
+          const localDB = readDB();
+          if (localDB.users[targetTelegramId]) localDB.users[targetTelegramId] = formatUser(updated);
+          writeDB(localDB);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, user: formatUser(updated), message: `Field '${field}' updated successfully!` }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Delete/Reset User Wallet: POST /api/admin/user/reset-wallet
+      if (req.method === 'POST' && reqPath === '/api/admin/user/reset-wallet') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        const { targetTelegramId, walletType } = data;
+        const walletMap = { game: 'wallet', profit: 'profit_wallet', ref: 'ref_wallet', withdraw: 'withdraw_wallet' };
+        const dbWallet = walletMap[walletType] || 'wallet';
+        try {
+          const { data: updated } = await supabase.from('users').update({ [dbWallet]: 0, updated_at: new Date().toISOString() }).eq('telegram_id', String(targetTelegramId)).select().single();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, user: formatUser(updated) }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Get All Withdrawals: POST /api/admin/withdrawals
+      if (req.method === 'POST' && reqPath === '/api/admin/withdrawals') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        try {
+          const status = data.status || null;
+          let query = supabase.from('withdrawals').select('*').order('created_at', { ascending: false }).limit(100);
+          if (status) query = supabase.from('withdrawals').select('*').eq('status', status).order('created_at', { ascending: false }).limit(100);
+          const { data: wds, error } = await query;
+          if (error) throw error;
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, withdrawals: wds || [] }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Update Withdrawal Status: POST /api/admin/withdrawal/update
+      if (req.method === 'POST' && reqPath === '/api/admin/withdrawal/update') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        const { withdrawalId, status, txHash } = data;
+        if (!withdrawalId || !status) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'withdrawalId and status required' })); }
+        try {
+          const updateData = { status, updated_at: new Date().toISOString() };
+          if (txHash) updateData.tx_hash = txHash;
+          const { data: updated, error } = await supabase.from('withdrawals').update(updateData).eq('id', withdrawalId).select().single();
+          if (error) throw error;
+
+          // If rejected, refund amount to user wallet
+          if (status === 'rejected' && updated) {
+            const walletField = updated.wallet_type === 'referral' ? 'ref_wallet' : updated.wallet_type === 'profit' ? 'profit_wallet' : 'wallet';
+            const userRow = await getSupabaseUser(updated.telegram_id);
+            if (userRow) {
+              const refundAmt = parseFloat(updated.amount || 0);
+              await supabase.from('users').update({ [walletField]: parseFloat(userRow[walletField.replace('_wallet', '').replace('ref', 'ref')] || userRow[walletField] || 0) + refundAmt, updated_at: new Date().toISOString() }).eq('telegram_id', String(updated.telegram_id));
+            }
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, withdrawal: updated, message: `Withdrawal ${status}!` }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Get All Deposits: POST /api/admin/deposits
+      if (req.method === 'POST' && reqPath === '/api/admin/deposits') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        try {
+          const { data: deps, error } = await supabase.from('deposits').select('*').order('created_at', { ascending: false }).limit(100);
+          if (error) throw error;
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, deposits: deps || [] }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Manual Credit Deposit: POST /api/admin/deposit/credit
+      if (req.method === 'POST' && reqPath === '/api/admin/deposit/credit') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        const { targetTelegramId, amount } = data;
+        const amt = parseFloat(amount);
+        if (!targetTelegramId || isNaN(amt) || amt <= 0) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Invalid parameters' })); }
+        try {
+          const userRow = await getSupabaseUser(targetTelegramId);
+          if (!userRow) { res.writeHead(404, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'User not found' })); }
+          const newWallet = parseFloat(userRow.wallet || 0) + amt;
+          const { data: updated } = await supabase.from('users').update({ wallet: newWallet, updated_at: new Date().toISOString() }).eq('telegram_id', String(targetTelegramId)).select().single();
+          await supabase.from('deposits').insert({ id: `admin_credit_${targetTelegramId}_${Date.now()}`, payment_id: `admin_${Date.now()}`, telegram_id: String(targetTelegramId), amount: amt, network: 'ADMIN-CREDIT', tx_hash: 'ADMIN_MANUAL_CREDIT', status: 'finished', created_at: new Date().toISOString() });
+          const localDB = readDB();
+          if (localDB.users[targetTelegramId]) localDB.users[targetTelegramId].wallet = newWallet;
+          writeDB(localDB);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, user: formatUser(updated), message: `$${amt} credited to user ${targetTelegramId}` }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Game Config: GET via POST /api/admin/config
+      if (req.method === 'POST' && reqPath === '/api/admin/config') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        const localDB = readDB();
+        const defaultConfig = {
+          referralBonus: 25,
+          minWithdrawal: 20,
+          withdrawalFee: 3,
+          battleEntryFee: 10,
+          battleWinMultiplier: 1.8,
+          maxBattleBoost: 100,
+          battleDuration: 15,
+          maintenanceMode: false,
+          welcomeMessage: 'Welcome to Turbo Team Battle! 🚀',
+          botName: 'Turbo Team Battle',
+          supportUsername: '@TurboSupport',
+          announcementText: '',
+          announcementActive: false,
+          minDepositAmount: 1,
+          depositNetwork: 'BSC (BEP-20)',
+          autoApproveWithdrawals: false,
+          maxDailyWithdrawal: 1000,
+          playerMatchTimeout: 30,
+          boostCooldown: 10
+        };
+        localDB.gameConfig = { ...defaultConfig, ...(localDB.gameConfig || {}) };
+        writeDB(localDB);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, config: localDB.gameConfig }));
+      }
+
+      // Admin Update Game Config: POST /api/admin/config/update
+      if (req.method === 'POST' && reqPath === '/api/admin/config/update') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        const { configKey, configValue } = data;
+        if (!configKey) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'configKey required' })); }
+        try {
+          const localDB = readDB();
+          localDB.gameConfig = localDB.gameConfig || {};
+          localDB.gameConfig[configKey] = configValue;
+          localDB.gameConfig.lastUpdated = new Date().toISOString();
+          localDB.gameConfig.updatedBy = ADMIN_TELEGRAM_ID;
+          writeDB(localDB);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, config: localDB.gameConfig, message: `Config '${configKey}' updated!` }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Broadcast Message (stored for frontend to pick up): POST /api/admin/broadcast
+      if (req.method === 'POST' && reqPath === '/api/admin/broadcast') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        const { message, title, type } = data;
+        if (!message) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Message required' })); }
+        try {
+          const localDB = readDB();
+          localDB.broadcasts = localDB.broadcasts || [];
+          const broadcast = { id: 'bc_' + Date.now(), title: title || 'Admin Notice', message, type: type || 'info', createdAt: new Date().toISOString(), active: true };
+          localDB.broadcasts.unshift(broadcast);
+          localDB.broadcasts = localDB.broadcasts.slice(0, 20); // keep last 20
+          localDB.gameConfig = localDB.gameConfig || {};
+          localDB.gameConfig.announcementText = message;
+          localDB.gameConfig.announcementActive = true;
+          writeDB(localDB);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, broadcast, message: 'Broadcast sent to all users!' }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Public: Get Active Broadcast: GET /api/broadcast
+      // (Used by bot frontend to show announcements)
+
+      // Admin Ban/Unban User: POST /api/admin/user/ban
+      if (req.method === 'POST' && reqPath === '/api/admin/user/ban') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        const { targetTelegramId, ban } = data;
+        if (!targetTelegramId) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'targetTelegramId required' })); }
+        try {
+          const { data: updated } = await supabase.from('users').update({ banned: ban === true || ban === 'true', updated_at: new Date().toISOString() }).eq('telegram_id', String(targetTelegramId)).select().single();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, user: formatUser(updated), message: ban ? `User ${targetTelegramId} BANNED!` : `User ${targetTelegramId} UNBANNED!` }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Delete User: POST /api/admin/user/delete
+      if (req.method === 'POST' && reqPath === '/api/admin/user/delete') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        const { targetTelegramId } = data;
+        if (!targetTelegramId) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'targetTelegramId required' })); }
+        try {
+          await supabase.from('users').delete().eq('telegram_id', String(targetTelegramId));
+          const localDB = readDB();
+          delete localDB.users[targetTelegramId];
+          writeDB(localDB);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, message: `User ${targetTelegramId} deleted!` }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Admin Leaderboard: POST /api/admin/leaderboard
+      if (req.method === 'POST' && reqPath === '/api/admin/leaderboard') {
+        if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
+        try {
+          const { data: topUsers } = await supabase.from('users').select('telegram_id, username, wallet, profit_wallet, ref_wallet, friends_count, total_ref_earned, created_at').order('profit_wallet', { ascending: false }).limit(50);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, leaderboard: (topUsers || []).map(formatUser) }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
+      // Public: Get Game Config (for bot use): GET /api/config
+      if (req.method === 'GET' && reqPath === '/api/config') {
+        const localDB = readDB();
+        const config = localDB.gameConfig || {};
+        // Only expose safe public fields
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({
+          referralBonus: config.referralBonus || 25,
+          minWithdrawal: config.minWithdrawal || 20,
+          withdrawalFee: config.withdrawalFee || 3,
+          battleEntryFee: config.battleEntryFee || 10,
+          battleWinMultiplier: config.battleWinMultiplier || 1.8,
+          battleDuration: config.battleDuration || 15,
+          maintenanceMode: config.maintenanceMode || false,
+          welcomeMessage: config.welcomeMessage || 'Welcome to Turbo Team Battle!',
+          announcementText: config.announcementActive ? (config.announcementText || '') : '',
+          announcementActive: config.announcementActive || false,
+          depositNetwork: config.depositNetwork || 'BSC (BEP-20)',
+          minDepositAmount: config.minDepositAmount || 1
+        }));
+      }
+
+      // ==================== ADMIN PANEL API ROUTES ====================
+      // Admin Telegram ID (ONLY this ID can access admin panel)
+      const ADMIN_ID = '8291758870';
+
+      // Helper: verify admin
+      function isAdmin(body) {
+        return String(body.telegramId || body.adminId || '') === ADMIN_ID;
+      }
+
+      // POST /api/admin/auth — Verify admin identity
+      if (req.method === 'POST' && reqPath === '/api/admin/auth') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (isAdmin(body)) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, message: 'Admin verified', adminId: ADMIN_ID }));
+        }
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: 'Access Denied. Unauthorized Telegram ID.' }));
+      }
+
+      // POST /api/admin/stats — Dashboard statistics
+      if (req.method === 'POST' && reqPath === '/api/admin/stats') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403, {'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const { data: users } = await supabase.from('users').select('telegram_id,username,wallet,profit_wallet,ref_wallet,created_at');
+          const { data: withdrawals } = await supabase.from('withdrawals').select('amount,net_amount,status');
+          const { data: deposits } = await supabase.from('deposits').select('amount,status');
+          const { data: recentUsers } = await supabase.from('users').select('telegram_id,username,wallet,created_at').order('created_at',{ascending:false}).limit(10);
+          const { data: cfgRow } = await supabase.from('config').select('*').eq('id', 1).maybeSingle();
+          const totalUsers = users?.length || 0;
+          const totalDeposited = (deposits||[]).filter(d=>d.status==='finished').reduce((s,d)=>s+(+d.amount||0),0).toFixed(2);
+          const pendingWD = (withdrawals||[]).filter(w=>w.status==='pending');
+          const pendingWithdrawalsCount = pendingWD.length;
+          const pendingWithdrawalsAmount = pendingWD.reduce((s,w)=>s+(+w.amount||0),0).toFixed(2);
+          const totalGameWallet = (users||[]).reduce((s,u)=>s+(+u.wallet||0),0).toFixed(2);
+          const totalProfitWallet = (users||[]).reduce((s,u)=>s+(+u.profit_wallet||0),0).toFixed(2);
+          const totalRefWallet = (users||[]).reduce((s,u)=>s+(+u.ref_wallet||0),0).toFixed(2);
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, stats:{ totalUsers, totalDeposited, pendingWithdrawalsCount, pendingWithdrawalsAmount, totalGameWallet, totalProfitWallet, totalRefWallet, recentUsers: recentUsers||[] }, gameConfig: cfgRow?.data || {} }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:e.message})); }
+      }
+
+      // POST /api/admin/users — List/search users with pagination
+      if (req.method === 'POST' && reqPath === '/api/admin/users') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const page = Math.max(1, parseInt(body.page)||1);
+          const limit = Math.min(100, parseInt(body.limit)||20);
+          const search = (body.search||'').trim();
+          const offset = (page-1)*limit;
+          let query = supabase.from('users').select('*', {count:'exact'});
+          if (search) query = query.or(`telegram_id.eq.${search},username.ilike.%${search}%,email.ilike.%${search}%`);
+          const { data, count, error } = await query.order('created_at',{ascending:false}).range(offset, offset+limit-1);
+          if (error) throw error;
+          const users = (data||[]).map(formatUser);
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, users, total: count||0, page, limit }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:e.message})); }
+      }
+
+      // POST /api/admin/user/update — Update any user field
+      if (req.method === 'POST' && reqPath === '/api/admin/user/update') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const { targetTelegramId, field, value } = body;
+          if (!targetTelegramId || !field) throw new Error('targetTelegramId and field required');
+          const fieldMap = { username:'username', email:'email', wallet:'wallet', profitWallet:'profit_wallet', refWallet:'ref_wallet', withdrawWallet:'withdraw_wallet', bscAddress:'bsc_address', banned:'banned' };
+          const dbField = fieldMap[field];
+          if (!dbField) throw new Error('Invalid field: '+field);
+          const { error } = await supabase.from('users').update({ [dbField]: value, updated_at: new Date().toISOString() }).eq('telegram_id', targetTelegramId);
+          if (error) throw error;
+          // Sync to local DB
+          const db = readDB();
+          if (db.users[targetTelegramId]) { db.users[targetTelegramId][field] = value; writeDB(db); }
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, message:`User ${targetTelegramId} ${field} updated` }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({success:false,error:e.message})); }
+      }
+
+      // POST /api/admin/user/ban — Ban or unban user
+      if (req.method === 'POST' && reqPath === '/api/admin/user/ban') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const { targetTelegramId, ban } = body;
+          if (!targetTelegramId) throw new Error('targetTelegramId required');
+          const { error } = await supabase.from('users').update({ banned: !!ban, updated_at: new Date().toISOString() }).eq('telegram_id', targetTelegramId);
+          if (error) throw error;
+          const db = readDB();
+          if (db.users[targetTelegramId]) { db.users[targetTelegramId].banned = !!ban; writeDB(db); }
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, message: `User ${targetTelegramId} ${ban?'banned':'unbanned'} successfully` }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({success:false,error:e.message})); }
+      }
+
+      // POST /api/admin/user/delete — Permanently delete user
+      if (req.method === 'POST' && reqPath === '/api/admin/user/delete') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const { targetTelegramId } = body;
+          if (!targetTelegramId) throw new Error('targetTelegramId required');
+          await supabase.from('users').delete().eq('telegram_id', targetTelegramId);
+          const db = readDB();
+          delete db.users[targetTelegramId];
+          writeDB(db);
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, message:`User ${targetTelegramId} permanently deleted` }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({success:false,error:e.message})); }
+      }
+
+      // POST /api/admin/withdrawals — Get all withdrawals
+      if (req.method === 'POST' && reqPath === '/api/admin/withdrawals') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          let query = supabase.from('withdrawals').select('*').order('created_at',{ascending:false}).limit(200);
+          if (body.status) query = query.eq('status', body.status);
+          const { data, error } = await query;
+          if (error) throw error;
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, withdrawals: data||[] }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:e.message})); }
+      }
+
+      // POST /api/admin/withdrawal/update — Approve or reject withdrawal
+      if (req.method === 'POST' && reqPath === '/api/admin/withdrawal/update') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const { withdrawalId, status, txHash } = body;
+          if (!withdrawalId || !status) throw new Error('withdrawalId and status required');
+          const updates = { status, updated_at: new Date().toISOString() };
+          if (txHash) updates.tx_hash = txHash;
+          if (status === 'completed') updates.completed_at = new Date().toISOString();
+          // If rejected, refund user
+          if (status === 'rejected') {
+            const { data: wd } = await supabase.from('withdrawals').select('*').eq('id', withdrawalId).maybeSingle();
+            if (wd) {
+              const { data: usr } = await supabase.from('users').select('*').eq('telegram_id', wd.telegram_id).maybeSingle();
+              if (usr) {
+                const walletField = wd.wallet_type === 'profit' ? 'profit_wallet' : wd.wallet_type === 'ref' ? 'ref_wallet' : 'withdraw_wallet';
+                const curBal = parseFloat(usr[walletField] || 0);
+                await supabase.from('users').update({ [walletField]: curBal + parseFloat(wd.amount||0), updated_at: new Date().toISOString() }).eq('telegram_id', wd.telegram_id);
+              }
+            }
+          }
+          const { error } = await supabase.from('withdrawals').update(updates).eq('id', withdrawalId);
+          if (error) throw error;
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, message:`Withdrawal ${status}${status==='rejected'?' + refunded to user':''}` }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({success:false,error:e.message})); }
+      }
+
+      // POST /api/admin/deposits — Get deposit history
+      if (req.method === 'POST' && reqPath === '/api/admin/deposits') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const { data, error } = await supabase.from('deposits').select('*').order('created_at',{ascending:false}).limit(200);
+          if (error) throw error;
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, deposits: data||[] }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:e.message})); }
+      }
+
+      // POST /api/admin/config — Get all game/bot/wallet config
+      if (req.method === 'POST' && reqPath === '/api/admin/config') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const { data: cfgRow } = await supabase.from('config').select('*').eq('id',1).maybeSingle();
+          const config = cfgRow?.data || {};
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, config }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:e.message})); }
+      }
+
+      // POST /api/admin/config/update — Update a config key
+      if (req.method === 'POST' && reqPath === '/api/admin/config/update') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const { configKey, configValue } = body;
+          if (!configKey) throw new Error('configKey required');
+          // Get existing config
+          const { data: cfgRow } = await supabase.from('config').select('*').eq('id',1).maybeSingle();
+          const config = cfgRow?.data || {};
+          config[configKey] = configValue;
+          if (cfgRow) {
+            await supabase.from('config').update({ data: config, updated_at: new Date().toISOString() }).eq('id',1);
+          } else {
+            await supabase.from('config').insert({ id:1, data: config, created_at: new Date().toISOString() });
+          }
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, message:`Config "${configKey}" updated to "${configValue}"`, config }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({success:false,error:e.message})); }
+      }
+
+      // POST /api/admin/broadcast — Set announcement broadcast
+      if (req.method === 'POST' && reqPath === '/api/admin/broadcast') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const { message, title, type } = body;
+          if (!message) throw new Error('message required');
+          const { data: cfgRow } = await supabase.from('config').select('*').eq('id',1).maybeSingle();
+          const config = cfgRow?.data || {};
+          config.announcementText = (title ? `[${title}] ` : '') + message;
+          config.announcementActive = true;
+          config.announcementType = type || 'info';
+          config.announcementTimestamp = new Date().toISOString();
+          if (cfgRow) {
+            await supabase.from('config').update({ data: config, updated_at: new Date().toISOString() }).eq('id',1);
+          } else {
+            await supabase.from('config').insert({ id:1, data: config, created_at: new Date().toISOString() });
+          }
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, message:'Broadcast set successfully. All users will see it live.' }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({success:false,error:e.message})); }
+      }
+
+      // POST /api/admin/leaderboard — Top 50 players by profit wallet
+      if (req.method === 'POST' && reqPath === '/api/admin/leaderboard') {
+        let body = {};
+        try { body = await parseBody(req); } catch(e) {}
+        if (!isAdmin(body)) { res.writeHead(403,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:'Unauthorized'})); }
+        try {
+          const { data, error } = await supabase.from('users').select('telegram_id,username,wallet,profit_wallet,ref_wallet,friends_count,total_ref_earned').order('profit_wallet',{ascending:false}).limit(50);
+          if (error) throw error;
+          const leaderboard = (data||[]).map(formatUser);
+          res.writeHead(200,{'Content-Type':'application/json'});
+          return res.end(JSON.stringify({ success:true, leaderboard }));
+        } catch(e) { res.writeHead(500,{'Content-Type':'application/json'}); return res.end(JSON.stringify({error:e.message})); }
+      }
+      // ==================== END ADMIN API ROUTES ====================
+
       // Fallback API 404
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'API Endpoint not found' }));

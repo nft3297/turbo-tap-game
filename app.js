@@ -114,10 +114,17 @@ const STATE = {
   user: {
     id: rawUserId,
     bscAddress: userBscAddress,
-    firstName: tg?.initDataUnsafe?.user?.first_name || 'Commander',
-    username: tg?.initDataUnsafe?.user?.username ? '@' + tg.initDataUnsafe.user.username : '@You',
+    // Priority: Telegram live data → localStorage cache → fallback
+    firstName: tg?.initDataUnsafe?.user?.first_name 
+               || localStorage.getItem('turbo_firstName') 
+               || 'Player',
+    username: tg?.initDataUnsafe?.user?.username 
+              ? '@' + tg.initDataUnsafe.user.username 
+              : (localStorage.getItem('turbo_username') || ''),
     email: '',
-    photoUrl: tg?.initDataUnsafe?.user?.photo_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${rawUserId}`,
+    photoUrl: tg?.initDataUnsafe?.user?.photo_url 
+              || localStorage.getItem('turbo_photoUrl') 
+              || `https://api.dicebear.com/7.x/bottts/svg?seed=${rawUserId}`,
     startParam: rawStartParam
   },
   isRegistered: false,
@@ -311,7 +318,15 @@ async function initApp() {
     if (data.exists && data.user) {
       // User already signed up previously!
       STATE.isRegistered = true;
-      STATE.user.username = data.user.username || STATE.user.username;
+      // Update username/firstName from DB if available
+      if (data.user.username) {
+        STATE.user.username = data.user.username.startsWith('@') ? data.user.username : '@' + data.user.username;
+        localStorage.setItem('turbo_username', STATE.user.username);
+      }
+      if (data.user.firstName || data.user.first_name) {
+        STATE.user.firstName = data.user.firstName || data.user.first_name;
+        localStorage.setItem('turbo_firstName', STATE.user.firstName);
+      }
       STATE.user.email = data.user.email || STATE.user.email;
       STATE.user.bscAddress = data.user.bscAddress || STATE.user.bscAddress;
       STATE.wallet = parseFloat(data.user.wallet || 0);
@@ -362,6 +377,15 @@ async function initApp() {
         if (regData.success && regData.user) {
           STATE.isRegistered = true;
           STATE.user.bscAddress = regData.user.bscAddress || STATE.user.bscAddress;
+          // Cache name from registration response
+          if (regData.user.username) {
+            STATE.user.username = regData.user.username.startsWith('@') ? regData.user.username : '@' + regData.user.username;
+            localStorage.setItem('turbo_username', STATE.user.username);
+          }
+          if (regData.user.firstName || regData.user.first_name) {
+            STATE.user.firstName = regData.user.firstName || regData.user.first_name;
+            localStorage.setItem('turbo_firstName', STATE.user.firstName);
+          }
           STATE.wallet = parseFloat(regData.user.wallet || 0);
           STATE.profitWallet = parseFloat(regData.user.profitWallet || 0);
           STATE.withdrawWallet = parseFloat(regData.user.withdrawWallet || 0);
@@ -422,9 +446,27 @@ async function initApp() {
 }
 
 function updateHeaderAndDisplays() {
-  document.getElementById('userName').textContent = STATE.user.username || STATE.user.firstName;
+  // Display Name Priority: firstName (real name) → username (@handle) → 'Player'
+  const displayName = STATE.user.firstName 
+    || (STATE.user.username && STATE.user.username !== '@You' ? STATE.user.username : null)
+    || 'Player';
+  document.getElementById('userName').textContent = displayName;
   document.getElementById('userAvatar').src = STATE.user.photoUrl;
-  document.getElementById('userIdDisplay').textContent = `#${STATE.user.id}`;
+  
+  // Show real Telegram ID (not hardcoded #1001)
+  const displayId = STATE.user.id ? `#${STATE.user.id}` : '';
+  document.getElementById('userIdDisplay').textContent = displayId;
+  
+  // Cache firstName and username to localStorage for persistence
+  if (STATE.user.firstName && STATE.user.firstName !== 'Player') {
+    localStorage.setItem('turbo_firstName', STATE.user.firstName);
+  }
+  if (STATE.user.username && STATE.user.username !== '@You') {
+    localStorage.setItem('turbo_username', STATE.user.username);
+  }
+  if (STATE.user.photoUrl) {
+    localStorage.setItem('turbo_photoUrl', STATE.user.photoUrl);
+  }
   
   const botUsername = 'TurboTapgame_bot';
   const myRefLink = `https://t.me/${botUsername}/Play?startapp=ref_${STATE.user.id}`;

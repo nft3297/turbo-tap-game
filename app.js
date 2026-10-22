@@ -3,8 +3,8 @@
 // STRICT NETWORK: BINANCE SMART CHAIN (BSC BEP-20)
 // ============================================================
 
-// 0. ADVANCED ANTI-TAMPER & ANTI-REVERSE ENGINEERING ARMOR
-(function installAntiTamperArmor() {
+// 0. BASIC PROTECTION (No debugger trap - it freezes Telegram WebView)
+(function installBasicProtection() {
   'use strict';
   
   // A. Block Right-Click Context Menu
@@ -13,55 +13,34 @@
     return false;
   }, { capture: true });
 
-  // B. Block Inspection & DevTools Keyboard Shortcuts
-  window.addEventListener('keydown', function(e) {
-    // F12
-    if (e.keyCode === 123 || e.key === 'F12') {
-      e.preventDefault();
-      return false;
-    }
-    // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools)
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) {
-      e.preventDefault();
-      return false;
-    }
-    // Ctrl+U (View Source) & Ctrl+S (Save Page)
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S')) {
-      e.preventDefault();
-      return false;
-    }
-  }, { capture: true });
-
-  // C. Anti-Dragging of Protected Media
+  // B. Anti-Dragging of Protected Media
   window.addEventListener('dragstart', function(e) {
     if (e.target && e.target.nodeName === 'IMG') {
       e.preventDefault();
     }
   });
 
-  // D. Anti-Debugger / DevTools Timing Trap
-  setInterval(function() {
-    var before = performance.now();
-    /* eslint-disable no-debugger */
-    debugger;
-    /* eslint-enable no-debugger */
-    var after = performance.now();
-    if (after - before > 100) {
-      try {
-        console.clear();
-      } catch (err) {}
-    }
-  }, 2500);
-
-  // E. Silence Console Output in Production
-  if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+  // C. Catch and show JS errors (helps debug in production)
+  window.addEventListener('error', function(event) {
+    var msg = event.message || 'Unknown error';
+    var src = (event.filename || '').split('/').pop();
+    var line = event.lineno || '?';
+    console.error('[APP ERROR]', msg, 'at', src + ':' + line);
+    // Show toast if available
     try {
-      console.log = function() {};
-      console.warn = function() {};
-      console.info = function() {};
-      console.debug = function() {};
-    } catch (e) {}
-  }
+      var toast = document.getElementById('appToast');
+      if (toast && msg) {
+        toast.textContent = '⚠️ ' + msg.substring(0, 60);
+        toast.classList.add('show');
+        setTimeout(function() { toast.classList.remove('show'); }, 4000);
+      }
+    } catch(e) {}
+  });
+
+  // D. Catch unhandled promise rejections
+  window.addEventListener('unhandledrejection', function(event) {
+    console.error('[PROMISE ERROR]', event.reason);
+  });
 })();
 
 // 1. Initialize Telegram WebApp SDK

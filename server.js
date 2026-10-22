@@ -1643,10 +1643,8 @@ const server = http.createServer(async (req, res) => {
   // ================= STATIC FILE SERVING WITH SECURITY SHIELD =================
   let requestedFile = reqPath === '/' ? 'index.html' : reqPath;
 
-  // Mask /app.js so raw source code is never exposed over HTTP (always serve obfuscated app.min.js)
-  if (requestedFile === '/app.js') {
-    requestedFile = '/app.min.js';
-  }
+
+  // Serve app.js directly (latest code with all fixes)
 
   // Prevent Directory Traversal & normalize path
   const safePath = path.normalize(path.join(__dirname, requestedFile));

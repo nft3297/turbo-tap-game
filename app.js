@@ -368,6 +368,7 @@ async function initApp() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             telegramId: STATE.user.id,
+            firstName: STATE.user.firstName || tg?.initDataUnsafe?.user?.first_name || '',
             username: STATE.user.username?.replace('@', '') || STATE.user.firstName || `Player_${STATE.user.id}`,
             email: STATE.user.email || `user_${STATE.user.id}@telegram.org`,
             referrerId: validReferrer
@@ -532,6 +533,21 @@ function openProfileModal() {
 
 function closeProfileModal() {
   document.getElementById('profileModal')?.classList.remove('active');
+}
+
+// ================= ADMIN PANEL ACCESS =================
+function openAdminPanel(e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+  const ADMIN_ID = '8291758870';
+  if (String(STATE.user.id) === ADMIN_ID) {
+    // Open admin.html in same window
+    window.location.href = '/admin.html';
+  } else {
+    showToast('⛔ Access Denied: Admin Only');
+  }
 }
 
 function copyProfileAddress() {

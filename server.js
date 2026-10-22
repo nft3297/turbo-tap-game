@@ -54,9 +54,18 @@ function writeDB(data) {
 // Convert Supabase DB snake_case row to frontend camelCase user object
 function formatUser(row) {
   if (!row) return null;
+  // Support firstName stored as 'FirstName||@username' in username field
+  let storedUsername = row.username || 'Gamer';
+  let extractedFirstName = row.first_name || row.firstName || '';
+  if (storedUsername.includes('||')) {
+    const parts = storedUsername.split('||');
+    extractedFirstName = extractedFirstName || parts[0] || '';
+    storedUsername = parts[1] || parts[0] || 'Gamer';
+  }
   return {
     telegramId: String(row.telegram_id),
-    username: row.username || 'Gamer',
+    username: storedUsername,
+    firstName: extractedFirstName,
     email: row.email || '',
     bscAddress: row.bsc_address,
     wallet: parseFloat(row.wallet || 0),
@@ -96,6 +105,7 @@ async function upsertSupabaseUser(userObj) {
     const row = {
       telegram_id: String(userObj.telegramId || userObj.telegram_id),
       username: userObj.username,
+      first_name: userObj.firstName || userObj.first_name || null,
       email: userObj.email || null,
       bsc_address: userObj.bscAddress || userObj.bsc_address,
       wallet: parseFloat(userObj.wallet || 0),
@@ -705,7 +715,7 @@ const server = http.createServer(async (req, res) => {
 
       // 2. 1st Time Sign Up / Auto Register: POST /api/register
       if (req.method === 'POST' && reqPath === '/api/register') {
-        const { telegramId, username, email, referrerId } = data;
+        const { telegramId, username, firstName, email, referrerId } = data;
 
         if (!telegramId) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -720,6 +730,7 @@ const server = http.createServer(async (req, res) => {
 
         // Anti-XSS String Sanitization
         const cleanUsername = String(username || 'Gamer').replace(/[<>&"']/g, '').trim().slice(0, 32) || 'Gamer';
+        const cleanFirstName = firstName ? String(firstName).replace(/[<>&"']/g, '').trim().slice(0, 64) : null;
         const cleanEmail = email ? String(email).replace(/[<>&"']/g, '').trim().slice(0, 64) : null;
 
         let referrer = null;
@@ -780,9 +791,11 @@ const server = http.createServer(async (req, res) => {
           console.log(`[Referral Success] New User ${telegramId} joined via ${validReferrer}! Both received +$25 in Referral Wallet!`);
         }
 
+        const cleanHandle = (username || 'Gamer_' + String(telegramId).slice(-4)).trim();
         const newUserRow = {
           telegram_id: String(telegramId),
-          username: (username || 'Gamer_' + String(telegramId).slice(-4)).trim(),
+          // Store as 'FirstName||@handle' so we can extract name without extra DB column
+          username: cleanFirstName ? `${cleanFirstName}||${cleanHandle}` : cleanHandle,
           email: (email || `user_${telegramId}@telegram.org`).trim().toLowerCase(),
           bsc_address: bscAddress,
           wallet: 0.00,

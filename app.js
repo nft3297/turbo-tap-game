@@ -72,6 +72,19 @@ if (tg) {
   if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
 }
 
+// 1b. Parse tg.initData string as fallback to get user info
+function parseTgInitData() {
+  try {
+    const raw = tg?.initData || '';
+    if (!raw) return null;
+    const params = new URLSearchParams(raw);
+    const userStr = params.get('user');
+    if (userStr) return JSON.parse(decodeURIComponent(userStr));
+  } catch(e) {}
+  return null;
+}
+const tgUser = tg?.initDataUnsafe?.user || parseTgInitData() || {};
+
 // 2. Deterministic BSC BEP-20 (EVM) Wallet Address Generator from User ID
 function generateBscAddress(userId) {
   const hex1 = ((userId * 2654435761) >>> 0).toString(16).padStart(8, '7');
@@ -96,7 +109,9 @@ if (rawStartParam) {
   if (cleanRef) localStorage.setItem('turbo_ref_id', cleanRef);
 }
 
-const rawUserId = tg?.initDataUnsafe?.user?.id || parseInt(localStorage.getItem('turbo_uid') || Math.floor(100000 + Math.random() * 900000).toString());
+const rawUserId = tgUser?.id 
+  || parseInt(localStorage.getItem('turbo_uid') || '0') 
+  || Math.floor(100000 + Math.random() * 900000);
 localStorage.setItem('turbo_uid', rawUserId.toString());
 
 const userBscAddress = generateBscAddress(rawUserId);
@@ -115,14 +130,14 @@ const STATE = {
     id: rawUserId,
     bscAddress: userBscAddress,
     // Priority: Telegram live data → localStorage cache → fallback
-    firstName: tg?.initDataUnsafe?.user?.first_name 
+    firstName: tgUser?.first_name 
                || localStorage.getItem('turbo_firstName') 
-               || 'Player',
-    username: tg?.initDataUnsafe?.user?.username 
-              ? '@' + tg.initDataUnsafe.user.username 
+               || '',
+    username: tgUser?.username 
+              ? '@' + tgUser.username 
               : (localStorage.getItem('turbo_username') || ''),
     email: '',
-    photoUrl: tg?.initDataUnsafe?.user?.photo_url 
+    photoUrl: tgUser?.photo_url 
               || localStorage.getItem('turbo_photoUrl') 
               || `https://api.dicebear.com/7.x/bottts/svg?seed=${rawUserId}`,
     startParam: rawStartParam
@@ -411,10 +426,27 @@ async function initApp() {
   } catch (err) {
     console.warn('[Init] Offline / local mode:', err.message);
     const localReg = localStorage.getItem(`turbo_reg_${STATE.user.id}`);
-    if (!localReg) {
-      showSignupModal();
-    } else {
+    if (localReg) {
       STATE.isRegistered = true;
+      // Still show whatever data we have from Telegram/localStorage
+    } else if (tgUser?.id) {
+      // We have Telegram data but no server — auto-register silently
+      try {
+        await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegramId: STATE.user.id,
+            firstName: STATE.user.firstName,
+            username: STATE.user.username?.replace('@', '') || STATE.user.firstName || `Player_${STATE.user.id}`,
+            email: `user_${STATE.user.id}@telegram.org`
+          })
+        });
+        localStorage.setItem(`turbo_reg_${STATE.user.id}`, 'true');
+        STATE.isRegistered = true;
+      } catch(e) {}
+    } else {
+      showSignupModal();
     }
   }
 
@@ -1723,7 +1755,12 @@ function showToast(message) {
 
 // 19. Start App
 document.addEventListener('DOMContentLoaded', () => {
+  // ✅ Show user info IMMEDIATELY from Telegram/localStorage — don't wait for API
+  updateHeaderAndDisplays();
+  
+  // Then fetch server data async
   initApp();
+  
   setInterval(() => {
     const onlineEl = document.getElementById('onlineCount');
     if (onlineEl) {

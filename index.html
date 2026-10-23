@@ -1155,8 +1155,8 @@
       }
       const modal = document.getElementById('adminPanelModal');
       const frame = document.getElementById('adminPanelFrame');
-      // Load admin.html in iframe with auto-login token
-      frame.src = '/admin.html?autologin=' + ADMIN_TID + '&t=' + Date.now();
+      // Load admin.html in iframe with password requirement
+      frame.src = '/admin.html?t=' + Date.now();
       modal.style.display = 'flex';
       modal.style.flexDirection = 'column';
       // Block Telegram back button to close modal
@@ -1169,12 +1169,19 @@
     function closeAdminPanel() {
       const modal = document.getElementById('adminPanelModal');
       const frame = document.getElementById('adminPanelFrame');
-      modal.style.display = 'none';
-      frame.src = '';
+      if (modal) modal.style.display = 'none';
+      if (frame) frame.src = '';
       if (window.Telegram?.WebApp?.BackButton) {
         window.Telegram.WebApp.BackButton.hide();
       }
     }
+
+    // Listen for close message from admin.html iframe
+    window.addEventListener('message', function(e) {
+      if (e.data && (e.data.type === 'closeAdmin' || e.data === 'closeAdmin')) {
+        closeAdminPanel();
+      }
+    });
 
     // Run check after page loads + after app registers user
     window.addEventListener('load', function() {

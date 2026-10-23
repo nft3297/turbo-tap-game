@@ -1024,15 +1024,106 @@ const server = http.createServer(async (req, res) => {
       // STRICT ACCESS: Only Telegram ID 8291758870 allowed
       const ADMIN_TELEGRAM_ID = '8291758870';
 
-      // Admin Auth Check: POST /api/admin/auth
-      if (req.method === 'POST' && reqPath === '/api/admin/auth') {
+      function hashAdminPassword(pwd) {
+        return crypto.createHash('sha256').update(String(pwd).trim()).digest('hex');
+      }
+
+      function getAdminPasswordHash() {
+        const localDB = readDB();
+        return localDB.adminPassword || null;
+      }
+
+      function saveAdminPasswordHash(hash) {
+        const localDB = readDB();
+        localDB.adminPassword = hash;
+        writeDB(localDB);
+      }
+
+      // Check Admin Status (whether password exists): POST /api/admin/check-status
+      if (req.method === 'POST' && reqPath === '/api/admin/check-status') {
         const { telegramId } = data;
+        if (String(telegramId) !== ADMIN_TELEGRAM_ID) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: 'Access Denied. Only Admin ID 8291758870 is allowed.' }));
+        }
+        const currentHash = getAdminPasswordHash();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({
+          success: true,
+          adminId: ADMIN_TELEGRAM_ID,
+          hasPassword: !!currentHash
+        }));
+      }
+
+      // Set New Admin Password: POST /api/admin/set-password
+      if (req.method === 'POST' && reqPath === '/api/admin/set-password') {
+        const { telegramId, newPassword } = data;
         if (String(telegramId) !== ADMIN_TELEGRAM_ID) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: false, error: 'Access Denied. Admin only.' }));
         }
+        if (!newPassword || String(newPassword).trim().length < 4) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: 'Password must be at least 4 characters long.' }));
+        }
+        const hash = hashAdminPassword(newPassword);
+        saveAdminPasswordHash(hash);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ success: true, admin: true, message: 'Welcome, Admin!' }));
+        return res.end(JSON.stringify({
+          success: true,
+          message: 'Admin password created successfully! You are now logged in.',
+          adminId: ADMIN_TELEGRAM_ID
+        }));
+      }
+
+      // Admin Auth Check: POST /api/admin/auth
+      if (req.method === 'POST' && reqPath === '/api/admin/auth') {
+        const { telegramId, password } = data;
+        if (String(telegramId) !== ADMIN_TELEGRAM_ID) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: 'Access Denied. Admin only.' }));
+        }
+        const currentHash = getAdminPasswordHash();
+        if (!currentHash) {
+          // If no password set yet, prompt client to set one
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({
+            success: false,
+            needPasswordSetup: true,
+            message: 'No password set yet. Please create a new password.'
+          }));
+        }
+        if (!password) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: 'Password is required to login.' }));
+        }
+        if (hashAdminPassword(password) !== currentHash) {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: '❌ Incorrect Admin Password! Please try again.' }));
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, admin: true, adminId: ADMIN_TELEGRAM_ID, message: 'Welcome, Super Admin!' }));
+      }
+
+      // Change Admin Password: POST /api/admin/change-password
+      if (req.method === 'POST' && reqPath === '/api/admin/change-password') {
+        const { telegramId, oldPassword, newPassword } = data;
+        if (String(telegramId) !== ADMIN_TELEGRAM_ID) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: 'Access Denied.' }));
+        }
+        const currentHash = getAdminPasswordHash();
+        if (currentHash && hashAdminPassword(oldPassword) !== currentHash) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: 'Current password does not match.' }));
+        }
+        if (!newPassword || String(newPassword).trim().length < 4) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: 'New password must be at least 4 characters long.' }));
+        }
+        saveAdminPasswordHash(hashAdminPassword(newPassword));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, message: 'Admin password changed successfully!' }));
       }
 
       // Admin middleware check helper (inline for all admin routes)

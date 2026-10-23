@@ -25,6 +25,10 @@
     .lb{width:100%;margin-top:20px;padding:15px;border:none;border-radius:12px;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:15px;font-weight:700;font-family:'Inter',sans-serif;transition:all 0.2s}
     .lb:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(99,102,241,0.4)}
     .le{margin-top:12px;padding:12px 16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:10px;color:#ef4444;font-size:13px;text-align:center;display:none}
+    .pwd-wrap{position:relative;width:100%}
+    .pwd-wrap input{padding-right:44px!important}
+    .pwd-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--t2);font-size:14px;transition:color 0.2s}
+    .pwd-eye:hover{color:var(--t1)}
     @keyframes pulse{0%,100%{box-shadow:0 0 30px rgba(99,102,241,0.4)}50%{box-shadow:0 0 60px rgba(99,102,241,0.8)}}
     #app{display:none;min-height:100vh}
     .sb{position:fixed;left:0;top:0;bottom:0;width:var(--sw);background:var(--bg2);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:100;overflow-y:auto;transition:transform 0.3s}
@@ -146,17 +150,56 @@
 <body>
 
 <div id="ls">
+  <!-- Close Button Top Right -->
+  <button onclick="closeAdmin()" style="position:fixed;top:16px;right:16px;z-index:10000;background:rgba(255,255,255,0.08);border:1px solid var(--bdr);color:var(--t1);padding:9px 16px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;cursor:pointer;backdrop-filter:blur(10px);transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.2)';this.style.color='#f87171'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='var(--t1)'">
+    <i class="fas fa-times"></i> Close
+  </button>
+
   <div style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:36px;animation:pulse 2s infinite">🛡️</div>
   <div class="lc">
     <div class="lt">🔐 Admin Control Center</div>
     <div class="ls2">Turbo Team Battle — Restricted Access Only</div>
+    
     <div class="lf">
       <label>Your Telegram ID</label>
-      <input type="number" id="ati" placeholder="Enter your Telegram ID" autocomplete="off">
+      <input type="number" id="ati" placeholder="Enter your Telegram ID" autocomplete="off" oninput="onTidChange()" onkeydown="if(event.key==='Enter')handleAuthAction()">
     </div>
-    <button class="lb" id="lbtn" onclick="doLogin()"><i class="fas fa-shield-alt"></i>&nbsp; Verify & Enter Panel</button>
+
+    <!-- Step 2A: Set New Password (shown if no password set yet) -->
+    <div class="lf" id="setupPwdGroup" style="display:none;margin-top:14px">
+      <div style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:12px;margin-bottom:14px;font-size:12px;color:#c7d2fe;display:flex;align-items:flex-start;gap:8px">
+        <i class="fas fa-key" style="font-size:14px;color:#a5b4fc;margin-top:2px"></i>
+        <span><b>First Time Setup:</b> Enter a new password for Super Admin (ID 8291758870) to protect this panel.</span>
+      </div>
+      <label>Create New Password</label>
+      <div class="pwd-wrap">
+        <input type="password" id="newPwd" placeholder="Enter new password (min 4 chars)" autocomplete="new-password" onkeydown="if(event.key==='Enter')handleAuthAction()">
+        <i class="fas fa-eye pwd-eye" id="eyeNewPwd" onclick="togglePwdVisibility('newPwd','eyeNewPwd')"></i>
+      </div>
+      <label style="margin-top:12px">Confirm Password</label>
+      <div class="pwd-wrap">
+        <input type="password" id="confirmNewPwd" placeholder="Re-enter password to confirm" autocomplete="new-password" onkeydown="if(event.key==='Enter')handleAuthAction()">
+        <i class="fas fa-eye pwd-eye" id="eyeConfirmPwd" onclick="togglePwdVisibility('confirmNewPwd','eyeConfirmPwd')"></i>
+      </div>
+    </div>
+
+    <!-- Step 2B: Enter Existing Password (shown when password is set) -->
+    <div class="lf" id="loginPwdGroup" style="display:none;margin-top:14px">
+      <label>Admin Password</label>
+      <div class="pwd-wrap">
+        <input type="password" id="apwd" placeholder="Enter your Admin Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleAuthAction()">
+        <i class="fas fa-eye pwd-eye" id="eyeLoginPwd" onclick="togglePwdVisibility('apwd','eyeLoginPwd')"></i>
+      </div>
+    </div>
+
+    <button class="lb" id="lbtn" onclick="handleAuthAction()"><i class="fas fa-shield-alt"></i>&nbsp; <span id="lbtnText">Verify & Continue</span></button>
     <div class="le" id="lerr"></div>
-    <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:14px;color:var(--t3);font-size:12px"><i class="fas fa-lock" style="color:#6366f1"></i><span>Secured · Telegram ID Verification</span></div>
+    <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:14px;color:var(--t3);font-size:12px"><i class="fas fa-lock" style="color:#6366f1"></i><span>Secured · ID & Password Protected</span></div>
+
+    <!-- Bottom Exit Button -->
+    <button onclick="closeAdmin()" style="width:100%;margin-top:14px;padding:12px;border:1px solid var(--bdr);border-radius:12px;background:rgba(255,255,255,0.03);color:var(--t2);cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.07)';this.style.color='var(--t1)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.color='var(--t2)'">
+      <i class="fas fa-arrow-left"></i> Close & Back to Game
+    </button>
   </div>
 </div>
 
@@ -168,7 +211,14 @@
       <div class="sbl" style="display:flex;align-items:center;justify-content:center;font-size:18px">🎮</div>
       <div class="sbb">TURBO ADMIN<span>Control Center v2.0</span></div>
     </div>
-    <div class="sbadm"><div class="dot"></div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--t1)">👑 Super Admin</div><div style="font-size:10px;color:var(--t3)">ID: 8291758870</div></div></div>
+    <div class="sbadm">
+      <div class="dot"></div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:var(--t1)">👑 Super Admin</div>
+        <div style="font-size:10px;color:var(--t3)">ID: 8291758870</div>
+        <button onclick="openChangePwdModal()" style="margin-top:6px;padding:3px 8px;font-size:10px;font-weight:600;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);border-radius:6px;color:#c7d2fe;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:'Inter',sans-serif"><i class="fas fa-key"></i> Change Password</button>
+      </div>
+    </div>
     <div class="stn">Overview</div>
     <div class="ni active" data-p="dashboard" onclick="go('dashboard',this)"><div class="nic"><i class="fas fa-chart-line"></i></div>Dashboard</div>
     <div class="ni" data-p="leaderboard" onclick="go('leaderboard',this)"><div class="nic"><i class="fas fa-trophy"></i></div>Leaderboard</div>
@@ -183,13 +233,20 @@
     <div class="stn">Tools</div>
     <div class="ni" data-p="broadcast" onclick="go('broadcast',this)"><div class="nic"><i class="fas fa-bullhorn"></i></div>Broadcast</div>
     <div class="ni" data-p="credit" onclick="go('credit',this)"><div class="nic"><i class="fas fa-plus-circle"></i></div>Credit User</div>
-    <div class="sbf"><button class="lob" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i> Logout Admin</button></div>
+    <div class="sbf">
+      <button class="lob" onclick="closeAdmin()" style="margin-bottom:8px;border-color:rgba(99,102,241,0.3);background:rgba(99,102,241,0.08);color:#a5b4fc"><i class="fas fa-gamepad"></i> Back to Game</button>
+      <button class="lob" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i> Logout Admin</button>
+    </div>
   </nav>
 
   <div class="mc">
     <div class="tb">
       <div class="tbt" id="pgtit">Dashboard <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Overview</span></div>
-      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;color:var(--t3)" id="clk"></span><button class="rbtn" onclick="refresh()"><i class="fas fa-rotate-right"></i> Refresh</button></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;color:var(--t3)" id="clk"></span>
+        <button class="rbtn" onclick="refresh()"><i class="fas fa-rotate-right"></i> Refresh</button>
+        <button class="rbtn" onclick="closeAdmin()" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.3);color:#f87171"><i class="fas fa-times"></i> Close</button>
+      </div>
     </div>
 
     <!-- DASHBOARD -->
@@ -295,52 +352,266 @@
   <div class="mf"><button class="btn bgh" onclick="cls('eum')">Cancel</button><button class="btn bpr" onclick="saveUser()"><i class="fas fa-save"></i> Save Changes</button></div>
 </div></div>
 
+<!-- CHANGE ADMIN PASSWORD MODAL -->
+<div class="mo" id="cpm"><div class="md">
+  <div class="mh"><div class="mtt">🔑 Change Admin Password</div><button class="mcl" onclick="cls('cpm')"><i class="fas fa-times"></i></button></div>
+  <div class="mb">
+    <div class="fg"><label class="fl">Current Password</label><div class="pwd-wrap"><input class="fi" type="password" id="cp-old" placeholder="Enter current password"><i class="fas fa-eye pwd-eye" id="eyeCpOld" onclick="togglePwdVisibility('cp-old','eyeCpOld')"></i></div></div>
+    <div class="fg"><label class="fl">New Password</label><div class="pwd-wrap"><input class="fi" type="password" id="cp-new" placeholder="Enter new password (min 4 chars)"><i class="fas fa-eye pwd-eye" id="eyeCpNew" onclick="togglePwdVisibility('cp-new','eyeCpNew')"></i></div></div>
+    <div class="fg"><label class="fl">Confirm New Password</label><div class="pwd-wrap"><input class="fi" type="password" id="cp-conf" placeholder="Re-enter new password to confirm"><i class="fas fa-eye pwd-eye" id="eyeCpConf" onclick="togglePwdVisibility('cp-conf','eyeCpConf')"></i></div></div>
+  </div>
+  <div class="mf"><button class="btn bgh" onclick="cls('cpm')">Cancel</button><button class="btn bpr" onclick="saveNewPassword()"><i class="fas fa-save"></i> Update Password</button></div>
+</div></div>
+
 <div id="tc"></div>
 
 <script>
-const AID='8291758870';
-let AT=null,cfg={},curPg='dashboard',uPage=1,euId=null,sbtype='info',dbt=null;
-const tg=window.Telegram?.WebApp;
-if(tg){tg.ready();tg.expand();}
-window.addEventListener('load',()=>{
-  // Check if opened via main app iframe (auto-login via URL param)
-  const urlP = new URLSearchParams(window.location.search);
-  const autoId = urlP.get('autologin');
-  if(autoId && autoId === AID) {
-    // Auto-login silently: skip login screen completely
-    document.getElementById('ati').value = autoId;
-    document.getElementById('ls').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    AT = autoId;
-    loadDash();
-  } else {
-    // Normal flow: check Telegram user
-    const u=tg?.initDataUnsafe?.user;
-    if(u?.id){document.getElementById('ati').value=u.id;if(String(u.id)===AID)setTimeout(doLogin,400);}
+const AID = '8291758870';
+let AT = null, cfg = {}, curPg = 'dashboard', uPage = 1, euId = null, sbtype = 'info', dbt = null;
+let currentAuthMode = 'check'; // 'check', 'setup', 'login'
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  if (tg.BackButton) {
+    tg.BackButton.show();
+    tg.BackButton.onClick(closeAdmin);
   }
-  setInterval(()=>{document.getElementById('clk').textContent=new Date().toLocaleTimeString('en-IN',{hour12:true});},1000);
+}
+
+function closeAdmin() {
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'closeAdmin' }, '*');
+      if (typeof window.parent.closeAdminPanel === 'function') {
+        window.parent.closeAdminPanel();
+        return;
+      }
+    }
+  } catch(e) {}
+  window.location.href = '/';
+}
+
+function togglePwdVisibility(inputId, eyeId) {
+  const inp = document.getElementById(inputId);
+  const eye = document.getElementById(eyeId);
+  if (!inp || !eye) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    eye.classList.remove('fa-eye');
+    eye.classList.add('fa-eye-slash');
+  } else {
+    inp.type = 'password';
+    eye.classList.remove('fa-eye-slash');
+    eye.classList.add('fa-eye');
+  }
+}
+
+let tidCheckTimeout = null;
+function onTidChange() {
+  clearTimeout(tidCheckTimeout);
+  const tid = document.getElementById('ati').value.trim();
+  document.getElementById('lerr').style.display = 'none';
+  if (tid === AID) {
+    tidCheckTimeout = setTimeout(() => checkPasswordStatus(tid), 300);
+  } else {
+    document.getElementById('setupPwdGroup').style.display = 'none';
+    document.getElementById('loginPwdGroup').style.display = 'none';
+    document.getElementById('lbtnText').textContent = 'Verify & Continue';
+    currentAuthMode = 'check';
+  }
+}
+
+async function checkPasswordStatus(tid) {
+  try {
+    const res = await fetch('/api/admin/check-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telegramId: tid })
+    });
+    const d = await res.json();
+    if (d.success) {
+      if (!d.hasPassword) {
+        currentAuthMode = 'setup';
+        document.getElementById('setupPwdGroup').style.display = 'block';
+        document.getElementById('loginPwdGroup').style.display = 'none';
+        document.getElementById('lbtnText').textContent = 'Set Password & Enter Panel';
+        document.getElementById('newPwd').focus();
+      } else {
+        currentAuthMode = 'login';
+        document.getElementById('setupPwdGroup').style.display = 'none';
+        document.getElementById('loginPwdGroup').style.display = 'block';
+        document.getElementById('lbtnText').textContent = 'Enter Admin Panel';
+        document.getElementById('apwd').focus();
+      }
+    } else {
+      showErr(d.error || 'Access Denied');
+    }
+  } catch(e) {
+    showErr('Server not reachable. Start the server first.');
+  }
+}
+
+async function handleAuthAction() {
+  const tid = document.getElementById('ati').value.trim();
+  const btn = document.getElementById('lbtn');
+  document.getElementById('lerr').style.display = 'none';
+
+  if (!tid) {
+    showErr('Please enter your Telegram ID');
+    return;
+  }
+  if (tid !== AID) {
+    showErr('❌ Access Denied! Telegram ID 8291758870 only.');
+    return;
+  }
+
+  if (currentAuthMode === 'check') {
+    await checkPasswordStatus(tid);
+    return;
+  }
+
+  if (currentAuthMode === 'setup') {
+    const newPwd = document.getElementById('newPwd').value.trim();
+    const confPwd = document.getElementById('confirmNewPwd').value.trim();
+    if (!newPwd || newPwd.length < 4) {
+      showErr('Password must be at least 4 characters long');
+      return;
+    }
+    if (newPwd !== confPwd) {
+      showErr('Passwords do not match');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spin" style="border-top-color:#fff;width:16px;height:16px"></div>&nbsp; Saving Password...';
+    try {
+      const r = await fetch('/api/admin/set-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramId: tid, newPassword: newPwd })
+      }).then(res => res.json());
+
+      if (r.success) {
+        AT = tid;
+        document.getElementById('ls').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        toast('🎉 Admin Password Created! Welcome, Admin!', 'ok');
+        loadDash();
+      } else {
+        showErr(r.error || 'Failed to set password');
+      }
+    } catch(e) {
+      showErr('Server communication error');
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-shield-alt"></i>&nbsp; <span id="lbtnText">Set Password & Enter Panel</span>';
+    return;
+  }
+
+  if (currentAuthMode === 'login') {
+    const pwd = document.getElementById('apwd').value.trim();
+    if (!pwd) {
+      showErr('Please enter your Admin Password');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spin" style="border-top-color:#fff;width:16px;height:16px"></div>&nbsp; Verifying...';
+    try {
+      const r = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramId: tid, password: pwd })
+      }).then(res => res.json());
+
+      if (r.success) {
+        AT = tid;
+        document.getElementById('ls').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        toast('✅ Welcome, Super Admin!', 'ok');
+        loadDash();
+      } else if (r.needPasswordSetup) {
+        currentAuthMode = 'setup';
+        document.getElementById('setupPwdGroup').style.display = 'block';
+        document.getElementById('loginPwdGroup').style.display = 'none';
+        document.getElementById('lbtnText').textContent = 'Set Password & Enter Panel';
+        showErr('Please create your admin password first.');
+      } else {
+        showErr(r.error || '❌ Incorrect Password');
+      }
+    } catch(e) {
+      showErr('Server not reachable. Start server first.');
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-shield-alt"></i>&nbsp; <span id="lbtnText">Enter Admin Panel</span>';
+  }
+}
+
+function openChangePwdModal() {
+  document.getElementById('cp-old').value = '';
+  document.getElementById('cp-new').value = '';
+  document.getElementById('cp-conf').value = '';
+  document.getElementById('cpm').classList.add('open');
+}
+
+async function saveNewPassword() {
+  const oldP = document.getElementById('cp-old').value.trim();
+  const newP = document.getElementById('cp-new').value.trim();
+  const confP = document.getElementById('cp-conf').value.trim();
+  if (!newP || newP.length < 4) { toast('New password must be at least 4 characters', 'err'); return; }
+  if (newP !== confP) { toast('Passwords do not match', 'err'); return; }
+  try {
+    const r = await ap('/api/admin/change-password', { telegramId: AID, oldPassword: oldP, newPassword: newP });
+    if (r.success) {
+      cls('cpm');
+      toast('✅ Password updated successfully!', 'ok');
+    } else {
+      toast(r.error || 'Failed to update password', 'err');
+    }
+  } catch(e) {
+    toast('Error updating password', 'err');
+  }
+}
+
+window.addEventListener('load', () => {
+  const u = tg?.initDataUnsafe?.user;
+  const uid = String(u?.id || localStorage.getItem('turbo_uid') || '');
+  if (uid === AID) {
+    document.getElementById('ati').value = AID;
+    checkPasswordStatus(AID);
+  } else {
+    const curVal = document.getElementById('ati').value.trim();
+    if (curVal === AID) checkPasswordStatus(AID);
+  }
+  setInterval(() => {
+    const el = document.getElementById('clk');
+    if (el) el.textContent = new Date().toLocaleTimeString('en-IN', { hour12: true });
+  }, 1000);
 });
 
-async function ap(url,body){
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,adminId:AT||body?.telegramId})});
+async function ap(url, body) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, adminId: AT || body?.telegramId || AID })
+  });
   return r.json();
 }
-async function doLogin(){
-  const tid=document.getElementById('ati').value.trim();
-  const btn=document.getElementById('lbtn');
-  document.getElementById('lerr').style.display='none';
-  if(!tid){showErr('Please enter your Telegram ID');return;}
-  if(tid!==AID){showErr('❌ Access Denied! Admin only.');return;}
-  btn.disabled=true;btn.innerHTML='<div class="spin" style="border-top-color:#fff;width:16px;height:16px"></div>&nbsp; Verifying...';
-  try{
-    const r=await ap('/api/admin/auth',{telegramId:tid});
-    if(r.success){AT=tid;document.getElementById('ls').style.display='none';document.getElementById('app').style.display='block';toast('✅ Welcome, Admin!','ok');loadDash();}
-    else showErr(r.error||'Access Denied');
-  }catch(e){showErr('Server not reachable. Start the server first.');}
-  btn.disabled=false;btn.innerHTML='<i class="fas fa-shield-alt"></i>&nbsp; Verify & Enter Panel';
+
+function showErr(m) {
+  const d = document.getElementById('lerr');
+  d.style.display = 'block';
+  d.textContent = m;
 }
-function showErr(m){const d=document.getElementById('lerr');d.style.display='block';d.textContent=m;}
-function doLogout(){AT=null;document.getElementById('app').style.display='none';document.getElementById('ls').style.display='flex';document.getElementById('ati').value='';toast('Logged out','inf');}
+
+function doLogout() {
+  AT = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('ls').style.display = 'flex';
+  document.getElementById('apwd').value = '';
+  toast('Logged out from Admin Panel', 'inf');
+}
 const PGTI={dashboard:'Dashboard <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Overview</span>',users:'Users <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Management</span>',withdrawals:'Withdrawals <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Management</span>',deposits:'Deposits <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">History</span>',gameConf:'Game Settings <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Configuration</span>',botConf:'Bot Config <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Settings</span>',walletConf:'Wallet Config <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Settings</span>',broadcast:'Broadcast <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Messaging</span>',credit:'Credit User <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Tool</span>',leaderboard:'Leaderboard <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Top Players</span>'};
 function go(pid,el){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));

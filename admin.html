@@ -653,8 +653,7 @@ async function loadUsers(pg){
   try{
     const d=await ap('/api/admin/users',{page:pg,limit:20,search:srch});
     document.getElementById('utot').textContent=(d.total||0)+' total users';
-    if(!d.users?.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:28px">No users found</td></tr>';return;}
-    tb.innerHTML=d.users.map(u=>'<tr><td><div class="uc"><div class="ua">'+(u.username||'?')[0].toUpperCase()+'</div><div><div class="un">'+E(u.username||'Gamer')+'</div><div class="uid">ID: '+u.telegramId+'</div></div></div></td><td style="color:var(--ok);font-weight:700">$'+(+u.wallet||0).toFixed(2)+'</td><td style="color:#a5b4fc;font-weight:700">$'+(+u.profitWallet||0).toFixed(2)+'</td><td style="color:#f59e0b;font-weight:700">$'+(+u.refWallet||0).toFixed(2)+'</td><td>'+(u.friendsCount||0)+'</td><td>'+(u.banned?'<span class="badge br">Banned</span>':'<span class="badge bg">Active</span>')+'</td><td><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn bsm bpr" onclick="openEU(''+u.telegramId+'')"><i class="fas fa-edit"></i></button><button class="btn bsm '+(u.banned?'bok':'bwn')+'" onclick="ban(''+u.telegramId+'','+(!u.banned)+')"><i class="fas fa-'+(u.banned?'unlock':'ban')+'"></i></button><button class="btn bsm ber" onclick="del(''+u.telegramId+'',''+E(u.username)+'')"><i class="fas fa-trash"></i></button></div></td></tr>').join('');
+    tb.innerHTML=d.users.map(u=>`<tr><td><div class="uc"><div class="ua">${(u.username||'?')[0].toUpperCase()}</div><div><div class="un">${E(u.username||'Gamer')}</div><div class="uid">ID: ${u.telegramId}</div></div></div></td><td style="color:var(--ok);font-weight:700">$${(+u.wallet||0).toFixed(2)}</td><td style="color:#a5b4fc;font-weight:700">$${(+u.profitWallet||0).toFixed(2)}</td><td style="color:#f59e0b;font-weight:700">$${(+u.refWallet||0).toFixed(2)}</td><td>${u.friendsCount||0}</td><td>${u.banned?'<span class="badge br">Banned</span>':'<span class="badge bg">Active</span>'}</td><td><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn bsm bpr" onclick="openEU('${u.telegramId}')"><i class="fas fa-edit"></i></button><button class="btn bsm ${u.banned?'bok':'bwn'}" onclick="ban('${u.telegramId}',${!u.banned})"><i class="fas fa-${u.banned?'unlock':'ban'}"></i></button><button class="btn bsm ber" onclick="del('${u.telegramId}','${E(u.username)}')"><i class="fas fa-trash"></i></button></div></td></tr>`).join('');
     renderPgn('upgn',pg,Math.ceil((d.total||0)/20),loadUsers);
   }catch(e){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--err);padding:28px">Error: '+e.message+'</td></tr>';}
 }
@@ -679,9 +678,7 @@ async function ban(tid,doBan){
   try{const r=await ap('/api/admin/user/ban',{targetTelegramId:tid,ban:doBan});toast(r.message||'Done',doBan?'wrn':'ok');loadUsers(uPage);}catch(e){toast('Error','err');}
 }
 async function del(tid,uname){
-  if(!confirm('DELETE user "'+uname+'" (ID: '+tid+')?
-
-This is IRREVERSIBLE!'))return;
+  if(!confirm(`DELETE user "${uname}" (ID: ${tid})?\n\nThis is IRREVERSIBLE!`))return;
   try{await ap('/api/admin/user/delete',{targetTelegramId:tid});toast('User deleted!','ok');loadUsers(uPage);}catch(e){toast('Error','err');}
 }
 async function loadWD(){
@@ -691,7 +688,14 @@ async function loadWD(){
   try{
     const d=await ap('/api/admin/withdrawals',{status:st||null});
     if(!d.withdrawals?.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:28px">No withdrawals</td></tr>';return;}
-    tb.innerHTML=d.withdrawals.map(w=>{const sc=w.status==='completed'?'bg':w.status==='pending'?'by':'br';return'<tr><td><div class="uid">'+w.telegram_id+'</div></td><td style="font-weight:700;color:var(--t1)">$'+(+w.amount||0).toFixed(2)+'</td><td style="color:var(--ok)">$'+(+w.net_amount||0).toFixed(2)+'</td><td><span style="font-size:11px;font-family:monospace;color:var(--t3)">'+(w.bsc_address||'').slice(0,10)+'...'+(w.bsc_address||'').slice(-6)+'</span></td><td><span class="badge bb">'+(w.wallet_type||'main')+'</span></td><td><span class="badge '+sc+'">'+w.status+'</span></td><td style="font-size:11px;color:var(--t3)">'+fd(w.created_at)+'</td><td>'+(w.status==='pending'?'<div style="display:flex;gap:5px"><button class="btn bsm bok" onclick="pWD(''+w.id+'','completed')"><i class="fas fa-check"></i></button><button class="btn bsm ber" onclick="pWD(''+w.id+'','rejected')"><i class="fas fa-times"></i></button></div>':'<span style="font-size:12px;color:var(--t3)">'+w.status+'</span>')+'</td></tr>';}).join('');
+    tb.innerHTML=d.withdrawals.map(w=>{
+      const sc=w.status==='completed'?'bg':w.status==='pending'?'by':'br';
+      const addr=w.bsc_address?(w.bsc_address.slice(0,10)+'...'+w.bsc_address.slice(-6)):'';
+      const actions=w.status==='pending'
+        ? `<div style="display:flex;gap:5px"><button class="btn bsm bok" onclick="pWD('${w.id}','completed')"><i class="fas fa-check"></i></button><button class="btn bsm ber" onclick="pWD('${w.id}','rejected')"><i class="fas fa-times"></i></button></div>`
+        : `<span style="font-size:12px;color:var(--t3)">${w.status}</span>`;
+      return `<tr><td><div class="uid">${w.telegram_id}</div></td><td style="font-weight:700;color:var(--t1)">$${(+w.amount||0).toFixed(2)}</td><td style="color:var(--ok)">$${(+w.net_amount||0).toFixed(2)}</td><td><span style="font-size:11px;font-family:monospace;color:var(--t3)">${addr}</span></td><td><span class="badge bb">${w.wallet_type||'main'}</span></td><td><span class="badge ${sc}">${w.status}</span></td><td style="font-size:11px;color:var(--t3)">${fd(w.created_at)}</td><td>${actions}</td></tr>`;
+    }).join('');
   }catch(e){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--err);padding:28px">Error</td></tr>';}
 }
 async function pWD(id,st){
@@ -712,9 +716,13 @@ const BCI=[{k:'botName',l:'Bot Name',d:'Display name of the game',ic:'🤖',bg:'
 const WCI=[{k:'withdrawalFee',l:'Withdrawal Fee (%)',d:'Fee deducted on withdrawal',ic:'💸',bg:'rgba(239,68,68,0.15)',t:'num'},{k:'maxDailyWithdrawal',l:'Max Daily Withdrawal ($)',d:'Max per user per day',ic:'📊',bg:'rgba(99,102,241,0.15)',t:'num'},{k:'minDepositAmount',l:'Min Deposit ($)',d:'Minimum accepted deposit',ic:'💳',bg:'rgba(16,185,129,0.15)',t:'num'},{k:'depositNetwork',l:'Deposit Network',d:'Accepted crypto network',ic:'🔗',bg:'rgba(6,182,212,0.15)',t:'txt'},{k:'autoApproveWithdrawals',l:'Auto-Approve Withdrawals',d:'Automatically process withdrawals',ic:'✅',bg:'rgba(16,185,129,0.15)',t:'tog'}];
 function cfgCard(it,val){
   let inp='';
-  if(it.t==='tog'){const chk=val===true||val==='true';inp='<div class="ftg" style="margin-top:10px"><label class="tgl"><input type="checkbox" id="c-'+it.k+'" '+(chk?'checked':'')+' onchange="saveCfg(''+it.k+'',this.checked)"><span class="tgs"></span></label><span style="font-size:13px;color:'+(chk?'var(--ok)':'var(--t3)')+'" id="cl-'+it.k+'">'+(chk?'Enabled':'Disabled')+'</span></div>';}
-  else inp='<div class="cer"><input type="'+(it.t==='num'?'number':'text')+'" id="c-'+it.k+'" value="'+E(String(val??''))+'" step="'+(it.t==='num'?'0.01':'')+'" placeholder="Enter value"><button class="csb" onclick="saveCfg(''+it.k+'',document.getElementById('c-'+it.k+'').value)"><i class="fas fa-check"></i> Save</button></div>';
-  return '<div class="ci"><div class="cih"><div class="cic" style="background:'+it.bg+'">'+it.ic+'</div><div><div class="cil">'+it.l+'</div><div class="cid2">'+it.d+'</div></div></div>'+inp+'</div>';
+  if(it.t==='tog'){
+    const chk=val===true||val==='true';
+    inp=`<div class="ftg" style="margin-top:10px"><label class="tgl"><input type="checkbox" id="c-${it.k}" ${chk?'checked':''} onchange="saveCfg('${it.k}',this.checked)"><span class="tgs"></span></label><span style="font-size:13px;color:${chk?'var(--ok)':'var(--t3)'}" id="cl-${it.k}">${chk?'Enabled':'Disabled'}</span></div>`;
+  } else {
+    inp=`<div class="cer"><input type="${it.t==='num'?'number':'text'}" id="c-${it.k}" value="${E(String(val??''))}" step="${it.t==='num'?'0.01':''}" placeholder="Enter value"><button class="csb" onclick="saveCfg('${it.k}',document.getElementById('c-${it.k}').value)"><i class="fas fa-check"></i> Save</button></div>`;
+  }
+  return `<div class="ci"><div class="cih"><div class="cic" style="background:${it.bg}">${it.ic}</div><div><div class="cil">${it.l}</div><div class="cid2">${it.d}</div></div></div>${inp}</div>`;
 }
 async function loadGC(){await loadCfgPage(GCI,'gcg');const mn=document.getElementById('mnb');if(mn)mn.style.display=cfg.maintenanceMode?'flex':'none';}
 async function loadBC2(){await loadCfgPage(BCI,'bcg');}
@@ -738,9 +746,7 @@ function selBT(el){document.querySelectorAll('.btb').forEach(b=>b.classList.remo
 async function sendBC(){
   const msg=V('bmsg'),tit=V('btit');
   if(!msg){toast('Enter a message','wrn');return;}
-  if(!confirm('Send to ALL users?
-Title: '+(tit||'(none)')+'
-Message: '+msg.slice(0,100)))return;
+  if(!confirm(`Send to ALL users?\nTitle: ${tit||'(none)'}\nMessage: ${msg.slice(0,100)}`))return;
   try{const r=await ap('/api/admin/broadcast',{message:msg,title:tit,type:sbtype});if(r.success){toast('✅ Broadcast sent!','ok');document.getElementById('bmsg').value='';document.getElementById('btit').value='';loadBH();}else toast('Error: '+r.error,'err');}catch(e){toast('Error: '+e.message,'err');}
 }
 function clrBC(){document.getElementById('bmsg').value='';document.getElementById('btit').value='';}
@@ -748,7 +754,7 @@ async function loadBH(){
   const div=document.getElementById('bchist');
   try{
     const d=await ap('/api/admin/config',{});const c=d.config||{};
-    if(c.announcementText&&c.announcementActive)div.innerHTML='<div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:#a5b4fc">📢 Active Announcement</span><button class="btn ber bsm" onclick="saveCfg('announcementActive',false).then(loadBH)">Deactivate</button></div><p style="font-size:13px;color:var(--t2)">'+E(c.announcementText)+'</p></div>';
+    if(c.announcementText&&c.announcementActive)div.innerHTML='<div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:#a5b4fc">📢 Active Announcement</span><button class="btn ber bsm" onclick="saveCfg(\'announcementActive\',false).then(loadBH)">Deactivate</button></div><p style="font-size:13px;color:var(--t2)">'+E(c.announcementText)+'</p></div>';
     else div.innerHTML='<div style="text-align:center;color:var(--t3);padding:28px;font-size:13px"><i class="fas fa-inbox" style="font-size:28px;opacity:0.3;display:block;margin-bottom:10px"></i>No active broadcast</div>';
   }catch(e){}
 }
@@ -771,7 +777,7 @@ async function lookup(){
   try{
     const d=await ap('/api/admin/users',{page:1,limit:1,search:id});const u=d.users?.[0];
     if(!u){div.innerHTML='<p style="color:var(--err);font-size:13px">User not found</p>';return;}
-    div.innerHTML='<div style="background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div class="ua" style="width:40px;height:40px;font-size:14px">'+(u.username||'?')[0].toUpperCase()+'</div><div><div style="font-weight:700;color:var(--t1)">'+E(u.username||'Gamer')+'</div><div style="font-size:12px;color:var(--t3)">ID: '+u.telegramId+'</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px"><div><span style="color:var(--t3)">Game</span><br><strong style="color:var(--ok)">$'+(+u.wallet||0).toFixed(2)+'</strong></div><div><span style="color:var(--t3)">Profit</span><br><strong style="color:#a5b4fc">$'+(+u.profitWallet||0).toFixed(2)+'</strong></div><div><span style="color:var(--t3)">Ref</span><br><strong style="color:#f59e0b">$'+(+u.refWallet||0).toFixed(2)+'</strong></div><div><span style="color:var(--t3)">Friends</span><br><strong style="color:var(--t1)">'+(u.friendsCount||0)+'</strong></div></div><button class="btn bpr bsm" style="margin-top:12px" onclick="openEU(''+u.telegramId+'')"><i class="fas fa-edit"></i> Edit User</button></div>';
+    div.innerHTML=`<div style="background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div class="ua" style="width:40px;height:40px;font-size:14px">${(u.username||'?')[0].toUpperCase()}</div><div><div style="font-weight:700;color:var(--t1)">${E(u.username||'Gamer')}</div><div style="font-size:12px;color:var(--t3)">ID: ${u.telegramId}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px"><div><span style="color:var(--t3)">Game</span><br><strong style="color:var(--ok)">$${(+u.wallet||0).toFixed(2)}</strong></div><div><span style="color:var(--t3)">Profit</span><br><strong style="color:#a5b4fc">$${(+u.profitWallet||0).toFixed(2)}</strong></div><div><span style="color:var(--t3)">Ref</span><br><strong style="color:#f59e0b">$${(+u.refWallet||0).toFixed(2)}</strong></div><div><span style="color:var(--t3)">Friends</span><br><strong style="color:var(--t1)">${u.friendsCount||0}</strong></div></div><button class="btn bpr bsm" style="margin-top:12px" onclick="openEU('${u.telegramId}')"><i class="fas fa-edit"></i> Edit User</button></div>`;
   }catch(e){div.innerHTML='<p style="color:var(--err);font-size:13px">Error: '+e.message+'</p>';}
 }
 async function loadLB(){

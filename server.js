@@ -1689,7 +1689,7 @@ const server = http.createServer(async (req, res) => {
       if (['.png', '.jpg', '.jpeg', '.svg', '.ico', '.webp', '.woff2'].includes(ext)) {
         cacheControl = 'public, max-age=604800, stale-while-revalidate=86400';
       } else if (['.css', '.js'].includes(ext)) {
-        cacheControl = 'public, max-age=300, must-revalidate';
+        cacheControl = 'no-cache, must-revalidate';
       }
 
       res.writeHead(200, {

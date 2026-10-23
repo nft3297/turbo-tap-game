@@ -1743,7 +1743,7 @@ function updateUI() {
 }
 
 // 20. Start App
-document.addEventListener('DOMContentLoaded', () => {
+function bootApp() {
   // ✅ Show user info IMMEDIATELY from Telegram/localStorage — don't wait for API
   updateHeaderAndDisplays();
   
@@ -1758,4 +1758,10 @@ document.addEventListener('DOMContentLoaded', () => {
       onlineEl.textContent = (cur + delta).toLocaleString();
     }
   }, 4000);
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootApp);
+} else {
+  bootApp();
+}

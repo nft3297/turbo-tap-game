@@ -385,8 +385,28 @@ const server = http.createServer(async (req, res) => {
       // Fetch from Supabase
       const userRow = await getSupabaseUser(telegramId);
       if (userRow) {
+        // Fetch latest completed deposit for this user so client accurately tracks new deposit events
+        let latestDeposit = null;
+        try {
+          const { data: depData } = await supabase
+            .from('deposits')
+            .select('id, amount, created_at')
+            .eq('telegram_id', String(telegramId))
+            .eq('status', 'finished')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (depData) {
+            latestDeposit = {
+              id: String(depData.id),
+              amount: parseFloat(depData.amount || 0),
+              createdAt: depData.created_at
+            };
+          }
+        } catch (e) {}
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ exists: true, user: formatUser(userRow) }));
+        return res.end(JSON.stringify({ exists: true, user: formatUser(userRow), latestDeposit }));
       }
 
       // Fallback local DB check
@@ -396,7 +416,7 @@ const server = http.createServer(async (req, res) => {
         // Auto migrate to Supabase
         await upsertSupabaseUser(localUser);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ exists: true, user: localUser }));
+        return res.end(JSON.stringify({ exists: true, user: localUser, latestDeposit: null }));
       }
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -553,36 +573,25 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify({ error: 'telegramId is required' }));
       }
 
-      // Tier 1: Check if deposit is already marked finished in Supabase
+      // Tier 1: Check if this specific paymentId is marked finished in Supabase
       try {
         let depRecord = null;
         if (paymentId && !paymentId.startsWith('local_')) {
           const { data } = await supabase
             .from('deposits')
             .select('*')
-            .eq('payment_id', String(paymentId))
+            .or(`payment_id.eq.${paymentId},id.eq.plisio_${paymentId}`)
             .maybeSingle();
           depRecord = data;
         }
 
-        if (!depRecord || depRecord.status !== 'finished') {
-          const { data } = await supabase
-            .from('deposits')
-            .select('*')
-            .eq('telegram_id', String(telegramId))
-            .eq('status', 'finished')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (data) depRecord = data;
-        }
-
-        if (depRecord?.status === 'finished') {
+        if (depRecord && depRecord.status === 'finished') {
           const userRow = await getSupabaseUser(telegramId);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({
             status: 'completed',
             credited: true,
+            depositId: depRecord.id || ('plisio_' + paymentId),
             amount: parseFloat(depRecord.amount || 0),
             wallet: parseFloat(userRow?.wallet || 0),
             message: `Deposit of $${parseFloat(depRecord.amount || 0).toFixed(2)} USDT credited to Game Wallet!`
@@ -640,6 +649,7 @@ const server = http.createServer(async (req, res) => {
               return res.end(JSON.stringify({
                 status: 'completed',
                 credited: true,
+                depositId: 'plisio_' + paymentId,
                 amount: paidAmount,
                 wallet: updatedWallet,
                 message: `Deposit of $${paidAmount.toFixed(2)} USDT credited to Game Wallet!`
@@ -702,6 +712,7 @@ const server = http.createServer(async (req, res) => {
               return res.end(JSON.stringify({
                 status: 'completed',
                 credited: true,
+                depositId: `dep_bsc_${telegramId}_${Date.now()}`,
                 amount: diff,
                 wallet: updatedWallet,
                 message: `Deposit of $${diff.toFixed(2)} USDT verified on Binance Smart Chain!`

@@ -331,6 +331,14 @@ async function initApp() {
       STATE.totalRefEarned = parseFloat(data.user.totalRefEarned || 0);
       localStorage.setItem(`turbo_reg_${STATE.user.id}`, 'true');
 
+      // Seed latest deposit ID on initial load so past historical deposits never pop up on launch/refresh
+      if (data.latestDeposit && data.latestDeposit.id) {
+        const lastSeen = localStorage.getItem('turbo_last_seen_deposit_id');
+        if (!lastSeen) {
+          localStorage.setItem('turbo_last_seen_deposit_id', data.latestDeposit.id);
+        }
+      }
+
       // If user had no referrer yet, but opened via referral link now, link and credit bonus!
       if (!data.user.referredBy && validReferrer) {
         try {
@@ -433,24 +441,31 @@ async function initApp() {
   updateAllBalances();
   renderHistoryList();
 
-  // Live Background Deposit Monitor (pops up centered modal whenever deposit arrives)
+  // Live Background Deposit Monitor (pops up centered modal ONLY when a genuine new deposit arrives)
   setInterval(async () => {
     if (!STATE.user?.id) return;
     try {
       const res = await fetch(`/api/user?telegramId=${STATE.user.id}`);
       const data = await res.json();
       if (data.exists && data.user) {
-        const newWallet = parseFloat(data.user.wallet || 0);
-        const oldWallet = parseFloat(STATE.wallet || 0);
-        if (newWallet > oldWallet) {
-          const diff = newWallet - oldWallet;
-          STATE.wallet = newWallet;
-          STATE.profitWallet = parseFloat(data.user.profitWallet || STATE.profitWallet);
-          STATE.withdrawWallet = parseFloat(data.user.withdrawWallet || STATE.withdrawWallet);
-          STATE.refWallet = parseFloat(data.user.refWallet || STATE.refWallet);
-          updateAllBalances();
-          addTransaction(`Deposit (USDT BSC BEP-20)`, `+$${diff.toFixed(2)}`, 'text-green');
-          showDepositSuccessModal(diff);
+        STATE.wallet = parseFloat(data.user.wallet || 0);
+        STATE.profitWallet = parseFloat(data.user.profitWallet || STATE.profitWallet);
+        STATE.withdrawWallet = parseFloat(data.user.withdrawWallet || STATE.withdrawWallet);
+        STATE.refWallet = parseFloat(data.user.refWallet || STATE.refWallet);
+        updateAllBalances();
+
+        // Accurately show deposit success popup ONLY when a brand new deposit event occurs
+        if (data.latestDeposit && data.latestDeposit.id) {
+          const lastSeen = localStorage.getItem('turbo_last_seen_deposit_id');
+          if (lastSeen && lastSeen !== data.latestDeposit.id) {
+            // New deposit detected!
+            localStorage.setItem('turbo_last_seen_deposit_id', data.latestDeposit.id);
+            const depAmt = parseFloat(data.latestDeposit.amount || 0);
+            addTransaction(`Deposit (USDT BSC BEP-20)`, `+$${depAmt.toFixed(2)}`, 'text-green');
+            showDepositSuccessModal(depAmt);
+          } else if (!lastSeen) {
+            localStorage.setItem('turbo_last_seen_deposit_id', data.latestDeposit.id);
+          }
         }
       }
     } catch (e) {}
@@ -1052,16 +1067,23 @@ async function checkCurrentDepositStatus(isManual = false) {
         depositPollInterval = null;
       }
 
-      sounds.playVictory();
-      triggerHaptic('success');
-      createConfetti();
+      const depId = data.depositId || `dep_${data.amount}`;
+      const lastSeen = localStorage.getItem('turbo_last_seen_deposit_id');
 
       STATE.wallet = data.wallet;
       updateAllBalances();
-      addTransaction(`Deposit (USDT BSC BEP-20)`, `+$${parseFloat(data.amount).toFixed(2)}`, 'text-green');
 
-      closeDepositModal();
-      showDepositSuccessModal(data.amount);
+      if (lastSeen !== depId) {
+        localStorage.setItem('turbo_last_seen_deposit_id', depId);
+        sounds.playVictory();
+        triggerHaptic('success');
+        createConfetti();
+        addTransaction(`Deposit (USDT BSC BEP-20)`, `+$${parseFloat(data.amount).toFixed(2)}`, 'text-green');
+        closeDepositModal();
+        showDepositSuccessModal(data.amount);
+      } else {
+        closeDepositModal();
+      }
       return;
     }
 

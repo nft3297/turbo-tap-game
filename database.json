@@ -42,6 +42,21 @@
       "referredBy": null,
       "createdAt": "2026-10-16T12:17:46.988Z"
     },
+    "123456789": {
+      "telegramId": "123456789",
+      "username": "TestUser",
+      "firstName": "Test",
+      "email": "test@test.com",
+      "bscAddress": "0xc9b05083c51082e52c78e499d50cff5f582136f8",
+      "wallet": 0,
+      "profitWallet": 0,
+      "withdrawWallet": 0,
+      "refWallet": 0,
+      "friendsCount": 0,
+      "totalRefEarned": 0,
+      "referredBy": null,
+      "createdAt": "2026-10-23T13:44:03.3+00:00"
+    },
     "ref_a_1792300156408": {
       "telegramId": "ref_a_1792300156408",
       "username": "UserA_Leader",

@@ -89,9 +89,9 @@ if (rawStartParam) {
 }
 
 const rawUserId = tgUser?.id 
-  || parseInt(localStorage.getItem('turbo_uid') || '0') 
-  || Math.floor(100000 + Math.random() * 900000);
-localStorage.setItem('turbo_uid', rawUserId.toString());
+  ? parseInt(tgUser.id)
+  : (parseInt(localStorage.getItem('turbo_uid') || '0') || Math.floor(100000 + Math.random() * 900000));
+localStorage.setItem('turbo_uid', String(rawUserId));
 
 const userBscAddress = generateBscAddress(rawUserId);
 
@@ -689,11 +689,14 @@ async function refreshAppSync() {
     const res = await fetch(`/api/user?telegramId=${STATE.user.id}`);
     const data = await res.json();
     if (data.exists && data.user) {
-      STATE.wallet = data.user.wallet;
-      STATE.refWallet = data.user.refWallet;
-      STATE.friendsCount = data.user.friendsCount;
-      STATE.totalRefEarned = data.user.totalRefEarned;
-      updateUI();
+      STATE.wallet = parseFloat(data.user.wallet || 0);
+      STATE.profitWallet = parseFloat(data.user.profitWallet || 0);
+      STATE.withdrawWallet = parseFloat(data.user.withdrawWallet || 0);
+      STATE.refWallet = parseFloat(data.user.refWallet || 0);
+      STATE.friendsCount = data.user.friendsCount || 0;
+      STATE.totalRefEarned = parseFloat(data.user.totalRefEarned || 0);
+      updateAllBalances();
+      updateHeaderAndDisplays();
       showToast('✅ Turbo Data synced with Backend!');
     } else {
       showToast('✅ Turbo Engine Active!');
@@ -1732,7 +1735,14 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove('show'), 2400);
 }
 
-// 19. Start App
+// 19. updateUI alias (used in multiple places)
+function updateUI() {
+  updateAllBalances();
+  updateHeaderAndDisplays();
+  renderHistoryList();
+}
+
+// 20. Start App
 document.addEventListener('DOMContentLoaded', () => {
   // ✅ Show user info IMMEDIATELY from Telegram/localStorage — don't wait for API
   updateHeaderAndDisplays();

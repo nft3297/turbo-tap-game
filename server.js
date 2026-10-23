@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -49,6 +50,94 @@ function writeDB(data) {
   } catch (e) {
     console.error('[Local DB] Write error:', e.message);
   }
+}
+
+// ================= TELEGRAM BOT NOTIFICATION SERVICE =================
+// Active Bot Token: reads from .env (TELEGRAM_BOT_TOKEN) or database.json (gameConfig.botToken)
+function getTelegramBotToken() {
+  if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_TOKEN.trim()) {
+    return process.env.TELEGRAM_BOT_TOKEN.trim();
+  }
+  const localDB = readDB();
+  if (localDB.gameConfig?.botToken && String(localDB.gameConfig.botToken).trim()) {
+    return String(localDB.gameConfig.botToken).trim();
+  }
+  return null;
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+async function sendTelegramMessage(chatId, text) {
+  const token = getTelegramBotToken();
+  if (!token) {
+    console.log(`[Telegram Bot] Notification skipped for ${chatId} (TELEGRAM_BOT_TOKEN not configured yet).`);
+    return { ok: false, error: 'TELEGRAM_BOT_TOKEN not configured' };
+  }
+  if (!chatId) return { ok: false, error: 'Chat ID missing' };
+
+  return new Promise((resolve) => {
+    try {
+      const payload = JSON.stringify({
+        chat_id: String(chatId),
+        text: text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: false
+      });
+
+      const options = {
+        hostname: 'api.telegram.org',
+        port: 443,
+        path: `/bot${token}/sendMessage`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload)
+        },
+        timeout: 10000
+      };
+
+      const req = https.request(options, (res) => {
+        let responseData = '';
+        res.on('data', chunk => responseData += chunk);
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(responseData);
+            if (json.ok) {
+              console.log(`[Telegram Bot] Message delivered to ${chatId}`);
+              resolve({ ok: true, result: json.result });
+            } else {
+              console.warn(`[Telegram Bot] Send failed to ${chatId}:`, json.description);
+              resolve({ ok: false, error: json.description });
+            }
+          } catch (e) {
+            resolve({ ok: false, error: e.message });
+          }
+        });
+      });
+
+      req.on('error', (err) => {
+        console.warn(`[Telegram Bot] Network error for ${chatId}:`, err.message);
+        resolve({ ok: false, error: err.message });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({ ok: false, error: 'Request timeout' });
+      });
+
+      req.write(payload);
+      req.end();
+    } catch (err) {
+      console.warn(`[Telegram Bot] Exception for ${chatId}:`, err.message);
+      resolve({ ok: false, error: err.message });
+    }
+  });
 }
 
 // Convert Supabase DB snake_case row to frontend camelCase user object
@@ -536,6 +625,17 @@ const server = http.createServer(async (req, res) => {
               if (localDB.users[telegramId]) localDB.users[telegramId].wallet = updatedWallet;
               writeDB(localDB);
 
+              // Send Telegram Notification to user
+              const depMsg = `🎮 <b>Turbo Tap Game — Deposit Confirmed!</b> 💰\n\n` +
+                `Hello <b>${escapeHtml(userRow?.username || 'Player')}</b>!\n` +
+                `Your deposit of <b>$${paidAmount.toFixed(2)} USDT</b> has been verified and added to your Game Wallet! 🚀\n\n` +
+                `💳 <b>Amount:</b> $${paidAmount.toFixed(2)} USDT\n` +
+                `💰 <b>New Game Balance:</b> $${updatedWallet.toFixed(2)}\n` +
+                `⚡ <b>Status:</b> Completed\n\n` +
+                `⚔️ <i>Jump into Turbo Team Battle and multiply your coins!</i>\n` +
+                `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
+              sendTelegramMessage(telegramId, depMsg).catch(() => {});
+
               res.writeHead(200, { 'Content-Type': 'application/json' });
               return res.end(JSON.stringify({
                 status: 'completed',
@@ -587,6 +687,16 @@ const server = http.createServer(async (req, res) => {
               const localDB = readDB();
               if (localDB.users[telegramId]) localDB.users[telegramId].wallet = updatedWallet;
               writeDB(localDB);
+
+              // Send Telegram Notification to user
+              const bscDepMsg = `🎮 <b>Turbo Tap Game — On-Chain Deposit Detected!</b> ⚡\n\n` +
+                `Hello <b>${escapeHtml(userRow?.username || 'Player')}</b>!\n` +
+                `Your Binance Smart Chain (BEP-20) deposit of <b>$${diff.toFixed(2)} USDT</b> has been confirmed on-chain and credited to your Game Wallet! 💎\n\n` +
+                `💳 <b>Deposited:</b> $${diff.toFixed(2)} USDT\n` +
+                `💰 <b>New Game Balance:</b> $${updatedWallet.toFixed(2)}\n` +
+                `⛓️ <b>Network:</b> BSC (BEP-20)\n\n` +
+                `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
+              sendTelegramMessage(telegramId, bscDepMsg).catch(() => {});
 
               res.writeHead(200, { 'Content-Type': 'application/json' });
               return res.end(JSON.stringify({
@@ -706,6 +816,16 @@ const server = http.createServer(async (req, res) => {
             writeDB(localDB);
 
             console.log(`[Plisio Callback] Auto-credited $${actuallyPaid} USDT to Game Wallet of user ${targetTelegramId} in Supabase!`);
+
+            // Send Telegram Notification to user
+            const ipnDepMsg = `🎮 <b>Turbo Tap Game — Deposit Successful!</b> 💳\n\n` +
+              `Hello <b>${escapeHtml(userRow?.username || 'Player')}</b>!\n` +
+              `Your payment of <b>$${actuallyPaid.toFixed(2)} USDT</b> has been processed and credited to your Game Wallet! 🎉\n\n` +
+              `💵 <b>Amount Credited:</b> $${actuallyPaid.toFixed(2)} USDT\n` +
+              `💰 <b>New Game Balance:</b> $${newBal.toFixed(2)}\n` +
+              `⚡ <b>Status:</b> Finished\n\n` +
+              `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
+            sendTelegramMessage(targetTelegramId, ipnDepMsg).catch(() => {});
           }
         }
 
@@ -1003,6 +1123,18 @@ const server = http.createServer(async (req, res) => {
 
         console.log(`[Supabase] Withdrawal requested: $${amt} by user ${telegramId}`);
 
+        // Send Telegram Notification to user
+        const wdReqMsg = `🎮 <b>Turbo Tap Game — Withdrawal Request Placed</b> ⏳\n\n` +
+          `Hello <b>${escapeHtml(userRow?.username || 'Player')}</b>,\n` +
+          `Your withdrawal request has been received and is queued for verification.\n\n` +
+          `💵 <b>Requested Amount:</b> $${amt.toFixed(2)}\n` +
+          `💸 <b>Fee (3%):</b> $${fee.toFixed(2)}\n` +
+          `✅ <b>Net to Receive:</b> $${netAmount.toFixed(2)} USDT\n` +
+          `📍 <b>BSC Address:</b> <code>${cleanAddress}</code>\n` +
+          `⏳ <b>Status:</b> Pending Admin Approval\n\n` +
+          `<i>You will receive another message as soon as the payout is approved!</i>`;
+        sendTelegramMessage(telegramId, wdReqMsg).catch(() => {});
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ success: true, withdrawal: withdrawRecord, user: formatUser(updatedUser || userRow) }));
       }
@@ -1282,6 +1414,32 @@ const server = http.createServer(async (req, res) => {
             }
           }
 
+          // Send Telegram Notification to user
+          if (updated && updated.telegram_id) {
+            const userRow = await getSupabaseUser(updated.telegram_id);
+            const userName = escapeHtml(userRow?.username || 'Player');
+            if (status === 'completed') {
+              const txInfo = txHash ? `\n🔗 <b>Transaction Hash:</b> <code>${txHash}</code>` : '';
+              const compMsg = `🎮 <b>Turbo Tap Game — Withdrawal Approved & Sent!</b> ✅\n\n` +
+                `Hello <b>${userName}</b>!\n` +
+                `Your withdrawal of <b>$${parseFloat(updated.amount || 0).toFixed(2)} USDT</b> has been approved and successfully transferred! 🚀\n\n` +
+                `💵 <b>Net Amount:</b> $${parseFloat(updated.net_amount || updated.amount || 0).toFixed(2)} USDT\n` +
+                `📍 <b>BSC Address:</b> <code>${updated.bsc_address || ''}</code>${txInfo}\n` +
+                `✅ <b>Status:</b> Completed\n\n` +
+                `<i>Thank you for playing Turbo Tap Game! Keep tapping and winning! ⚔️</i>\n` +
+                `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
+              sendTelegramMessage(updated.telegram_id, compMsg).catch(() => {});
+            } else if (status === 'rejected') {
+              const rejMsg = `🎮 <b>Turbo Tap Game — Withdrawal Request Update</b> ⚠️\n\n` +
+                `Hello <b>${userName}</b>,\n` +
+                `Your withdrawal request of <b>$${parseFloat(updated.amount || 0).toFixed(2)} USDT</b> was rejected by Admin.\n\n` +
+                `💰 <b>Refund:</b> The full amount of $${parseFloat(updated.amount || 0).toFixed(2)} has been refunded back to your wallet.\n` +
+                `⚠️ <b>Notice:</b> Please ensure your BSC address is valid and contact support if you need assistance.\n\n` +
+                `🆘 <b>Support:</b> @TurboSupport`;
+              sendTelegramMessage(updated.telegram_id, rejMsg).catch(() => {});
+            }
+          }
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, withdrawal: updated, message: `Withdrawal ${status}!` }));
         } catch (e) {
@@ -1319,6 +1477,16 @@ const server = http.createServer(async (req, res) => {
           const localDB = readDB();
           if (localDB.users[targetTelegramId]) localDB.users[targetTelegramId].wallet = newWallet;
           writeDB(localDB);
+
+          // Send Telegram Notification to user
+          const adminDepMsg = `🎮 <b>Turbo Tap Game — Funds Credited!</b> 🎁\n\n` +
+            `Hello <b>${escapeHtml(userRow?.username || 'Player')}</b>!\n` +
+            `An amount of <b>$${amt.toFixed(2)}</b> has been credited to your Game Wallet by Admin! 🌟\n\n` +
+            `💵 <b>Credited Amount:</b> $${amt.toFixed(2)}\n` +
+            `💰 <b>New Game Balance:</b> $${newWallet.toFixed(2)}\n\n` +
+            `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
+          sendTelegramMessage(targetTelegramId, adminDepMsg).catch(() => {});
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, user: formatUser(updated), message: `$${amt} credited to user ${targetTelegramId}` }));
         } catch (e) {
@@ -1369,6 +1537,9 @@ const server = http.createServer(async (req, res) => {
           localDB.gameConfig[configKey] = configValue;
           localDB.gameConfig.lastUpdated = new Date().toISOString();
           localDB.gameConfig.updatedBy = ADMIN_TELEGRAM_ID;
+          if (configKey === 'botToken') {
+            process.env.TELEGRAM_BOT_TOKEN = String(configValue || '').trim();
+          }
           writeDB(localDB);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, config: localDB.gameConfig, message: `Config '${configKey}' updated!` }));
@@ -1378,7 +1549,7 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
-      // Admin Broadcast Message (stored for frontend to pick up): POST /api/admin/broadcast
+      // Admin Broadcast Message (stored for frontend + direct Telegram broadcast to all registered users): POST /api/admin/broadcast
       if (req.method === 'POST' && reqPath === '/api/admin/broadcast') {
         if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
         const { message, title, type } = data;
@@ -1393,8 +1564,44 @@ const server = http.createServer(async (req, res) => {
           localDB.gameConfig.announcementText = message;
           localDB.gameConfig.announcementActive = true;
           writeDB(localDB);
+
+          // Get all registered users from Supabase and Local DB
+          const { data: dbUsers } = await supabase.from('users').select('telegram_id, username, first_name');
+          const localUsers = Object.values(localDB.users || {});
+          const userMap = new Map();
+          (dbUsers || []).forEach(u => { if (u.telegram_id) userMap.set(String(u.telegram_id), u); });
+          localUsers.forEach(u => { if (u.telegramId && !userMap.has(String(u.telegramId))) userMap.set(String(u.telegramId), u); });
+          const recipients = Array.from(userMap.values());
+
+          const typeIcons = { info: 'ℹ️', success: '✅', warning: '⚠️', alert: '🚨', error: '🚨' };
+          const icon = typeIcons[type] || '📢';
+          const titleLine = title ? `\n\n📌 <b>${escapeHtml(title)}</b>` : '';
+          const broadcastText = `🎮 <b>Turbo Tap Game — Announcement</b> ${icon}${titleLine}\n\n${escapeHtml(message)}\n\n━━━━━━━━━━━━━━━━━\n🕹️ <b>Play & Battle Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>\n💬 <b>Join Community:</b> <a href="https://t.me/turbotapgame_2nd">Turbo Tap Community</a>`;
+
+          // Asynchronously dispatch direct Telegram messages to all registered users
+          let sentTotal = 0;
+          let failTotal = 0;
+          (async () => {
+            console.log(`[Broadcast] Starting Telegram broadcast to ${recipients.length} registered users...`);
+            for (const r of recipients) {
+              const tid = r.telegram_id || r.telegramId;
+              if (tid) {
+                const res = await sendTelegramMessage(tid, broadcastText);
+                if (res.ok) sentTotal++;
+                else failTotal++;
+                await new Promise(resolve => setTimeout(resolve, 35)); // 28 msgs/sec safely below Telegram 30/s limit
+              }
+            }
+            console.log(`[Broadcast] Telegram broadcast finished. Sent: ${sentTotal}, Failed: ${failTotal}, Total: ${recipients.length}`);
+          })();
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ success: true, broadcast, message: 'Broadcast sent to all users!' }));
+          return res.end(JSON.stringify({ 
+            success: true, 
+            broadcast, 
+            totalRecipients: recipients.length, 
+            message: `Broadcast message sent to ${recipients.length} registered users on Telegram!` 
+          }));
         } catch (e) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: e.message }));

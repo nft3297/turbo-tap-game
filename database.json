@@ -432,13 +432,26 @@
     "welcomeMessage": "Welcome to Turbo Team Battle! 🚀",
     "botName": "Turbo Team Battle",
     "supportUsername": "@TurboSupport",
-    "announcementText": "",
-    "announcementActive": false,
+    "announcementText": "Join the Turbo Team Battle and win huge rewards!",
+    "announcementActive": true,
     "minDepositAmount": 1,
     "depositNetwork": "BSC (BEP-20)",
     "autoApproveWithdrawals": false,
     "maxDailyWithdrawal": 1000,
     "playerMatchTimeout": 30,
-    "boostCooldown": 10
-  }
+    "boostCooldown": 10,
+    "botToken": "",
+    "lastUpdated": "2026-10-23T16:54:27.531Z",
+    "updatedBy": "8291758870"
+  },
+  "broadcasts": [
+    {
+      "id": "bc_1792774428641",
+      "title": "Mega Tournament Live",
+      "message": "Join the Turbo Team Battle and win huge rewards!",
+      "type": "success",
+      "createdAt": "2026-10-23T16:53:48.642Z",
+      "active": true
+    }
+  ]
 }

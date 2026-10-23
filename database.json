@@ -419,5 +419,26 @@
       "created_at": "2026-10-18T17:44:57.636Z"
     }
   ],
-  "creditedDeposits": {}
+  "creditedDeposits": {},
+  "gameConfig": {
+    "referralBonus": 25,
+    "minWithdrawal": 20,
+    "withdrawalFee": 3,
+    "battleEntryFee": 10,
+    "battleWinMultiplier": 1.8,
+    "maxBattleBoost": 100,
+    "battleDuration": 15,
+    "maintenanceMode": false,
+    "welcomeMessage": "Welcome to Turbo Team Battle! 🚀",
+    "botName": "Turbo Team Battle",
+    "supportUsername": "@TurboSupport",
+    "announcementText": "",
+    "announcementActive": false,
+    "minDepositAmount": 1,
+    "depositNetwork": "BSC (BEP-20)",
+    "autoApproveWithdrawals": false,
+    "maxDailyWithdrawal": 1000,
+    "playerMatchTimeout": 30,
+    "boostCooldown": 10
+  }
 }

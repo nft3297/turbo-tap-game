@@ -227,6 +227,7 @@
     <div class="ni" data-p="withdrawals" onclick="go('withdrawals',this)"><div class="nic"><i class="fas fa-arrow-up-from-bracket"></i></div>Withdrawals<span class="nbadge" id="pb2" style="display:none">0</span></div>
     <div class="ni" data-p="deposits" onclick="go('deposits',this)"><div class="nic"><i class="fas fa-arrow-down-to-bracket"></i></div>Deposits</div>
     <div class="stn">Configuration</div>
+    <div class="ni" data-p="arenaCards" onclick="go('arenaCards',this)"><div class="nic"><i class="fas fa-layer-group"></i></div>Battle Cards (4 Rooms)</div>
     <div class="ni" data-p="gameConf" onclick="go('gameConf',this)"><div class="nic"><i class="fas fa-gamepad"></i></div>Game Settings</div>
     <div class="ni" data-p="botConf" onclick="go('botConf',this)"><div class="nic"><i class="fas fa-robot"></i></div>Bot Config</div>
     <div class="ni" data-p="walletConf" onclick="go('walletConf',this)"><div class="nic"><i class="fas fa-wallet"></i></div>Wallet Config</div>
@@ -262,6 +263,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px" class="dg">
         <div class="cd"><div class="cdh"><div class="cdt"><div class="cdi"><i class="fas fa-user-plus"></i></div>Recent Signups</div></div><div class="tw"><table><thead><tr><th>User</th><th>Wallet</th><th>Joined</th></tr></thead><tbody id="rut"><tr class="lr"><td colspan="3"><div class="spin"></div></td></tr></tbody></table></div></div>
         <div class="cd"><div class="cdh"><div class="cdt"><div class="cdi"><i class="fas fa-bolt"></i></div>Quick Actions</div></div><div class="cdb"><div style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn bpr" style="justify-content:center;background:linear-gradient(135deg,#06b6d4,#6366f1)" onclick="go('arenaCards',document.querySelector('[data-p=arenaCards]'))"><i class="fas fa-layer-group"></i> Manage 4 Battle Cards (Prizes & Fees)</button>
           <button class="btn bpr" style="justify-content:center" onclick="go('users',document.querySelector('[data-p=users]'))"><i class="fas fa-users"></i> Manage Users</button>
           <button class="btn bwn" style="justify-content:center" onclick="go('withdrawals',document.querySelector('[data-p=withdrawals]'))"><i class="fas fa-clock"></i> Review Pending Withdrawals</button>
           <button class="btn bok" style="justify-content:center" onclick="go('credit',document.querySelector('[data-p=credit]'))"><i class="fas fa-plus"></i> Credit User Wallet</button>
@@ -292,6 +294,27 @@
     <div class="pg" id="pg-deposits">
       <div class="cd"><div class="cdh"><div class="cdt"><div class="cdi"><i class="fas fa-arrow-down"></i></div>Deposit History</div></div>
         <div class="tw"><table><thead><tr><th>Telegram ID</th><th>Amount</th><th>Network</th><th>TX Hash</th><th>Status</th><th>Date</th></tr></thead><tbody id="dpt"><tr class="lr"><td colspan="6"><div class="spin"></div></td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ARENA BATTLE CARDS CONFIG -->
+    <div class="pg" id="pg-arenaCards">
+      <div style="background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(6,182,212,0.12));border:1px solid rgba(99,102,241,0.25);border-radius:16px;padding:18px 22px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:var(--t1);display:flex;align-items:center;gap:8px">
+            <i class="fas fa-layer-group" style="color:#06b6d4"></i> Live Arena Battle Cards (4 Cards)
+          </div>
+          <div style="font-size:12px;color:var(--t2);margin-top:4px">
+            Yahan jo bhi Entry Fee, Winner Reward, ya Title likhenge, wo sidha live game app ke cards par update ho jayega.
+          </div>
+        </div>
+        <button class="btn bpr" onclick="saveAllArenaCards()" style="padding:10px 18px;font-size:13px;font-weight:700">
+          <i class="fas fa-floppy-disk"></i> Save All 4 Cards
+        </button>
+      </div>
+
+      <div id="arenaCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px">
+        <div style="grid-column:1/-1;text-align:center;padding:40px"><div class="spin"></div></div>
       </div>
     </div>
 
@@ -616,7 +639,7 @@ function doLogout() {
   document.getElementById('apwd').value = '';
   toast('Logged out from Admin Panel', 'inf');
 }
-const PGTI={dashboard:'Dashboard <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Overview</span>',users:'Users <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Management</span>',withdrawals:'Withdrawals <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Management</span>',deposits:'Deposits <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">History</span>',gameConf:'Game Settings <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Configuration</span>',botConf:'Bot Config <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Settings</span>',walletConf:'Wallet Config <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Settings</span>',broadcast:'Broadcast <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Messaging</span>',credit:'Credit User <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Tool</span>',leaderboard:'Leaderboard <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Top Players</span>'};
+const PGTI={dashboard:'Dashboard <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Overview</span>',arenaCards:'Battle Arena Cards <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Manage 4 Room Cards</span>',users:'Users <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Management</span>',withdrawals:'Withdrawals <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Management</span>',deposits:'Deposits <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">History</span>',gameConf:'Game Settings <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Configuration</span>',botConf:'Bot Config <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Settings</span>',walletConf:'Wallet Config <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Settings</span>',broadcast:'Broadcast <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Messaging</span>',credit:'Credit User <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Tool</span>',leaderboard:'Leaderboard <span style="color:var(--t2);font-weight:400;font-size:13px;margin-left:10px">Top Players</span>'};
 function go(pid,el){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.getElementById('pg-'+pid)?.classList.add('active');
@@ -624,7 +647,7 @@ function go(pid,el){
   if(el)el.classList.add('active');
   document.getElementById('pgtit').innerHTML=PGTI[pid]||pid;
   curPg=pid;closeSB();
-  const L={dashboard:loadDash,users:()=>loadUsers(1),withdrawals:loadWD,deposits:loadDeps,gameConf:loadGC,botConf:loadBC2,walletConf:loadWC,leaderboard:loadLB,broadcast:loadBH};
+  const L={dashboard:loadDash,arenaCards:loadArenaCards,users:()=>loadUsers(1),withdrawals:loadWD,deposits:loadDeps,gameConf:loadGC,botConf:loadBC2,walletConf:loadWC,leaderboard:loadLB,broadcast:loadBH};
   if(L[pid])L[pid]();
 }
 function refresh(){go(curPg,document.querySelector('[data-p="'+curPg+'"]'));}
@@ -791,6 +814,120 @@ async function loadLB(){
     if(!d.leaderboard?.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:28px">No data yet</td></tr>';return;}
     tb.innerHTML=d.leaderboard.map((u,i)=>{const rk=i+1,rc=rk===1?'r1':rk===2?'r2':rk===3?'r3':'rx',rt=rk===1?'🥇':rk===2?'🥈':rk===3?'🥉':rk;return'<tr><td><div class="rk '+rc+'" style="margin:0">'+rt+'</div></td><td><div class="uc"><div class="ua">'+(u.username||'?')[0].toUpperCase()+'</div><div><div class="un">'+E(u.username||'Gamer')+'</div><div class="uid">ID: '+u.telegramId+'</div></div></div></td><td style="color:#a5b4fc;font-weight:800;font-size:15px">$'+(+u.profitWallet||0).toFixed(2)+'</td><td style="color:var(--ok);font-weight:700">$'+(+u.wallet||0).toFixed(2)+'</td><td style="color:#f59e0b;font-weight:700">$'+(+u.refWallet||0).toFixed(2)+'</td><td>'+(u.friendsCount||0)+'</td><td>$'+(+u.totalRefEarned||0).toFixed(2)+'</td></tr>';}).join('');
   }catch(e){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--err);padding:28px">Error</td></tr>';}
+}
+let arenaRoomsData = [];
+async function loadArenaCards(){
+  const container=document.getElementById('arenaCardsGrid');
+  container.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px"><div class="spin"></div></div>';
+  try{
+    const res=await fetch('/api/rooms?t='+Date.now());
+    const data=await res.json();
+    arenaRoomsData=data.rooms||[];
+    renderArenaCardsAdmin();
+  }catch(e){
+    container.innerHTML='<div style="color:var(--err);padding:20px">Error loading cards: '+e.message+'</div>';
+  }
+}
+function renderArenaCardsAdmin(){
+  const container=document.getElementById('arenaCardsGrid');
+  const themeMap={
+    trio:{color:'#06b6d4',bg:'rgba(6,182,212,0.12)',border:'rgba(6,182,212,0.3)',icon:'fa-user-ninja'},
+    squad:{color:'#8b5cf6',bg:'rgba(139,92,246,0.12)',border:'rgba(139,92,246,0.3)',icon:'fa-skull-crossbones'},
+    elite:{color:'#f59e0b',bg:'rgba(245,158,11,0.12)',border:'rgba(245,158,11,0.3)',icon:'fa-shield-virus'},
+    royale:{color:'#ffd700',bg:'rgba(255,215,0,0.12)',border:'rgba(255,215,0,0.3)',icon:'fa-dragon'}
+  };
+  container.innerHTML=arenaRoomsData.map((r,idx)=>{
+    const th=themeMap[r.id]||themeMap.trio;
+    return `
+      <div class="cd" style="border-color:${th.border};position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${th.color}"></div>
+        <div class="cdh" style="background:${th.bg}">
+          <div class="cdt" style="color:${th.color}">
+            <div class="cdi" style="background:${th.color}22;color:${th.color}"><i class="fas ${th.icon}"></i></div>
+            <span>Card ${idx+1}: ${E(r.name)}</span>
+          </div>
+          <span class="badge" style="background:${th.color}22;color:${th.color};border:1px solid ${th.border}">${r.players} PLAYERS</span>
+        </div>
+        <div class="cdb">
+          <div class="fg">
+            <label class="fl">Card Title / Room Name</label>
+            <input class="fi" id="rc-name-${r.id}" value="${E(r.name)}" placeholder="e.g. TRIO SHOWDOWN">
+          </div>
+          <div class="fg">
+            <label class="fl">Description / Subtitle</label>
+            <input class="fi" id="rc-desc-${r.id}" value="${E(r.desc)}" placeholder="e.g. 3 Players Solo Knockout">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="fg">
+              <label class="fl">Players Count</label>
+              <input type="number" class="fi" id="rc-players-${r.id}" value="${r.players}" min="2" max="50">
+            </div>
+            <div class="fg">
+              <label class="fl">Badge / Ribbon Tag</label>
+              <input class="fi" id="rc-badge-${r.id}" value="${E(r.badge)}" placeholder="e.g. FASTEST MATCH">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:rgba(255,255,255,0.02);padding:10px;border-radius:10px;border:1px solid var(--bdr);margin-bottom:12px">
+            <div class="fg" style="margin-bottom:0">
+              <label class="fl" style="color:#06b6d4"><i class="fas fa-ticket"></i> Entry Fee ($)</label>
+              <input type="number" step="0.01" class="fi" id="rc-fee-${r.id}" value="${(+r.entryFee).toFixed(2)}" style="font-weight:700;color:#06b6d4;font-size:15px">
+            </div>
+            <div class="fg" style="margin-bottom:0">
+              <label class="fl" style="color:#10b981"><i class="fas fa-trophy"></i> Winner Reward ($)</label>
+              <input type="number" step="0.01" class="fi" id="rc-prize-${r.id}" value="${(+r.prize).toFixed(2)}" style="font-weight:700;color:#10b981;font-size:15px">
+            </div>
+          </div>
+          <button class="btn bpr" style="width:100%;justify-content:center" onclick="saveSingleArenaCard('${r.id}')">
+            <i class="fas fa-check"></i> Save This Card
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+async function saveSingleArenaCard(roomId){
+  const name=document.getElementById(`rc-name-${roomId}`)?.value?.trim()||'';
+  const desc=document.getElementById(`rc-desc-${roomId}`)?.value?.trim()||'';
+  const players=parseInt(document.getElementById(`rc-players-${roomId}`)?.value)||3;
+  const badge=document.getElementById(`rc-badge-${roomId}`)?.value?.trim()||'';
+  const entryFee=parseFloat(document.getElementById(`rc-fee-${roomId}`)?.value)||0;
+  const prize=parseFloat(document.getElementById(`rc-prize-${roomId}`)?.value)||0;
+  try{
+    const res=await ap('/api/admin/rooms/update',{roomId,roomData:{name,desc,players,badge,entryFee,prize}});
+    if(res.success){
+      toast(`✅ "${name}" ($${entryFee}) updated! Live game updated!`,'ok');
+      try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:'roomsUpdated'},'*');}catch(e){}
+      loadArenaCards();
+    }else toast('Error: '+(res.error||'Failed'),'err');
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+async function saveAllArenaCards(){
+  const rooms=arenaRoomsData.map(r=>{
+    const name=document.getElementById(`rc-name-${r.id}`)?.value?.trim()||r.name;
+    const desc=document.getElementById(`rc-desc-${r.id}`)?.value?.trim()||r.desc;
+    const players=parseInt(document.getElementById(`rc-players-${r.id}`)?.value)||r.players;
+    const badge=document.getElementById(`rc-badge-${r.id}`)?.value?.trim()||r.badge;
+    const feeInp=parseFloat(document.getElementById(`rc-fee-${r.id}`)?.value);
+    const prizeInp=parseFloat(document.getElementById(`rc-prize-${r.id}`)?.value);
+    return {
+      id:r.id,
+      name,
+      desc,
+      players,
+      badge,
+      entryFee:isNaN(feeInp)?r.entryFee:feeInp,
+      prize:isNaN(prizeInp)?r.prize:prizeInp,
+      theme:r.theme
+    };
+  });
+  try{
+    const res=await ap('/api/admin/rooms/update',{rooms});
+    if(res.success){
+      toast('✅ All 4 Cards saved! Live game updated!','ok');
+      try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:'roomsUpdated'},'*');}catch(e){}
+      loadArenaCards();
+    }else toast('Error: '+(res.error||'Failed'),'err');
+  }catch(e){toast('Error: '+e.message,'err');}
 }
 function renderPgn(cid,cur,tot,cb){
   const div=document.getElementById(cid);if(!div||tot<=1){if(div)div.innerHTML='';return;}

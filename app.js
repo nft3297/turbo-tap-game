@@ -295,7 +295,10 @@ function navigateTo(screenId) {
   triggerHaptic('light');
   showScreen(screenId);
   document.querySelectorAll('.bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
-  if (screenId === 'screenLobby') document.getElementById('navArenaBtn')?.classList.add('active');
+  if (screenId === 'screenLobby') {
+    document.getElementById('navArenaBtn')?.classList.add('active');
+    if (typeof loadDynamicRooms === 'function') loadDynamicRooms();
+  }
   else if (screenId === 'screenReferral') document.getElementById('navReferralBtn')?.classList.add('active');
   else if (screenId === 'screenWallet') document.getElementById('navWalletBtn')?.classList.add('active');
 }
@@ -440,6 +443,7 @@ async function initApp() {
   updateHeaderAndDisplays();
   updateAllBalances();
   renderHistoryList();
+  if (typeof loadDynamicRooms === 'function') loadDynamicRooms();
 
   // Live Background Deposit Monitor (pops up centered modal ONLY when a genuine new deposit arrives)
   setInterval(async () => {
@@ -1318,20 +1322,108 @@ function renderHistoryList() {
   `).join('');
 }
 
+// ================= ARENA DYNAMIC ROOMS ENGINE =================
+window.__ARENA_ROOMS = [
+  { id: 'trio', name: 'TRIO SHOWDOWN', desc: '3 Players Solo Knockout', players: 3, entryFee: 2, prize: 2, badge: 'FASTEST MATCH' },
+  { id: 'squad', name: 'SQUAD DOMINATION', desc: '5-Player Rush Elimination', players: 5, entryFee: 4, prize: 4, badge: 'SQUAD BATTLE' },
+  { id: 'elite', name: 'ELITE SYNDICATE', desc: '8-Player Mega Clash', players: 8, entryFee: 7, prize: 7, badge: 'HIGH STAKES' },
+  { id: 'royale', name: 'CHAMPIONS ROYALE', desc: '12-Player Ultimate Showdown', players: 12, entryFee: 15, prize: 15, badge: 'GRAND JACKPOT' }
+];
+
+async function loadDynamicRooms() {
+  try {
+    const res = await fetch('/api/rooms?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && Array.isArray(data.rooms) && data.rooms.length > 0) {
+      window.__ARENA_ROOMS = data.rooms;
+      applyDynamicRooms(data.rooms);
+    }
+  } catch (e) {
+    console.warn('[Rooms] Could not fetch dynamic rooms:', e);
+  }
+}
+
+function applyDynamicRooms(rooms) {
+  if (!Array.isArray(rooms)) return;
+  const badgeIcons = {
+    trio: 'fa-bolt',
+    squad: 'fa-trophy',
+    elite: 'fa-crosshairs',
+    royale: 'fa-crown'
+  };
+
+  rooms.forEach((r, idx) => {
+    const key = r.id || (idx === 0 ? 'trio' : idx === 1 ? 'squad' : idx === 2 ? 'elite' : 'royale');
+    const card = document.getElementById(`roomCard-${key}`);
+    const badgeEl = document.getElementById(`roomBadge-${key}`);
+    const playersTag = document.getElementById(`roomPlayersTag-${key}`);
+    const nameEl = document.getElementById(`roomName-${key}`);
+    const descEl = document.getElementById(`roomDesc-${key}`);
+    const prizeEl = document.getElementById(`roomPrizeValue-${key}`);
+    const joinBtn = document.getElementById(`roomJoinBtn-${key}`);
+    const joinText = document.getElementById(`roomJoinText-${key}`);
+
+    const feeNum = parseFloat(r.entryFee) >= 0 ? parseFloat(r.entryFee) : 2;
+    const prizeNum = parseFloat(r.prize) >= 0 ? parseFloat(r.prize) : feeNum;
+    const playersNum = parseInt(r.players) || (idx === 0 ? 3 : idx === 1 ? 5 : idx === 2 ? 8 : 12);
+    const roomTitle = r.name || 'Arena Battle';
+
+    if (nameEl) nameEl.textContent = roomTitle;
+    if (descEl) descEl.textContent = r.desc || '';
+    if (badgeEl && r.badge) {
+      const bIcon = badgeIcons[key] || 'fa-bolt';
+      badgeEl.innerHTML = `<i class="fa-solid ${bIcon}"></i> ${r.badge}`;
+    }
+    if (playersTag) {
+      playersTag.innerHTML = `<i class="fa-solid fa-users"></i> ${playersNum} PLAYERS`;
+    }
+    if (prizeEl) prizeEl.textContent = `$${prizeNum.toFixed(2)}`;
+    if (joinText) joinText.textContent = `JOIN $${feeNum % 1 === 0 ? feeNum : feeNum.toFixed(2)}`;
+    if (card) {
+      card.setAttribute('data-prize', prizeNum);
+      card.setAttribute('data-players', playersNum);
+    }
+    if (joinBtn) {
+      joinBtn.onclick = function() {
+        startMatchmaking(playersNum, feeNum, prizeNum, roomTitle);
+      };
+    }
+  });
+}
+
+// Auto-run immediately and on focus
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadDynamicRooms);
+} else {
+  loadDynamicRooms();
+}
+window.addEventListener('focus', loadDynamicRooms);
+
 // 13. Arena Matchmaking Logic (3, 5, 8, 12 Teams)
-function startMatchmaking(playerCount, prizeAmount, roomTitle) {
+function startMatchmaking(playerCount, entryFee, prizeAmount, roomTitle) {
+  // Support both 3 arguments (legacy fallback) and 4 arguments
+  if (typeof roomTitle === 'undefined') {
+    roomTitle = prizeAmount;
+    prizeAmount = entryFee;
+  }
+  entryFee = parseFloat(entryFee);
+  if (isNaN(entryFee)) entryFee = 2;
+  prizeAmount = parseFloat(prizeAmount);
+  if (isNaN(prizeAmount)) prizeAmount = entryFee;
+
   // Check if user has sufficient deposit in Game Wallet
-  if ((STATE.wallet || 0) < prizeAmount) {
+  if ((STATE.wallet || 0) < entryFee) {
     triggerHaptic('warning');
-    showToast(`⚠️ Insufficient Game Wallet ($${(STATE.wallet || 0).toFixed(2)})! Deposit $${prizeAmount.toFixed(2)} to play.`);
+    showToast(`⚠️ Insufficient Game Wallet ($${(STATE.wallet || 0).toFixed(2)})! Deposit $${entryFee.toFixed(2)} to play.`);
     openDepositModal();
     return;
   }
 
   // Deduct entry fee from Game Wallet (deposited funds)
-  STATE.wallet = Math.max(0, (STATE.wallet || 0) - prizeAmount);
+  STATE.wallet = Math.max(0, (STATE.wallet || 0) - entryFee);
   updateAllBalances();
-  addTransaction(`Arena Entry: ${roomTitle}`, `-$${prizeAmount.toFixed(2)}`, 'text-amber');
+  addTransaction(`Arena Entry: ${roomTitle}`, `-$${entryFee.toFixed(2)}`, 'text-amber');
 
   try {
     fetch('/api/wallet/update', {
@@ -1339,7 +1431,7 @@ function startMatchmaking(playerCount, prizeAmount, roomTitle) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         telegramId: STATE.user.id,
-        amount: -prizeAmount,
+        amount: -entryFee,
         type: 'game'
       })
     });
@@ -1350,6 +1442,7 @@ function startMatchmaking(playerCount, prizeAmount, roomTitle) {
 
   STATE.currentRoom = {
     players: playerCount,
+    entryFee: entryFee,
     prize: prizeAmount,
     title: roomTitle
   };

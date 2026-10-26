@@ -453,5 +453,47 @@
       "createdAt": "2026-10-23T16:53:48.642Z",
       "active": true
     }
+  ],
+  "battleRooms": [
+    {
+      "id": "trio",
+      "name": "TRIO SHOWDOWN",
+      "desc": "3 Players Solo Knockout",
+      "players": 3,
+      "entryFee": 2,
+      "prize": 2,
+      "badge": "FASTEST MATCH",
+      "theme": "cyan"
+    },
+    {
+      "id": "squad",
+      "name": "SQUAD DOMINATION",
+      "desc": "5-Player Rush Elimination",
+      "players": 5,
+      "entryFee": 4,
+      "prize": 4,
+      "badge": "SQUAD BATTLE",
+      "theme": "purple"
+    },
+    {
+      "id": "elite",
+      "name": "ELITE SYNDICATE",
+      "desc": "8-Player Mega Clash",
+      "players": 8,
+      "entryFee": 7,
+      "prize": 7,
+      "badge": "HIGH STAKES",
+      "theme": "amber"
+    },
+    {
+      "id": "royale",
+      "name": "CHAMPIONS ROYALE",
+      "desc": "12-Player Ultimate Showdown",
+      "players": 12,
+      "entryFee": 15,
+      "prize": 15,
+      "badge": "GRAND JACKPOT",
+      "theme": "gold"
+    }
   ]
 }

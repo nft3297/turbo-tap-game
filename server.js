@@ -1668,12 +1668,122 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
+      // ================= ARENA BATTLE ROOMS (4 CARDS) =================
+      const DEFAULT_ARENA_ROOMS = [
+        {
+          id: 'trio',
+          name: 'TRIO SHOWDOWN',
+          desc: '3 Players Solo Knockout',
+          players: 3,
+          entryFee: 2,
+          prize: 2,
+          badge: 'FASTEST MATCH',
+          theme: 'cyan'
+        },
+        {
+          id: 'squad',
+          name: 'SQUAD DOMINATION',
+          desc: '5-Player Rush Elimination',
+          players: 5,
+          entryFee: 4,
+          prize: 4,
+          badge: 'SQUAD BATTLE',
+          theme: 'purple'
+        },
+        {
+          id: 'elite',
+          name: 'ELITE SYNDICATE',
+          desc: '8-Player Mega Clash',
+          players: 8,
+          entryFee: 7,
+          prize: 7,
+          badge: 'HIGH STAKES',
+          theme: 'amber'
+        },
+        {
+          id: 'royale',
+          name: 'CHAMPIONS ROYALE',
+          desc: '12-Player Ultimate Showdown',
+          players: 12,
+          entryFee: 15,
+          prize: 15,
+          badge: 'GRAND JACKPOT',
+          theme: 'gold'
+        }
+      ];
+
+      // Public: Get Battle Rooms: GET /api/rooms
+      if (req.method === 'GET' && reqPath === '/api/rooms') {
+        const localDB = readDB();
+        if (!localDB.battleRooms || !Array.isArray(localDB.battleRooms) || localDB.battleRooms.length === 0) {
+          localDB.battleRooms = DEFAULT_ARENA_ROOMS;
+          writeDB(localDB);
+        }
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+        });
+        return res.end(JSON.stringify({ success: true, rooms: localDB.battleRooms }));
+      }
+
+      // Admin: Update Battle Rooms (single or all): POST /api/admin/rooms/update
+      if (req.method === 'POST' && reqPath === '/api/admin/rooms/update') {
+        if (!isAdmin(data)) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Access Denied' }));
+        }
+        try {
+          const localDB = readDB();
+          if (!localDB.battleRooms || !Array.isArray(localDB.battleRooms)) {
+            localDB.battleRooms = JSON.parse(JSON.stringify(DEFAULT_ARENA_ROOMS));
+          }
+          const { rooms, roomId, roomData } = data;
+          if (Array.isArray(rooms)) {
+            localDB.battleRooms = rooms.map((r, i) => {
+              const def = DEFAULT_ARENA_ROOMS[i] || {};
+              return {
+                id: r.id || def.id || `room_${i+1}`,
+                name: String(r.name || def.name || '').trim(),
+                desc: String(r.desc || def.desc || '').trim(),
+                players: parseInt(r.players) || def.players || 3,
+                entryFee: parseFloat(r.entryFee) >= 0 ? parseFloat(r.entryFee) : (def.entryFee || 2),
+                prize: parseFloat(r.prize) >= 0 ? parseFloat(r.prize) : (def.prize || 2),
+                badge: String(r.badge || def.badge || '').trim(),
+                theme: r.theme || def.theme || 'cyan'
+              };
+            });
+          } else if (roomId && roomData) {
+            const idx = localDB.battleRooms.findIndex(r => r.id === roomId);
+            if (idx !== -1) {
+              localDB.battleRooms[idx] = {
+                ...localDB.battleRooms[idx],
+                name: roomData.name !== undefined ? String(roomData.name).trim() : localDB.battleRooms[idx].name,
+                desc: roomData.desc !== undefined ? String(roomData.desc).trim() : localDB.battleRooms[idx].desc,
+                players: parseInt(roomData.players) || localDB.battleRooms[idx].players,
+                entryFee: parseFloat(roomData.entryFee) >= 0 ? parseFloat(roomData.entryFee) : localDB.battleRooms[idx].entryFee,
+                prize: parseFloat(roomData.prize) >= 0 ? parseFloat(roomData.prize) : localDB.battleRooms[idx].prize,
+                badge: roomData.badge !== undefined ? String(roomData.badge).trim() : localDB.battleRooms[idx].badge
+              };
+            }
+          }
+          writeDB(localDB);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, rooms: localDB.battleRooms, message: 'Battle room cards saved successfully!' }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+
       // Public: Get Game Config (for bot use): GET /api/config
       if (req.method === 'GET' && reqPath === '/api/config') {
         const localDB = readDB();
         const config = localDB.gameConfig || {};
         // Only expose safe public fields
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+        });
         return res.end(JSON.stringify({
           referralBonus: config.referralBonus || 25,
           minWithdrawal: config.minWithdrawal || 20,
@@ -1686,7 +1796,8 @@ const server = http.createServer(async (req, res) => {
           announcementText: config.announcementActive ? (config.announcementText || '') : '',
           announcementActive: config.announcementActive || false,
           depositNetwork: config.depositNetwork || 'BSC (BEP-20)',
-          minDepositAmount: config.minDepositAmount || 1
+          minDepositAmount: config.minDepositAmount || 1,
+          rooms: localDB.battleRooms || DEFAULT_ARENA_ROOMS
         }));
       }
       // ==================== END ADMIN API ROUTES ====================

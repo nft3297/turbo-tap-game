@@ -460,7 +460,7 @@
       "name": "TRIO SHOWDOWN",
       "desc": "3 Players Solo Knockout",
       "players": 3,
-      "entryFee": 2,
+      "entryFee": 5,
       "prize": 2,
       "badge": "FASTEST MATCH",
       "theme": "cyan"

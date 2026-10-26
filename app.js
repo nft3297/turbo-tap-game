@@ -1327,28 +1327,88 @@ function renderHistoryList() {
 }
 
 // ================= ARENA DYNAMIC ROOMS ENGINE =================
+// ================= ARENA DYNAMIC ROOMS ENGINE (REAL-TIME LIVE SYNC) =================
 window.__ARENA_ROOMS = [
-  { id: 'trio', name: 'TRIO SHOWDOWN', desc: '3 Players Solo Knockout', players: 3, entryFee: 2, prize: 2, badge: 'FASTEST MATCH' },
+  { id: 'trio', name: 'TRIO SHOWDOWN', desc: '3 Players Solo Knockout', players: 3, entryFee: 5, prize: 2, badge: 'FASTEST MATCH' },
   { id: 'squad', name: 'SQUAD DOMINATION', desc: '5-Player Rush Elimination', players: 5, entryFee: 4, prize: 4, badge: 'SQUAD BATTLE' },
   { id: 'elite', name: 'ELITE SYNDICATE', desc: '8-Player Mega Clash', players: 8, entryFee: 7, prize: 7, badge: 'HIGH STAKES' },
   { id: 'royale', name: 'CHAMPIONS ROYALE', desc: '12-Player Ultimate Showdown', players: 12, entryFee: 15, prize: 15, badge: 'GRAND JACKPOT' }
 ];
 
+let __roomsSyncInterval = null;
+let __roomsEventSource = null;
+
 async function loadDynamicRooms() {
   try {
-    const res = await fetch('/api/rooms?t=' + Date.now(), { cache: 'no-store' });
+    const res = await fetch('/api/rooms?t=' + Date.now(), {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
     if (!res.ok) return;
     const data = await res.json();
     if (data && Array.isArray(data.rooms) && data.rooms.length > 0) {
       window.__ARENA_ROOMS = data.rooms;
-      applyDynamicRooms(data.rooms);
+      applyDynamicRooms(data.rooms, false);
     }
   } catch (e) {
-    console.warn('[Rooms] Could not fetch dynamic rooms:', e);
+    console.warn('[Rooms] Sync error:', e);
   }
 }
 
-function applyDynamicRooms(rooms) {
+function initRoomsLiveSync() {
+  // 1. Initial Immediate Load
+  loadDynamicRooms();
+
+  // 2. Real-Time Server-Sent Events (SSE) Stream
+  if (window.EventSource && !__roomsEventSource) {
+    try {
+      __roomsEventSource = new EventSource('/api/live/stream');
+      __roomsEventSource.addEventListener('roomsUpdated', (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          if (payload && Array.isArray(payload.rooms)) {
+            window.__ARENA_ROOMS = payload.rooms;
+            applyDynamicRooms(payload.rooms, true);
+          }
+        } catch (err) {}
+      });
+      __roomsEventSource.onerror = () => {
+        // EventSource auto-reconnects; polling guarantees 100% reliability
+      };
+    } catch (e) {}
+  }
+
+  // 3. Fallback High-Frequency Polling (every 2.5 seconds)
+  if (!__roomsSyncInterval) {
+    __roomsSyncInterval = setInterval(() => {
+      // Only poll when tab is visible and player is not actively inside 15s battle gameplay
+      if (document.visibilityState === 'visible' && !STATE.battleTimerInterval) {
+        loadDynamicRooms();
+      }
+    }, 2500);
+  }
+
+  // 4. Lifecycle Event Triggers
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') loadDynamicRooms();
+  });
+  window.addEventListener('focus', loadDynamicRooms);
+  window.addEventListener('pageshow', loadDynamicRooms);
+}
+
+function joinArenaRoom(roomId) {
+  const room = (window.__ARENA_ROOMS || []).find(r => r.id === roomId);
+  const players = room?.players || (roomId === 'trio' ? 3 : roomId === 'squad' ? 5 : roomId === 'elite' ? 8 : 12);
+  const fee = room?.entryFee !== undefined ? parseFloat(room.entryFee) : (roomId === 'trio' ? 5 : roomId === 'squad' ? 4 : roomId === 'elite' ? 7 : 15);
+  const prize = room?.prize !== undefined ? parseFloat(room.prize) : fee;
+  const title = room?.name || (roomId === 'trio' ? 'Trio Showdown' : roomId === 'squad' ? 'Squad Domination' : roomId === 'elite' ? 'Elite Syndicate' : 'Champions Royale');
+  startMatchmaking(players, fee, prize, title);
+}
+
+function applyDynamicRooms(rooms, isLivePush = false) {
   if (!Array.isArray(rooms)) return;
   const badgeIcons = {
     trio: 'fa-bolt',
@@ -1373,8 +1433,8 @@ function applyDynamicRooms(rooms) {
     const playersNum = parseInt(r.players) || (idx === 0 ? 3 : idx === 1 ? 5 : idx === 2 ? 8 : 12);
     const roomTitle = r.name || 'Arena Battle';
 
-    if (nameEl) nameEl.textContent = roomTitle;
-    if (descEl) descEl.textContent = r.desc || '';
+    if (nameEl && nameEl.textContent !== roomTitle) nameEl.textContent = roomTitle;
+    if (descEl && descEl.textContent !== (r.desc || '')) descEl.textContent = r.desc || '';
     if (badgeEl && r.badge) {
       const bIcon = badgeIcons[key] || 'fa-bolt';
       badgeEl.innerHTML = `<i class="fa-solid ${bIcon}"></i> ${r.badge}`;
@@ -1387,22 +1447,27 @@ function applyDynamicRooms(rooms) {
     if (card) {
       card.setAttribute('data-prize', prizeNum);
       card.setAttribute('data-players', playersNum);
+      card.setAttribute('data-fee', feeNum);
+      if (isLivePush) {
+        card.classList.add('card-live-pulse');
+        setTimeout(() => card.classList.remove('card-live-pulse'), 1200);
+      }
     }
     if (joinBtn) {
-      joinBtn.onclick = function() {
-        startMatchmaking(playersNum, feeNum, prizeNum, roomTitle);
+      joinBtn.onclick = function(e) {
+        if (e) e.stopPropagation();
+        joinArenaRoom(key);
       };
     }
   });
 }
 
-// Auto-run immediately and on focus
+// Auto-start live synchronization engine
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', loadDynamicRooms);
+  document.addEventListener('DOMContentLoaded', initRoomsLiveSync);
 } else {
-  loadDynamicRooms();
+  initRoomsLiveSync();
 }
-window.addEventListener('focus', loadDynamicRooms);
 
 // 13. Arena Matchmaking Logic (3, 5, 8, 12 Teams)
 function startMatchmaking(playerCount, entryFee, prizeAmount, roomTitle) {

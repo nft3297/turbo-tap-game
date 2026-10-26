@@ -890,13 +890,15 @@ async function saveSingleArenaCard(roomId){
   const desc=document.getElementById(`rc-desc-${roomId}`)?.value?.trim()||'';
   const players=parseInt(document.getElementById(`rc-players-${roomId}`)?.value)||3;
   const badge=document.getElementById(`rc-badge-${roomId}`)?.value?.trim()||'';
-  const entryFee=parseFloat(document.getElementById(`rc-fee-${roomId}`)?.value)||0;
-  const prize=parseFloat(document.getElementById(`rc-prize-${roomId}`)?.value)||0;
+  const feeInp=parseFloat(document.getElementById(`rc-fee-${roomId}`)?.value);
+  const prizeInp=parseFloat(document.getElementById(`rc-prize-${roomId}`)?.value);
+  const entryFee=!isNaN(feeInp)?feeInp:2;
+  const prize=!isNaN(prizeInp)?prizeInp:entryFee;
   try{
     const res=await ap('/api/admin/rooms/update',{roomId,roomData:{name,desc,players,badge,entryFee,prize}});
     if(res.success){
       toast(`✅ "${name}" ($${entryFee}) updated! Live game updated!`,'ok');
-      try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:'roomsUpdated'},'*');}catch(e){}
+      try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:'roomsUpdated',rooms:res.rooms},'*');}catch(e){}
       loadArenaCards();
     }else toast('Error: '+(res.error||'Failed'),'err');
   }catch(e){toast('Error: '+e.message,'err');}

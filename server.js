@@ -52,6 +52,73 @@ function writeDB(data) {
   }
 }
 
+// ================= ARENA BATTLE ROOMS (4 CARDS) =================
+const DEFAULT_ARENA_ROOMS = [
+  {
+    id: 'trio',
+    name: 'TRIO SHOWDOWN',
+    desc: '3 Players Solo Knockout',
+    players: 3,
+    entryFee: 5,
+    prize: 2,
+    badge: 'FASTEST MATCH',
+    theme: 'cyan'
+  },
+  {
+    id: 'squad',
+    name: 'SQUAD DOMINATION',
+    desc: '5-Player Rush Elimination',
+    players: 5,
+    entryFee: 4,
+    prize: 4,
+    badge: 'SQUAD BATTLE',
+    theme: 'purple'
+  },
+  {
+    id: 'elite',
+    name: 'ELITE SYNDICATE',
+    desc: '8-Player Mega Clash',
+    players: 8,
+    entryFee: 7,
+    prize: 7,
+    badge: 'HIGH STAKES',
+    theme: 'amber'
+  },
+  {
+    id: 'royale',
+    name: 'CHAMPIONS ROYALE',
+    desc: '12-Player Ultimate Showdown',
+    players: 12,
+    entryFee: 15,
+    prize: 15,
+    badge: 'GRAND JACKPOT',
+    theme: 'gold'
+  }
+];
+
+// ================= REAL-TIME BROADCAST ENGINE (SSE) =================
+const liveSyncClients = new Set();
+function broadcastLiveUpdate(eventType, payload) {
+  const message = `event: ${eventType}\ndata: ${JSON.stringify(payload)}\n\n`;
+  for (const client of liveSyncClients) {
+    try {
+      client.write(message);
+    } catch (e) {
+      liveSyncClients.delete(client);
+    }
+  }
+}
+// Heartbeat keep-alive every 25s for SSE clients
+setInterval(() => {
+  for (const client of liveSyncClients) {
+    try {
+      client.write(': ping\n\n');
+    } catch (e) {
+      liveSyncClients.delete(client);
+    }
+  }
+}, 25000);
+
 // ================= TELEGRAM BOT NOTIFICATION SERVICE =================
 // Active Bot Token: reads from .env (TELEGRAM_BOT_TOKEN) or database.json (gameConfig.botToken)
 function getTelegramBotToken() {
@@ -371,6 +438,24 @@ const server = http.createServer(async (req, res) => {
 
   // ================= API ROUTES =================
   if (reqPath.startsWith('/api/')) {
+
+    // Real-Time SSE Stream for Instant Updates across all users: GET /api/live/stream
+    if (req.method === 'GET' && reqPath === '/api/live/stream') {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+      });
+      const localDB = readDB();
+      res.write(`event: connected\ndata: ${JSON.stringify({ connected: true, time: Date.now() })}\n\n`);
+      res.write(`event: roomsUpdated\ndata: ${JSON.stringify({ rooms: localDB.battleRooms || DEFAULT_ARENA_ROOMS, time: Date.now() })}\n\n`);
+      liveSyncClients.add(res);
+      req.on('close', () => {
+        liveSyncClients.delete(res);
+      });
+      return;
+    }
 
     // 1. Check / Get User Profile: GET /api/user?telegramId=123
     if (req.method === 'GET' && reqPath === '/api/user') {
@@ -1552,6 +1637,10 @@ const server = http.createServer(async (req, res) => {
             process.env.TELEGRAM_BOT_TOKEN = String(configValue || '').trim();
           }
           writeDB(localDB);
+          broadcastLiveUpdate('configUpdated', {
+            config: localDB.gameConfig,
+            updatedAt: Date.now()
+          });
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, config: localDB.gameConfig, message: `Config '${configKey}' updated!` }));
         } catch (e) {
@@ -1668,50 +1757,6 @@ const server = http.createServer(async (req, res) => {
         }
       }
 
-      // ================= ARENA BATTLE ROOMS (4 CARDS) =================
-      const DEFAULT_ARENA_ROOMS = [
-        {
-          id: 'trio',
-          name: 'TRIO SHOWDOWN',
-          desc: '3 Players Solo Knockout',
-          players: 3,
-          entryFee: 2,
-          prize: 2,
-          badge: 'FASTEST MATCH',
-          theme: 'cyan'
-        },
-        {
-          id: 'squad',
-          name: 'SQUAD DOMINATION',
-          desc: '5-Player Rush Elimination',
-          players: 5,
-          entryFee: 4,
-          prize: 4,
-          badge: 'SQUAD BATTLE',
-          theme: 'purple'
-        },
-        {
-          id: 'elite',
-          name: 'ELITE SYNDICATE',
-          desc: '8-Player Mega Clash',
-          players: 8,
-          entryFee: 7,
-          prize: 7,
-          badge: 'HIGH STAKES',
-          theme: 'amber'
-        },
-        {
-          id: 'royale',
-          name: 'CHAMPIONS ROYALE',
-          desc: '12-Player Ultimate Showdown',
-          players: 12,
-          entryFee: 15,
-          prize: 15,
-          badge: 'GRAND JACKPOT',
-          theme: 'gold'
-        }
-      ];
-
       // Public: Get Battle Rooms: GET /api/rooms
       if (req.method === 'GET' && reqPath === '/api/rooms') {
         const localDB = readDB();
@@ -1721,9 +1766,11 @@ const server = http.createServer(async (req, res) => {
         }
         res.writeHead(200, {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         });
-        return res.end(JSON.stringify({ success: true, rooms: localDB.battleRooms }));
+        return res.end(JSON.stringify({ success: true, rooms: localDB.battleRooms, updatedAt: Date.now() }));
       }
 
       // Admin: Update Battle Rooms (single or all): POST /api/admin/rooms/update
@@ -1741,34 +1788,62 @@ const server = http.createServer(async (req, res) => {
           if (Array.isArray(rooms)) {
             localDB.battleRooms = rooms.map((r, i) => {
               const def = DEFAULT_ARENA_ROOMS[i] || {};
+              const feeVal = parseFloat(r.entryFee);
+              const prizeVal = parseFloat(r.prize);
               return {
-                id: r.id || def.id || `room_${i+1}`,
+                id: r.id || def.id || (i === 0 ? 'trio' : i === 1 ? 'squad' : i === 2 ? 'elite' : 'royale'),
                 name: String(r.name || def.name || '').trim(),
                 desc: String(r.desc || def.desc || '').trim(),
                 players: parseInt(r.players) || def.players || 3,
-                entryFee: parseFloat(r.entryFee) >= 0 ? parseFloat(r.entryFee) : (def.entryFee || 2),
-                prize: parseFloat(r.prize) >= 0 ? parseFloat(r.prize) : (def.prize || 2),
+                entryFee: !isNaN(feeVal) && feeVal >= 0 ? feeVal : (def.entryFee || 2),
+                prize: !isNaN(prizeVal) && prizeVal >= 0 ? prizeVal : (def.prize || 2),
                 badge: String(r.badge || def.badge || '').trim(),
                 theme: r.theme || def.theme || 'cyan'
               };
             });
           } else if (roomId && roomData) {
-            const idx = localDB.battleRooms.findIndex(r => r.id === roomId);
-            if (idx !== -1) {
+            let idx = localDB.battleRooms.findIndex(r => r.id === roomId);
+            if (idx === -1) {
+              if (roomId === 'trio') idx = localDB.battleRooms.findIndex(r => r.players === 3);
+              else if (roomId === 'squad') idx = localDB.battleRooms.findIndex(r => r.players === 5);
+              else if (roomId === 'elite') idx = localDB.battleRooms.findIndex(r => r.players === 8);
+              else if (roomId === 'royale') idx = localDB.battleRooms.findIndex(r => r.players === 12);
+            }
+            if (idx === -1) {
+              idx = roomId === 'trio' ? 0 : roomId === 'squad' ? 1 : roomId === 'elite' ? 2 : 3;
+            }
+            if (idx !== -1 && localDB.battleRooms[idx]) {
+              const feeVal = parseFloat(roomData.entryFee);
+              const prizeVal = parseFloat(roomData.prize);
               localDB.battleRooms[idx] = {
                 ...localDB.battleRooms[idx],
+                id: roomId || localDB.battleRooms[idx].id,
                 name: roomData.name !== undefined ? String(roomData.name).trim() : localDB.battleRooms[idx].name,
                 desc: roomData.desc !== undefined ? String(roomData.desc).trim() : localDB.battleRooms[idx].desc,
                 players: parseInt(roomData.players) || localDB.battleRooms[idx].players,
-                entryFee: parseFloat(roomData.entryFee) >= 0 ? parseFloat(roomData.entryFee) : localDB.battleRooms[idx].entryFee,
-                prize: parseFloat(roomData.prize) >= 0 ? parseFloat(roomData.prize) : localDB.battleRooms[idx].prize,
+                entryFee: !isNaN(feeVal) && feeVal >= 0 ? feeVal : localDB.battleRooms[idx].entryFee,
+                prize: !isNaN(prizeVal) && prizeVal >= 0 ? prizeVal : localDB.battleRooms[idx].prize,
                 badge: roomData.badge !== undefined ? String(roomData.badge).trim() : localDB.battleRooms[idx].badge
               };
             }
           }
           writeDB(localDB);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ success: true, rooms: localDB.battleRooms, message: 'Battle room cards saved successfully!' }));
+
+          // REAL-TIME BROADCAST: Instantly push updated cards to all active users via SSE
+          broadcastLiveUpdate('roomsUpdated', {
+            rooms: localDB.battleRooms,
+            updatedAt: Date.now()
+          });
+
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
+          });
+          return res.end(JSON.stringify({
+            success: true,
+            rooms: localDB.battleRooms,
+            message: 'Battle room cards saved successfully and pushed live!'
+          }));
         } catch (e) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: e.message }));

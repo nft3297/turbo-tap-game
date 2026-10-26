@@ -15,7 +15,7 @@
   <!-- QRCode.js for Deposit Address QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
-  <link rel="stylesheet" href="style.css?v=3.0">
+  <link rel="stylesheet" href="style.css?v=3.2">
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
@@ -206,7 +206,7 @@
 
         <div class="rooms-grid">
           <!-- Room 1: 3 Players -> Dynamic -->
-          <div class="room-card room-trio" id="roomCard-trio" data-players="3" data-prize="2">
+          <div class="room-card room-trio" id="roomCard-trio" data-players="3" data-prize="2" data-fee="5" onclick="joinArenaRoom('trio')">
             <div class="room-glow cyan-glow"></div>
             <div class="room-header">
               <span class="room-badge cyan-badge" id="roomBadge-trio"><i class="fa-solid fa-bolt"></i> FASTEST MATCH</span>
@@ -226,15 +226,15 @@
                 <span class="prize-label">WINNER REWARD</span>
                 <span class="prize-value cyan-val" id="roomPrizeValue-trio">$2.00</span>
               </div>
-              <button class="join-btn cyan-btn" id="roomJoinBtn-trio" onclick="startMatchmaking(3, 2.00, 'Trio Showdown')">
-                <span id="roomJoinText-trio">JOIN $2</span>
+              <button class="join-btn cyan-btn" id="roomJoinBtn-trio" onclick="event.stopPropagation();joinArenaRoom('trio')">
+                <span id="roomJoinText-trio">JOIN $5</span>
                 <i class="fa-solid fa-arrow-right"></i>
               </button>
             </div>
           </div>
 
           <!-- Room 2: 5 Players -> Dynamic -->
-          <div class="room-card featured room-squad" id="roomCard-squad" data-players="5" data-prize="4">
+          <div class="room-card featured room-squad" id="roomCard-squad" data-players="5" data-prize="4" data-fee="4" onclick="joinArenaRoom('squad')">
             <div class="featured-ribbon"><i class="fa-solid fa-fire"></i> POPULAR</div>
             <div class="room-glow purple-glow"></div>
             <div class="room-header">
@@ -255,7 +255,7 @@
                 <span class="prize-label">WINNER REWARD</span>
                 <span class="prize-value purple-val" id="roomPrizeValue-squad">$4.00</span>
               </div>
-              <button class="join-btn purple-btn" id="roomJoinBtn-squad" onclick="startMatchmaking(5, 4.00, 'Squad Domination')">
+              <button class="join-btn purple-btn" id="roomJoinBtn-squad" onclick="event.stopPropagation();joinArenaRoom('squad')">
                 <span id="roomJoinText-squad">JOIN $4</span>
                 <i class="fa-solid fa-arrow-right"></i>
               </button>
@@ -263,7 +263,7 @@
           </div>
 
           <!-- Room 3: 8 Players -> Dynamic -->
-          <div class="room-card room-elite" id="roomCard-elite" data-players="8" data-prize="7">
+          <div class="room-card room-elite" id="roomCard-elite" data-players="8" data-prize="7" data-fee="7" onclick="joinArenaRoom('elite')">
             <div class="room-glow amber-glow"></div>
             <div class="room-header">
               <span class="room-badge amber-badge" id="roomBadge-elite"><i class="fa-solid fa-crosshairs"></i> HIGH STAKES</span>
@@ -283,7 +283,7 @@
                 <span class="prize-label">WINNER REWARD</span>
                 <span class="prize-value amber-val" id="roomPrizeValue-elite">$7.00</span>
               </div>
-              <button class="join-btn amber-btn" id="roomJoinBtn-elite" onclick="startMatchmaking(8, 7.00, 'Elite Syndicate')">
+              <button class="join-btn amber-btn" id="roomJoinBtn-elite" onclick="event.stopPropagation();joinArenaRoom('elite')">
                 <span id="roomJoinText-elite">JOIN $7</span>
                 <i class="fa-solid fa-arrow-right"></i>
               </button>
@@ -291,7 +291,7 @@
           </div>
 
           <!-- Room 4: 12 Players -> Dynamic -->
-          <div class="room-card jackpot room-royale" id="roomCard-royale" data-players="12" data-prize="15">
+          <div class="room-card jackpot room-royale" id="roomCard-royale" data-players="12" data-prize="15" data-fee="15" onclick="joinArenaRoom('royale')">
             <div class="room-glow gold-glow"></div>
             <div class="room-header">
               <span class="room-badge gold-badge" id="roomBadge-royale"><i class="fa-solid fa-crown"></i> GRAND JACKPOT</span>
@@ -311,7 +311,7 @@
                 <span class="prize-label">JACKPOT POOL</span>
                 <span class="prize-value gold-val" id="roomPrizeValue-royale">$15.00</span>
               </div>
-              <button class="join-btn gold-btn" id="roomJoinBtn-royale" onclick="startMatchmaking(12, 15.00, 'Champions Royale')">
+              <button class="join-btn gold-btn" id="roomJoinBtn-royale" onclick="event.stopPropagation();joinArenaRoom('royale')">
                 <span id="roomJoinText-royale">JOIN $15</span>
                 <i class="fa-solid fa-arrow-right"></i>
               </button>
@@ -1252,6 +1252,10 @@
         if (typeof loadDynamicRooms === 'function') loadDynamicRooms();
       }
       if (e.data && (e.data.type === 'roomsUpdated' || e.data === 'roomsUpdated')) {
+        if (e.data.rooms && typeof applyDynamicRooms === 'function') {
+          window.__ARENA_ROOMS = e.data.rooms;
+          applyDynamicRooms(e.data.rooms, true);
+        }
         if (typeof loadDynamicRooms === 'function') loadDynamicRooms();
       }
     });
@@ -1264,6 +1268,6 @@
   </script>
 
   <!-- Production Engine -->
-  <script src="app.js?v=3.0"></script>
+  <script src="app.js?v=3.2"></script>
 </body>
 </html>

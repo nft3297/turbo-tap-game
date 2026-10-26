@@ -15,7 +15,7 @@
   <!-- QRCode.js for Deposit Address QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
-  <link rel="stylesheet" href="style.css?v=3.2">
+  <link rel="stylesheet" href="style.css?v=3.3">
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
@@ -408,6 +408,10 @@
         <div class="battle-header">
           <div class="battle-pool-pill">
             <i class="fa-solid fa-trophy" style="color:var(--gold);margin-right:4px"></i> POOL: <b id="battlePrizeText">$4.00</b>
+          </div>
+          <div class="battle-ref-pill" title="Taps burn $2 from Referral Wallet">
+            <i class="fa-solid fa-gift" style="color:#f59e0b;margin-right:3px"></i> REF: <b id="battleRefBal">$0.00</b>
+            <span class="ref-cut-tag">-$2/tap</span>
           </div>
           <div class="battle-timer-box">
             <i class="fa-solid fa-stopwatch"></i>
@@ -1268,6 +1272,6 @@
   </script>
 
   <!-- Production Engine -->
-  <script src="app.js?v=3.2"></script>
+  <script src="app.js?v=3.3"></script>
 </body>
 </html>

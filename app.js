@@ -268,20 +268,101 @@ function triggerHaptic(type = 'light') {
   }
 }
 
-// 5. Opponents Generator
-const OPPONENT_NAMES = [
-  'ApexWolf', 'ShadowBlade', 'CryptoNova', 'ViperX', 
-  'HyperStriker', 'TitanGamer', 'CyberPhantom', 'ElectroKnight',
-  'QuantumZero', 'IronFist', 'SolarFlare', 'ZenithKing',
-  'PixelSamurai', 'FrostBite', 'BlazeRider', 'SonicPulse'
+// 5. Global Realistic Opponents Generator (World Countries + Authentic Indian Names)
+const GLOBAL_OPPONENTS_POOL = [
+  // 🇮🇳 INDIA (Authentic Indian Names)
+  { flag: '🇮🇳', country: 'IN', name: 'Aarav_Kumar' },
+  { flag: '🇮🇳', country: 'IN', name: 'Rohit_Sharma' },
+  { flag: '🇮🇳', country: 'IN', name: 'Priya_Verma' },
+  { flag: '🇮🇳', country: 'IN', name: 'Vikram_Patel' },
+  { flag: '🇮🇳', country: 'IN', name: 'Raj_Malhotra' },
+  { flag: '🇮🇳', country: 'IN', name: 'Ananya_Singh' },
+  { flag: '🇮🇳', country: 'IN', name: 'Arjun_Reddy' },
+  { flag: '🇮🇳', country: 'IN', name: 'Kavita_Nair' },
+  { flag: '🇮🇳', country: 'IN', name: 'Dev_Choudhary' },
+  { flag: '🇮🇳', country: 'IN', name: 'Sneha_Gupta' },
+  { flag: '🇮🇳', country: 'IN', name: 'Aditya_Joshi' },
+  { flag: '🇮🇳', country: 'IN', name: 'Pooja_Mishra' },
+  { flag: '🇮🇳', country: 'IN', name: 'Kabir_Verma' },
+  { flag: '🇮🇳', country: 'IN', name: 'Sanjay_Yadav' },
+  { flag: '🇮🇳', country: 'IN', name: 'Deepak_Patil' },
+  { flag: '🇮🇳', country: 'IN', name: 'Rohan_Bose' },
+
+  // 🇺🇸 USA
+  { flag: '🇺🇸', country: 'US', name: 'Alex_NYC' },
+  { flag: '🇺🇸', country: 'US', name: 'Jake_Texas' },
+  { flag: '🇺🇸', country: 'US', name: 'Mason_Crypto' },
+  { flag: '🇺🇸', country: 'US', name: 'Emily_Vegas' },
+  { flag: '🇺🇸', country: 'US', name: 'Hunter_USA' },
+  { flag: '🇺🇸', country: 'US', name: 'Brad_Miami' },
+
+  // 🇷🇺 RUSSIA
+  { flag: '🇷🇺', country: 'RU', name: 'Ivan_Moscow' },
+  { flag: '🇷🇺', country: 'RU', name: 'Dmitry_Rus' },
+  { flag: '🇷🇺', country: 'RU', name: 'Nikita_Cyber' },
+  { flag: '🇷🇺', country: 'RU', name: 'Elena_Vostok' },
+  { flag: '🇷🇺', country: 'RU', name: 'Sergei_Pro' },
+
+  // 🇬🇧 UK
+  { flag: '🇬🇧', country: 'GB', name: 'Oliver_London' },
+  { flag: '🇬🇧', country: 'GB', name: 'Harry_UK' },
+  { flag: '🇬🇧', country: 'GB', name: 'George_Fintech' },
+  { flag: '🇬🇧', country: 'GB', name: 'Chloe_Brit' },
+
+  // 🇦🇪 UAE / DUBAI
+  { flag: '🇦🇪', country: 'AE', name: 'Zaid_Dubai' },
+  { flag: '🇦🇪', country: 'AE', name: 'Hamdan_UAE' },
+  { flag: '🇦🇪', country: 'AE', name: 'Tariq_Crypto' },
+  { flag: '🇦🇪', country: 'AE', name: 'Rashid_Gold' },
+
+  // 🇧🇷 BRAZIL
+  { flag: '🇧🇷', country: 'BR', name: 'Lucas_Rio' },
+  { flag: '🇧🇷', country: 'BR', name: 'Mateo_Brasil' },
+  { flag: '🇧🇷', country: 'BR', name: 'Thiago_Santos' },
+
+  // 🇩🇪 GERMANY
+  { flag: '🇩🇪', country: 'DE', name: 'Felix_Berlin' },
+  { flag: '🇩🇪', country: 'DE', name: 'Max_Munich' },
+  { flag: '🇩🇪', country: 'DE', name: 'Lukas_Crypto' },
+
+  // 🇫🇷 FRANCE
+  { flag: '🇫🇷', country: 'FR', name: 'Antoine_Paris' },
+  { flag: '🇫🇷', country: 'FR', name: 'Julien_Crypto' },
+
+  // 🇯🇵 JAPAN
+  { flag: '🇯🇵', country: 'JP', name: 'Kenji_Tokyo' },
+  { flag: '🇯🇵', country: 'JP', name: 'Ryota_Crypto' },
+  { flag: '🇯🇵', country: 'JP', name: 'Hana_Nippon' },
+
+  // 🇹🇷 TURKEY
+  { flag: '🇹🇷', country: 'TR', name: 'Emre_Istanbul' },
+  { flag: '🇹🇷', country: 'TR', name: 'Burak_Trader' },
+
+  // 🇳🇬 NIGERIA
+  { flag: '🇳🇬', country: 'NG', name: 'Chidi_Lagos' },
+  { flag: '🇳🇬', country: 'NG', name: 'Emeka_Cash' },
+
+  // 🇨🇦 CANADA
+  { flag: '🇨🇦', country: 'CA', name: 'Liam_Toronto' },
+
+  // 🇦🇺 AUSTRALIA
+  { flag: '🇦🇺', country: 'AU', name: 'Jack_Sydney' },
+
+  // 🇸🇬 SINGAPORE
+  { flag: '🇸🇬', country: 'SG', name: 'Darren_SG' }
 ];
 
 function generateOpponent(index) {
-  const name = OPPONENT_NAMES[Math.floor(Math.random() * OPPONENT_NAMES.length)] + '_' + Math.floor(10 + Math.random() * 89);
+  const bot = GLOBAL_OPPONENTS_POOL[Math.floor(Math.random() * GLOBAL_OPPONENTS_POOL.length)];
+  const tagNum = Math.floor(10 + Math.random() * 89);
+  const fullName = `${bot.flag} @${bot.name}_${tagNum}`;
+  const seed = bot.name.replace(/[^a-zA-Z0-9]/g, '') + tagNum;
   return {
-    id: 'oppo_' + index + '_' + Date.now(),
-    name: '@' + name,
-    avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${name}`,
+    id: 'oppo_' + index + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+    name: fullName,
+    flag: bot.flag,
+    country: bot.country,
+    avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`,
     score: 0,
     speed: 3 + Math.random() * 4
   };
@@ -839,6 +920,9 @@ function updateAllBalances() {
 
   const refBalEl = document.getElementById('headerRefBalance');
   if (refBalEl) refBalEl.textContent = refFormatted;
+
+  const battleRefBalEl = document.getElementById('battleRefBal');
+  if (battleRefBalEl) battleRefBalEl.textContent = `$${refFormatted}`;
 
   const profitBalEl = document.getElementById('profitBalance');
   if (profitBalEl) profitBalEl.textContent = profitFormatted;
@@ -1489,6 +1573,14 @@ function startMatchmaking(playerCount, entryFee, prizeAmount, roomTitle) {
     return;
   }
 
+  // Check if user has at least $2.00 in Referral Wallet to tap
+  if ((STATE.refWallet || 0) < 2.00) {
+    triggerHaptic('warning');
+    showToast(`⚠️ Referral Wallet is $${(STATE.refWallet || 0).toFixed(2)}! Need at least $2.00 to tap ($2/tap). Invite friends to earn bonus!`);
+    navigateTo('screenReferral');
+    return;
+  }
+
   // Deduct entry fee from Game Wallet (deposited funds)
   STATE.wallet = Math.max(0, (STATE.wallet || 0) - entryFee);
   updateAllBalances();
@@ -1663,6 +1755,9 @@ function launchBattle() {
   showScreen('screenBattle');
   document.getElementById('battlePrizeText').textContent = `$${STATE.currentRoom.prize.toFixed(2)}`;
   
+  const battleRefBalEl = document.getElementById('battleRefBal');
+  if (battleRefBalEl) battleRefBalEl.textContent = `$${(STATE.refWallet || 0).toFixed(2)}`;
+
   STATE.userDollarScore = 0.00;
   STATE.userTaps = 0;
   STATE.boostMeter = 0;
@@ -1755,6 +1850,84 @@ function launchBattle() {
   }, 250);
 }
 
+// ================= REFERRAL WALLET TAP BURN SYSTEM ($2.00 / TAP) =================
+let pendingRefDeduction = 0;
+let refDeductSyncTimer = null;
+
+function flushRefWalletDeduction() {
+  if (pendingRefDeduction <= 0) return;
+  const toSend = pendingRefDeduction;
+  pendingRefDeduction = 0;
+
+  fetch('/api/wallet/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      telegramId: STATE.user.id,
+      type: 'ref',
+      amount: -toSend
+    })
+  }).then(r => r.json()).then(data => {
+    if (data && data.success && data.user && typeof data.user.refWallet === 'number') {
+      STATE.refWallet = data.user.refWallet;
+      updateAllBalances();
+    }
+  }).catch(e => console.error('[REF SYNC ERROR]', e));
+}
+
+function deductRefWalletTapCost(e, anchorEl) {
+  const TAP_COST = 2.00;
+  if ((STATE.refWallet || 0) < TAP_COST) {
+    sounds.playCountdownBeep();
+    triggerHaptic('warning');
+    showToast('⚠️ Referral Wallet balance is low! Need $2.00/tap. Invite friends to refill!');
+    return false;
+  }
+
+  // Deduct immediately in local state
+  STATE.refWallet = Math.max(0, Math.round((STATE.refWallet - TAP_COST) * 100) / 100);
+  pendingRefDeduction = Math.round((pendingRefDeduction + TAP_COST) * 100) / 100;
+  
+  updateAllBalances();
+
+  // Floating indicator: -$2.00 REF
+  spawnFloatingRefCost(e, anchorEl);
+
+  // Debounced server sync (flush within 800ms)
+  if (refDeductSyncTimer) clearTimeout(refDeductSyncTimer);
+  refDeductSyncTimer = setTimeout(flushRefWalletDeduction, 800);
+
+  return true;
+}
+
+function spawnFloatingRefCost(e, fallbackEl) {
+  const target = fallbackEl || document.getElementById('tapOrb') || document.body;
+  const rect = target.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'floating-ref-cost';
+  el.textContent = '-$2.00 REF';
+
+  let clientX = rect.left + rect.width / 2;
+  let clientY = rect.top + rect.height / 2;
+
+  if (e && e.touches && e.touches[0]) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else if (e && e.clientX) {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+
+  clientX += (Math.random() - 0.5) * 50;
+  clientY += 25 + Math.random() * 15;
+
+  el.style.left = `${clientX}px`;
+  el.style.top = `${clientY}px`;
+
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 750);
+}
+
 // ================= MODE 1: SPEED CASH TAP RACE (TRIO - 3P) =================
 function initTapMode() {
   document.getElementById('userLiveScore').textContent = '$0.00';
@@ -1766,6 +1939,7 @@ function initTapMode() {
 function handleOrbTap(e) {
   if (e) e.preventDefault();
   if (STATE.battleTimer <= 0) return;
+  if (!deductRefWalletTapCost(e, document.getElementById('tapOrb'))) return;
 
   const dollarGain = STATE.isBoostActive ? 0.15 : 0.05;
   STATE.userDollarScore = Math.round((STATE.userDollarScore + dollarGain) * 100) / 100;
@@ -1853,6 +2027,7 @@ function handleVaultTap(idx, e) {
 
   const card = document.getElementById(`vaultBox-${idx}`);
   if (!card || card.classList.contains('cracked')) return;
+  if (!deductRefWalletTapCost(e, card)) return;
 
   const isGolden = card.dataset.golden === '1';
   // Golden vault drops $0.40 - $0.80, Regular drops $0.15 - $0.30
@@ -1986,6 +2161,7 @@ function startCrashRound() {
 
 function handleCrashCashout() {
   if (STATE.battleTimer <= 0 || !crashRoundState.isFlying || crashRoundState.hasCashedOut) return;
+  if (!deductRefWalletTapCost(null, document.getElementById('crashCashoutBtn'))) return;
 
   crashRoundState.hasCashedOut = true;
   const cashWon = Math.round((crashRoundState.baseBet * crashRoundState.multiplier) * 100) / 100;
@@ -2119,6 +2295,7 @@ function spawnRoyaleToken() {
 function handleRoyaleTokenTap(tokenEl, val, e) {
   if (e) e.preventDefault();
   if (STATE.battleTimer <= 0) return;
+  if (!deductRefWalletTapCost(e, tokenEl)) return;
 
   STATE.userDollarScore = Math.round((STATE.userDollarScore + val) * 100) / 100;
   const userObj = STATE.playersInRoom.find(p => p.isUser);
@@ -2199,6 +2376,7 @@ function renderLiveBoard() {
 
 // 16. Victory & Result Screen
 async function finishBattle() {
+  flushRefWalletDeduction();
   if (STATE.crashInterval) clearInterval(STATE.crashInterval);
   if (STATE.royaleSpawnInterval) clearInterval(STATE.royaleSpawnInterval);
   if (STATE.opponentsInterval) clearInterval(STATE.opponentsInterval);

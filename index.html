@@ -15,7 +15,7 @@
   <!-- QRCode.js for Deposit Address QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.6">
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
@@ -36,6 +36,7 @@
   <link rel="preload" as="image" href="images/deposit_bg_4d.jpg">
   <link rel="preload" as="image" href="images/deposit_amt_4d.jpg">
   <link rel="preload" as="image" href="images/deposit_meta_4d.jpg">
+  <link rel="preload" as="image" href="images/countdown_bg.jpg">
 </head>
 <body>
   <script>
@@ -56,7 +57,8 @@
         'images/card_royale.jpg',
         'images/deposit_bg_4d.jpg',
         'images/deposit_amt_4d.jpg',
-        'images/deposit_meta_4d.jpg'
+        'images/deposit_meta_4d.jpg',
+        'images/countdown_bg.jpg'
       ];
       window.__GAME_IMAGES = [];
       assets.forEach(function(src) {
@@ -371,11 +373,33 @@
       <!-- ================= SCREEN 3: COUNTDOWN ================= -->
       <section id="screenCountdown" class="view-screen">
         <div class="countdown-modal-box">
-          <div class="vs-badge">ALL PLAYERS READY!</div>
-          <div class="match-pool-chip">PRIZE POOL: <span id="countdownPrizeText">$4.00</span></div>
-          <h2 class="battle-starting-title">BATTLE STARTS IN</h2>
-          <div class="huge-countdown" id="hugeCountdownNumber">3</div>
-          <p class="countdown-tip">Tip: Tap the Energy Core as fast as possible to overwhelm opponents!</p>
+          <div class="countdown-bg-overlay"></div>
+          <div class="countdown-light-sweep"></div>
+          
+          <div class="countdown-content-wrap">
+            <div class="vs-badge"><i class="fa-solid fa-bolt"></i> ALL PLAYERS READY!</div>
+            
+            <div class="match-pool-chip">
+              <i class="fa-solid fa-trophy" style="color:var(--gold);margin-right:4px"></i> PRIZE POOL: <span id="countdownPrizeText">$4.00</span>
+            </div>
+            
+            <h2 class="battle-starting-title">BATTLE STARTS IN</h2>
+
+            <!-- High-Tech Neon Countdown Energy Ring -->
+            <div class="countdown-dial-wrap">
+              <div class="countdown-glow-orb"></div>
+              <svg class="countdown-svg-ring" viewBox="0 0 130 130">
+                <circle class="ring-bg" cx="65" cy="65" r="58"></circle>
+                <circle class="ring-progress" id="countdownRingCircle" cx="65" cy="65" r="58"></circle>
+              </svg>
+              <div class="huge-countdown" id="hugeCountdownNumber">10</div>
+            </div>
+
+            <p class="countdown-tip">
+              <i class="fa-solid fa-lightbulb" style="color:var(--cyan);margin-right:4px"></i>
+              Tip: Tap the Energy Core as fast as possible to overwhelm opponents!
+            </p>
+          </div>
         </div>
       </section>
 
@@ -1195,6 +1219,6 @@
   </script>
 
   <!-- Production Engine -->
-  <script src="app.js?v=2.5"></script>
+  <script src="app.js?v=2.6"></script>
 </body>
 </html>

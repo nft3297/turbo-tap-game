@@ -1545,19 +1545,41 @@ function launchCountdown() {
   document.getElementById('countdownPrizeText').textContent = `$${STATE.currentRoom.prize.toFixed(2)}`;
   showScreen('screenCountdown');
 
-  let count = 3;
+  let count = 10;
   const countElem = document.getElementById('hugeCountdownNumber');
+  const ringProgress = document.getElementById('countdownRingCircle');
+  const circumference = 364.4;
+
+  function updateRing(cnt) {
+    if (ringProgress) {
+      const progress = Math.max(0, cnt / 10);
+      ringProgress.style.strokeDashoffset = (circumference * (1 - progress)).toFixed(1);
+    }
+  }
+
   countElem.textContent = count;
+  countElem.classList.remove('countdown-go');
+  countElem.classList.remove('pop-tick');
+  void countElem.offsetWidth;
+  countElem.classList.add('pop-tick');
+  updateRing(count);
   sounds.playCountdownBeep();
 
   const cInterval = setInterval(() => {
     count--;
     if (count > 0) {
       countElem.textContent = count;
+      countElem.classList.remove('pop-tick');
+      void countElem.offsetWidth;
+      countElem.classList.add('pop-tick');
+      updateRing(count);
       sounds.playCountdownBeep();
       triggerHaptic('impact');
     } else if (count === 0) {
       countElem.textContent = 'GO!';
+      countElem.classList.remove('pop-tick');
+      countElem.classList.add('countdown-go');
+      updateRing(0);
       sounds.playCountdownBeep();
       triggerHaptic('heavy');
     } else {

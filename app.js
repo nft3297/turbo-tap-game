@@ -146,6 +146,10 @@ const STATE = {
   battleTimerInterval: null,
   opponentsInterval: null,
   userTaps: 0,
+  userDollarScore: 0,
+  activeGameMode: 'tap',
+  crashInterval: null,
+  royaleSpawnInterval: null,
   boostMeter: 0,
   isBoostActive: false,
   boostTimeout: null
@@ -1589,25 +1593,68 @@ function launchCountdown() {
   }, 1000);
 }
 
-// 15. Battle Arena Gameplay
+// 15. Battle Arena Gameplay & 4 Distinct Mini-Games
 function launchBattle() {
   showScreen('screenBattle');
   document.getElementById('battlePrizeText').textContent = `$${STATE.currentRoom.prize.toFixed(2)}`;
   
+  STATE.userDollarScore = 0.00;
   STATE.userTaps = 0;
   STATE.boostMeter = 0;
   STATE.isBoostActive = false;
   STATE.battleTimer = 15;
-  document.getElementById('userLiveScore').textContent = '0';
-  document.getElementById('boostPercent').textContent = '0%';
-  document.getElementById('boostFill').style.width = '0%';
-  document.getElementById('tapOrb').classList.remove('boost-active');
   document.getElementById('battleTimer').textContent = `${STATE.battleTimer}s`;
 
-  STATE.playersInRoom.forEach(p => p.score = 0);
+  // Determine Game Mode based on Room
+  const players = STATE.currentRoom.players;
+  const title = (STATE.currentRoom.title || '').toLowerCase();
+  
+  let activeMode = 'tap';
+  if (players === 3 || title.includes('trio')) {
+    activeMode = 'tap';
+  } else if (players === 5 || title.includes('squad')) {
+    activeMode = 'vault';
+  } else if (players === 8 || title.includes('elite')) {
+    activeMode = 'crash';
+  } else if (players >= 12 || title.includes('royale')) {
+    activeMode = 'royale';
+  }
+  STATE.activeGameMode = activeMode;
+
+  // Switch Active Mode Panel
+  document.querySelectorAll('.game-mode-panel').forEach(panel => {
+    panel.classList.remove('active');
+    panel.style.display = 'none';
+  });
+
+  const activePanel = document.getElementById(`gameMode-${activeMode}`);
+  if (activePanel) {
+    activePanel.classList.add('active');
+    activePanel.style.display = 'flex';
+  }
+
+  // Reset all players scores in room
+  STATE.playersInRoom.forEach(p => p.score = 0.00);
   renderLiveBoard();
 
+  // Clear any existing intervals
   if (STATE.battleTimerInterval) clearInterval(STATE.battleTimerInterval);
+  if (STATE.opponentsInterval) clearInterval(STATE.opponentsInterval);
+  if (STATE.crashInterval) clearInterval(STATE.crashInterval);
+  if (STATE.royaleSpawnInterval) clearInterval(STATE.royaleSpawnInterval);
+
+  // Initialize specific game mode
+  if (activeMode === 'tap') {
+    initTapMode();
+  } else if (activeMode === 'vault') {
+    initVaultMode();
+  } else if (activeMode === 'crash') {
+    initCrashMode();
+  } else if (activeMode === 'royale') {
+    initRoyaleMode();
+  }
+
+  // Battle Countdown Timer
   STATE.battleTimerInterval = setInterval(() => {
     STATE.battleTimer--;
     document.getElementById('battleTimer').textContent = `${STATE.battleTimer}s`;
@@ -1620,33 +1667,48 @@ function launchBattle() {
     if (STATE.battleTimer <= 0) {
       clearInterval(STATE.battleTimerInterval);
       clearInterval(STATE.opponentsInterval);
+      if (STATE.crashInterval) clearInterval(STATE.crashInterval);
+      if (STATE.royaleSpawnInterval) clearInterval(STATE.royaleSpawnInterval);
       finishBattle();
     }
   }, 1000);
 
-  if (STATE.opponentsInterval) clearInterval(STATE.opponentsInterval);
+  // Realistic Opponent AI Dollar Accumulation
+  // In 15 seconds, opponents gradually gain dollar values matching the target prize pool!
   STATE.opponentsInterval = setInterval(() => {
+    const prizeTarget = STATE.currentRoom.prize || 2.0;
+    // 60 ticks over 15s (250ms interval)
     STATE.playersInRoom.forEach(p => {
       if (!p.isUser) {
-        const gain = Math.floor(Math.random() * (p.speed * 2.2));
-        p.score += gain;
+        const speedFactor = (p.speed || 8) / 10;
+        const tickBase = (prizeTarget / 60) * speedFactor;
+        const gain = Math.random() * tickBase * 1.55;
+        p.score = Math.round((p.score + gain) * 100) / 100;
       }
     });
     renderLiveBoard();
-  }, 200);
+  }, 250);
+}
+
+// ================= MODE 1: SPEED CASH TAP RACE (TRIO - 3P) =================
+function initTapMode() {
+  document.getElementById('userLiveScore').textContent = '$0.00';
+  document.getElementById('boostPercent').textContent = '0%';
+  document.getElementById('boostFill').style.width = '0%';
+  document.getElementById('tapOrb').classList.remove('boost-active');
 }
 
 function handleOrbTap(e) {
   if (e) e.preventDefault();
   if (STATE.battleTimer <= 0) return;
 
-  const points = STATE.isBoostActive ? 30 : 10;
-  STATE.userTaps += points;
+  const dollarGain = STATE.isBoostActive ? 0.15 : 0.05;
+  STATE.userDollarScore = Math.round((STATE.userDollarScore + dollarGain) * 100) / 100;
 
   const userObj = STATE.playersInRoom.find(p => p.isUser);
-  if (userObj) userObj.score = STATE.userTaps;
+  if (userObj) userObj.score = STATE.userDollarScore;
 
-  document.getElementById('userLiveScore').textContent = STATE.userTaps;
+  document.getElementById('userLiveScore').textContent = `$${STATE.userDollarScore.toFixed(2)}`;
 
   if (STATE.isBoostActive) {
     sounds.playBoostTap();
@@ -1656,10 +1718,10 @@ function handleOrbTap(e) {
     triggerHaptic('light');
   }
 
-  spawnFloatingText(e, points, STATE.isBoostActive);
+  spawnFloatingText(e, `$${dollarGain.toFixed(2)}`, STATE.isBoostActive, document.getElementById('tapOrb'));
 
   if (!STATE.isBoostActive) {
-    STATE.boostMeter += 4;
+    STATE.boostMeter += 5;
     if (STATE.boostMeter >= 100) {
       activateTurboBoost();
     } else {
@@ -1678,24 +1740,352 @@ function activateTurboBoost() {
   document.getElementById('boostFill').style.width = '100%';
   document.getElementById('tapOrb').classList.add('boost-active');
   triggerHaptic('heavy');
-  showToast('🔥 TURBO FRENZY ACTIVATED! 3X SCORE!');
+  showToast('🔥 TURBO FRENZY ACTIVATED! 3X CASH REWARDS!');
 
   clearTimeout(STATE.boostTimeout);
   STATE.boostTimeout = setTimeout(() => {
     STATE.isBoostActive = false;
     STATE.boostMeter = 0;
-    document.getElementById('boostPercent').textContent = '0%';
-    document.getElementById('boostFill').style.width = '0%';
-    document.getElementById('tapOrb').classList.remove('boost-active');
+    const boostPercentEl = document.getElementById('boostPercent');
+    const boostFillEl = document.getElementById('boostFill');
+    const tapOrbEl = document.getElementById('tapOrb');
+    if (boostPercentEl) boostPercentEl.textContent = '0%';
+    if (boostFillEl) boostFillEl.style.width = '0%';
+    if (tapOrbEl) tapOrbEl.classList.remove('boost-active');
   }, 4000);
 }
 
-function spawnFloatingText(e, text, isBoosted) {
-  const orb = document.getElementById('tapOrb');
-  const rect = orb.getBoundingClientRect();
+// ================= MODE 2: LUCKY VAULT LOOT BOX (SQUAD - 5P) =================
+function initVaultMode() {
+  const scoreEl = document.getElementById('userVaultLiveScore');
+  if (scoreEl) scoreEl.textContent = '$0.00';
+  renderVaultGrid();
+}
+
+function renderVaultGrid() {
+  const grid = document.getElementById('vaultGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  for (let i = 0; i < 6; i++) {
+    const isGolden = Math.random() < 0.28;
+    const card = document.createElement('div');
+    card.className = `vault-card ${isGolden ? 'golden' : ''}`;
+    card.id = `vaultBox-${i}`;
+    card.dataset.golden = isGolden ? '1' : '0';
+    card.innerHTML = `
+      <i class="fa-solid ${isGolden ? 'fa-vault' : 'fa-lock'} vault-icon"></i>
+      <span class="vault-drop-label">${isGolden ? 'JACKPOT SAFE' : 'CYBER SAFE'}</span>
+    `;
+    card.addEventListener('pointerdown', (e) => handleVaultTap(i, e));
+    grid.appendChild(card);
+  }
+}
+
+function handleVaultTap(idx, e) {
+  if (e) e.preventDefault();
+  if (STATE.battleTimer <= 0) return;
+
+  const card = document.getElementById(`vaultBox-${idx}`);
+  if (!card || card.classList.contains('cracked')) return;
+
+  const isGolden = card.dataset.golden === '1';
+  // Golden vault drops $0.40 - $0.80, Regular drops $0.15 - $0.30
+  const gain = isGolden 
+    ? Math.round((0.40 + Math.random() * 0.40) * 100) / 100
+    : Math.round((0.15 + Math.random() * 0.15) * 100) / 100;
+
+  STATE.userDollarScore = Math.round((STATE.userDollarScore + gain) * 100) / 100;
+  const userObj = STATE.playersInRoom.find(p => p.isUser);
+  if (userObj) userObj.score = STATE.userDollarScore;
+
+  const scoreEl = document.getElementById('userVaultLiveScore');
+  if (scoreEl) scoreEl.textContent = `$${STATE.userDollarScore.toFixed(2)}`;
+
+  if (isGolden) {
+    sounds.playBoostTap();
+    triggerHaptic('heavy');
+  } else {
+    sounds.playTap();
+    triggerHaptic('light');
+  }
+
+  spawnFloatingText(e, `$${gain.toFixed(2)}`, isGolden, card);
+
+  card.classList.add('cracked');
+  card.style.transform = 'scale(0.92)';
+
+  // Re-arm vault box with fresh loot after 450ms
+  setTimeout(() => {
+    if (!card || STATE.battleTimer <= 0) return;
+    const newGolden = Math.random() < 0.28;
+    card.className = `vault-card ${newGolden ? 'golden' : ''}`;
+    card.dataset.golden = newGolden ? '1' : '0';
+    card.innerHTML = `
+      <i class="fa-solid ${newGolden ? 'fa-vault' : 'fa-lock'} vault-icon"></i>
+      <span class="vault-drop-label">${newGolden ? 'JACKPOT SAFE' : 'CYBER SAFE'}</span>
+    `;
+    card.style.transform = 'none';
+  }, 450);
+
+  renderLiveBoard();
+}
+
+// ================= MODE 3: RISING $ MULTIPLIER CRASH (ELITE - 8P) =================
+let crashRoundState = {
+  multiplier: 1.00,
+  crashAt: 2.50,
+  hasCashedOut: false,
+  isFlying: false,
+  baseBet: 0.50
+};
+
+function initCrashMode() {
+  crashRoundState = {
+    multiplier: 1.00,
+    crashAt: 2.50,
+    hasCashedOut: false,
+    isFlying: false,
+    baseBet: 0.50
+  };
+  startCrashRound();
+}
+
+function startCrashRound() {
+  if (STATE.battleTimer <= 0) return;
+  if (STATE.crashInterval) clearInterval(STATE.crashInterval);
+
+  crashRoundState.multiplier = 1.00;
+  // Dynamic crash point between 1.50x and 6.00x
+  crashRoundState.crashAt = Math.round((1.50 + Math.random() * 4.20) * 100) / 100;
+  crashRoundState.hasCashedOut = false;
+  crashRoundState.isFlying = true;
+  crashRoundState.baseBet = Math.max(0.40, Math.round((STATE.currentRoom.prize / 10) * 100) / 100);
+
+  const stateTag = document.getElementById('crashStateLabel');
+  const rocketWrap = document.getElementById('crashRocketWrap');
+  const cashoutBtn = document.getElementById('crashCashoutBtn');
+  const multText = document.getElementById('crashMultiplierText');
+  const liveVal = document.getElementById('crashLiveValue');
+  const ticker = document.getElementById('crashOppoTicker');
+
+  if (stateTag) {
+    stateTag.className = 'crash-state-tag flying';
+    stateTag.innerHTML = '<i class="fa-solid fa-plane-departure"></i> FLYING 🚀';
+  }
+  if (rocketWrap) {
+    rocketWrap.className = 'crash-rocket-wrap flying';
+  }
+  if (cashoutBtn) {
+    cashoutBtn.disabled = false;
+    document.getElementById('cashoutBtnAmt').textContent = `$${crashRoundState.baseBet.toFixed(2)}`;
+  }
+  if (multText) multText.textContent = '1.00x';
+  if (liveVal) liveVal.textContent = `$${crashRoundState.baseBet.toFixed(2)}`;
+  if (ticker) ticker.textContent = '🚀 Rocket launching! Tap Cashout before crash!';
+
+  STATE.crashInterval = setInterval(() => {
+    if (STATE.battleTimer <= 0) {
+      clearInterval(STATE.crashInterval);
+      return;
+    }
+
+    // Accelerating multiplier climb
+    const step = crashRoundState.multiplier < 2 ? 0.04 : 0.08;
+    crashRoundState.multiplier = Math.round((crashRoundState.multiplier + step) * 100) / 100;
+
+    const currentVal = Math.round((crashRoundState.baseBet * crashRoundState.multiplier) * 100) / 100;
+
+    if (multText) multText.textContent = `${crashRoundState.multiplier.toFixed(2)}x`;
+    if (liveVal) liveVal.textContent = `$${currentVal.toFixed(2)}`;
+    if (cashoutBtn && !crashRoundState.hasCashedOut) {
+      document.getElementById('cashoutBtnAmt').textContent = `$${currentVal.toFixed(2)}`;
+    }
+
+    // Random rival cashout simulation in ticker
+    if (Math.random() < 0.12) {
+      const rivals = STATE.playersInRoom.filter(p => !p.isUser);
+      if (rivals.length > 0) {
+        const randRival = rivals[Math.floor(Math.random() * rivals.length)];
+        if (ticker) ticker.textContent = `⚡ ${randRival.name} cashed out at ${crashRoundState.multiplier.toFixed(2)}x!`;
+      }
+    }
+
+    // Check Crash
+    if (crashRoundState.multiplier >= crashRoundState.crashAt) {
+      clearInterval(STATE.crashInterval);
+      handleCrashOccurred();
+    }
+  }, 90);
+}
+
+function handleCrashCashout() {
+  if (STATE.battleTimer <= 0 || !crashRoundState.isFlying || crashRoundState.hasCashedOut) return;
+
+  crashRoundState.hasCashedOut = true;
+  const cashWon = Math.round((crashRoundState.baseBet * crashRoundState.multiplier) * 100) / 100;
+
+  STATE.userDollarScore = Math.round((STATE.userDollarScore + cashWon) * 100) / 100;
+  const userObj = STATE.playersInRoom.find(p => p.isUser);
+  if (userObj) userObj.score = STATE.userDollarScore;
+
+  sounds.playBoostTap();
+  triggerHaptic('success');
+
+  const stateTag = document.getElementById('crashStateLabel');
+  const cashoutBtn = document.getElementById('crashCashoutBtn');
+  const ticker = document.getElementById('crashOppoTicker');
+
+  if (stateTag) {
+    stateTag.className = 'crash-state-tag cashed';
+    stateTag.textContent = `CASHED $${cashWon.toFixed(2)}!`;
+  }
+  if (cashoutBtn) {
+    cashoutBtn.disabled = true;
+    document.getElementById('cashoutBtnAmt').textContent = `LOCKED!`;
+  }
+  if (ticker) ticker.textContent = `🎉 You secured $${cashWon.toFixed(2)} at ${crashRoundState.multiplier.toFixed(2)}x!`;
+
+  spawnFloatingText(null, `$${cashWon.toFixed(2)}`, true, cashoutBtn);
+  renderLiveBoard();
+}
+
+function handleCrashOccurred() {
+  crashRoundState.isFlying = false;
+
+  const stateTag = document.getElementById('crashStateLabel');
+  const rocketWrap = document.getElementById('crashRocketWrap');
+  const cashoutBtn = document.getElementById('crashCashoutBtn');
+  const ticker = document.getElementById('crashOppoTicker');
+
+  if (stateTag) {
+    stateTag.className = 'crash-state-tag crashed';
+    stateTag.innerHTML = `CRASHED @ ${crashRoundState.crashAt.toFixed(2)}x 💥`;
+  }
+  if (rocketWrap) {
+    rocketWrap.className = 'crash-rocket-wrap crashed';
+  }
+  if (cashoutBtn) {
+    cashoutBtn.disabled = true;
+    document.getElementById('cashoutBtnAmt').textContent = 'CRASHED!';
+  }
+  if (!crashRoundState.hasCashedOut) {
+    sounds.playCountdownBeep();
+    triggerHaptic('warning');
+    if (ticker) ticker.textContent = `💥 Rocket crashed! You didn't cash out in time!`;
+  }
+
+  // Next round launches after 1.2s if time remains
+  setTimeout(() => {
+    if (STATE.battleTimer > 2) {
+      startCrashRound();
+    }
+  }, 1200);
+}
+
+// ================= MODE 4: MEGA JACKPOT ROYALE (CHAMPIONS - 12P) =================
+function initRoyaleMode() {
+  const scoreEl = document.getElementById('userRoyaleLiveScore');
+  if (scoreEl) scoreEl.textContent = '$0.00';
+
+  const field = document.getElementById('lightningField');
+  if (field) field.innerHTML = '';
+
+  if (STATE.royaleSpawnInterval) clearInterval(STATE.royaleSpawnInterval);
+
+  // Spawn dynamic lightning tokens every 550ms
+  STATE.royaleSpawnInterval = setInterval(() => {
+    if (STATE.battleTimer <= 0) {
+      clearInterval(STATE.royaleSpawnInterval);
+      return;
+    }
+    spawnRoyaleToken();
+  }, 550);
+}
+
+function spawnRoyaleToken() {
+  const field = document.getElementById('lightningField');
+  if (!field) return;
+
+  const currentTokens = field.querySelectorAll('.royale-token');
+  if (currentTokens.length >= 6) return;
+
+  const rand = Math.random();
+  let type = { name: 'Cash', val: 0.25, icon: 'fa-solid fa-money-bill-wave', color: '#10b981' };
+
+  if (rand < 0.40) {
+    type = { name: 'Cash', val: 0.25, icon: 'fa-solid fa-money-bill-wave', color: '#10b981' };
+  } else if (rand < 0.70) {
+    type = { name: 'Gold', val: 0.50, icon: 'fa-solid fa-coins', color: '#f59e0b' };
+  } else if (rand < 0.90) {
+    type = { name: 'Diamond', val: 1.00, icon: 'fa-solid fa-gem', color: '#00f0ff' };
+  } else {
+    type = { name: 'Jackpot Crown', val: 2.00, icon: 'fa-solid fa-crown', color: '#ffd700' };
+  }
+
+  const token = document.createElement('div');
+  token.className = 'royale-token';
+  const top = 12 + Math.random() * 62;
+  const left = 8 + Math.random() * 76;
+  token.style.top = `${top}%`;
+  token.style.left = `${left}%`;
+
+  token.innerHTML = `
+    <i class="${type.icon} royale-token-icon" style="color: ${type.color};"></i>
+    <span class="royale-token-val">+$${type.val.toFixed(2)}</span>
+  `;
+
+  token.addEventListener('pointerdown', (e) => {
+    handleRoyaleTokenTap(token, type.val, e);
+  });
+
+  field.appendChild(token);
+
+  // Auto-snatch by rivals if not tapped in 2.2 seconds!
+  setTimeout(() => {
+    if (token && token.parentElement) {
+      token.style.opacity = '0';
+      token.style.transform = 'scale(0)';
+      setTimeout(() => token.remove(), 200);
+    }
+  }, 2200);
+}
+
+function handleRoyaleTokenTap(tokenEl, val, e) {
+  if (e) e.preventDefault();
+  if (STATE.battleTimer <= 0) return;
+
+  STATE.userDollarScore = Math.round((STATE.userDollarScore + val) * 100) / 100;
+  const userObj = STATE.playersInRoom.find(p => p.isUser);
+  if (userObj) userObj.score = STATE.userDollarScore;
+
+  const scoreEl = document.getElementById('userRoyaleLiveScore');
+  if (scoreEl) scoreEl.textContent = `$${STATE.userDollarScore.toFixed(2)}`;
+
+  if (val >= 1.00) {
+    sounds.playBoostTap();
+    triggerHaptic('heavy');
+  } else {
+    sounds.playTap();
+    triggerHaptic('light');
+  }
+
+  spawnFloatingText(e, `$${val.toFixed(2)}`, val >= 1.00, tokenEl);
+
+  if (tokenEl && tokenEl.parentElement) {
+    tokenEl.remove();
+  }
+
+  renderLiveBoard();
+}
+
+function spawnFloatingText(e, text, isBoosted, fallbackEl) {
+  const target = fallbackEl || document.getElementById('tapOrb') || document.body;
+  const rect = target.getBoundingClientRect();
   const el = document.createElement('div');
   el.className = 'floating-damage' + (isBoosted ? ' boosted' : '');
-  el.textContent = `+${text}`;
+  const str = String(text);
+  el.textContent = str.startsWith('$') || str.startsWith('+') ? (str.startsWith('+') ? str : `+${str}`) : `+${str}`;
 
   let clientX = rect.left + rect.width / 2;
   let clientY = rect.top + rect.height / 3;
@@ -1720,11 +2110,15 @@ function renderLiveBoard() {
   const container = document.getElementById('opponentsList');
   if (!container) return;
 
+  const userObj = STATE.playersInRoom.find(p => p.isUser);
+  if (userObj) userObj.score = STATE.userDollarScore || 0;
+
   const sorted = [...STATE.playersInRoom].sort((a, b) => b.score - a.score);
-  const maxScore = Math.max(...sorted.map(p => p.score), 100);
+  const prizePool = STATE.currentRoom?.prize || 2.0;
+  const maxScore = Math.max(prizePool, ...sorted.map(p => p.score), 0.5);
 
   container.innerHTML = sorted.map((p, idx) => {
-    const pct = Math.min(100, Math.round((p.score / maxScore) * 100));
+    const pct = Math.min(100, Math.max(5, Math.round((p.score / maxScore) * 100)));
     return `
       <div class="oppo-row ${p.isUser ? 'is-user' : ''}">
         <span class="oppo-rank">#${idx + 1}</span>
@@ -1732,7 +2126,7 @@ function renderLiveBoard() {
         <div class="oppo-bar-track">
           <div class="oppo-bar-fill" style="width: ${pct}%"></div>
         </div>
-        <span class="oppo-score">${p.score}</span>
+        <span class="oppo-score">$${p.score.toFixed(2)}</span>
       </div>
     `;
   }).join('');
@@ -1740,6 +2134,14 @@ function renderLiveBoard() {
 
 // 16. Victory & Result Screen
 async function finishBattle() {
+  if (STATE.crashInterval) clearInterval(STATE.crashInterval);
+  if (STATE.royaleSpawnInterval) clearInterval(STATE.royaleSpawnInterval);
+  if (STATE.opponentsInterval) clearInterval(STATE.opponentsInterval);
+  if (STATE.battleTimerInterval) clearInterval(STATE.battleTimerInterval);
+
+  const userObj = STATE.playersInRoom.find(p => p.isUser);
+  if (userObj) userObj.score = STATE.userDollarScore || 0;
+
   const sorted = [...STATE.playersInRoom].sort((a, b) => b.score - a.score);
   const userRank = sorted.findIndex(p => p.isUser) + 1;
   const isWinner = userRank === 1;
@@ -1794,13 +2196,17 @@ async function finishBattle() {
   board.innerHTML = sorted.map((p, idx) => `
     <div class="summary-row ${idx === 0 ? 'is-winner' : ''}">
       <span>#${idx + 1} ${p.isUser ? 'YOU' : p.name}</span>
-      <span class="${idx === 0 ? 'text-gold' : ''}">${p.score} pts</span>
+      <span class="${idx === 0 ? 'text-gold' : ''}">$${p.score.toFixed(2)}</span>
     </div>
   `).join('');
 }
 
 function returnToLobby() {
   triggerHaptic('light');
+  if (STATE.crashInterval) clearInterval(STATE.crashInterval);
+  if (STATE.royaleSpawnInterval) clearInterval(STATE.royaleSpawnInterval);
+  if (STATE.opponentsInterval) clearInterval(STATE.opponentsInterval);
+  if (STATE.battleTimerInterval) clearInterval(STATE.battleTimerInterval);
   showScreen('screenLobby');
 }
 

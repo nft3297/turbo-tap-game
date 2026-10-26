@@ -15,7 +15,7 @@
   <!-- QRCode.js for Deposit Address QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
-  <link rel="stylesheet" href="style.css?v=2.6">
+  <link rel="stylesheet" href="style.css?v=3.0">
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
@@ -407,7 +407,7 @@
       <section id="screenBattle" class="view-screen">
         <div class="battle-header">
           <div class="battle-pool-pill">
-            <i class="fa-solid fa-trophy"></i> POOL: <b id="battlePrizeText">$4.00</b>
+            <i class="fa-solid fa-trophy" style="color:var(--gold);margin-right:4px"></i> POOL: <b id="battlePrizeText">$4.00</b>
           </div>
           <div class="battle-timer-box">
             <i class="fa-solid fa-stopwatch"></i>
@@ -418,35 +418,80 @@
 
         <div class="live-leaderboard-card">
           <div class="board-title">
-            <span><i class="fa-solid fa-ranking-star"></i> LIVE ARENA STANDINGS</span>
+            <span><i class="fa-solid fa-ranking-star" style="color:#06b6d4;margin-right:4px"></i> LIVE ARENA STANDINGS (USDT $)</span>
             <span class="live-pill">LIVE</span>
           </div>
           <div class="opponents-list" id="opponentsList"></div>
         </div>
 
-        <div class="battle-tap-area">
-          <div class="tap-target-wrapper">
-            <div class="tap-rings">
-              <div class="ring-pulse r1"></div>
-              <div class="ring-pulse r2"></div>
-            </div>
-            <button id="tapOrb" class="battle-orb" ontouchstart="handleOrbTap(event)" onmousedown="handleOrbTap(event)">
-              <div class="orb-inner">
-                <i class="fa-solid fa-bolt-lightning"></i>
-                <div class="orb-tap-text">TAP FAST!</div>
-                <div class="orb-score" id="userLiveScore">0</div>
+        <!-- Dynamic Game Arena Container (Switches per room mode) -->
+        <div id="battleGameplayContainer">
+          <!-- Mode 1: Cash Tap Race (Trio 3P) -->
+          <div id="gameMode-tap" class="game-mode-panel active">
+            <div class="tap-target-wrapper">
+              <div class="tap-rings">
+                <div class="ring-pulse r1"></div>
+                <div class="ring-pulse r2"></div>
               </div>
-            </button>
+              <button id="tapOrb" class="battle-orb" ontouchstart="handleOrbTap(event)" onmousedown="handleOrbTap(event)">
+                <div class="orb-inner">
+                  <div class="orb-cash-icon" style="font-size:1.8rem;color:#10b981;margin-bottom:2px"><i class="fa-solid fa-dollar-sign"></i></div>
+                  <div class="orb-tap-text">TAP TO LOOT $</div>
+                  <div class="orb-score" id="userLiveScore">$0.00</div>
+                </div>
+              </button>
+            </div>
+            <div class="boost-meter-container">
+              <div class="boost-label">
+                <span><i class="fa-solid fa-bolt"></i> 3X CASH FRENZY</span>
+                <span id="boostPercent">0%</span>
+              </div>
+              <div class="boost-track">
+                <div id="boostFill" class="boost-fill" style="width: 0%;"></div>
+              </div>
+            </div>
           </div>
 
-          <div class="boost-meter-container">
-            <div class="boost-label">
-              <span><i class="fa-solid fa-fire"></i> TURBO FRENZY (3X)</span>
-              <span id="boostPercent">0%</span>
+          <!-- Mode 2: Lucky Vault Loot Box (Squad 5P) -->
+          <div id="gameMode-vault" class="game-mode-panel" style="display:none">
+            <div class="vault-mode-header">
+              <span class="vault-mode-tag"><i class="fa-solid fa-shield-halved"></i> CRACK VAULTS FOR INSTANT $</span>
+              <div class="user-vault-score">YOUR CASH: <b id="userVaultLiveScore">$0.00</b></div>
             </div>
-            <div class="boost-track">
-              <div id="boostFill" class="boost-fill" style="width: 0%;"></div>
+            <div class="vault-grid" id="vaultGrid"></div>
+            <div class="vault-mode-tip">⚡ Tap glowing gold safes for massive +$1.00 loot drops!</div>
+          </div>
+
+          <!-- Mode 3: Rising $ Multiplier Crash (Elite 8P) -->
+          <div id="gameMode-crash" class="game-mode-panel" style="display:none">
+            <div class="crash-arena-card">
+              <div class="crash-status-bar">
+                <span class="crash-badge"><i class="fa-solid fa-chart-line"></i> CYBER MULTIPLIER</span>
+                <span id="crashStateLabel" class="crash-state-tag flying">FLYING 🚀</span>
+              </div>
+              <div class="crash-display-box">
+                <div class="crash-rocket-wrap" id="crashRocketWrap">
+                  <i class="fa-solid fa-rocket crash-rocket-icon"></i>
+                </div>
+                <div class="crash-multiplier-text" id="crashMultiplierText">1.00x</div>
+                <div class="crash-live-val">VALUE: <b id="crashLiveValue">$0.00</b></div>
+              </div>
+              <button class="crash-cashout-btn" id="crashCashoutBtn" onclick="handleCrashCashout()">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+                <span>CASHOUT <b id="cashoutBtnAmt">$0.00</b></span>
+              </button>
+              <div class="crash-oppo-ticker" id="crashOppoTicker">Rocket launching...</div>
             </div>
+          </div>
+
+          <!-- Mode 4: Mega Jackpot Royale (Royale 12P) -->
+          <div id="gameMode-royale" class="game-mode-panel" style="display:none">
+            <div class="royale-mode-header">
+              <span class="royale-badge"><i class="fa-solid fa-crown"></i> 12-PLAYER LIGHTNING ROYALE</span>
+              <div class="user-royale-score">LOOTED: <b id="userRoyaleLiveScore">$0.00</b></div>
+            </div>
+            <div class="lightning-field" id="lightningField"></div>
+            <div class="royale-tip">⚡ Snatch high-value 💎 Diamonds & 👑 Mystery Bags before 11 rivals grab them!</div>
           </div>
         </div>
       </section>
@@ -1219,6 +1264,6 @@
   </script>
 
   <!-- Production Engine -->
-  <script src="app.js?v=2.6"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 </html>

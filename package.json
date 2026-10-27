@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "node scripts/build-secure.js"
+    "build": "node scripts/build-secure.js",
+    "auto-push": "node scripts/auto-push.js"
   },
   "keywords": [
     "telegram-mini-app",

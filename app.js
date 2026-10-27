@@ -1629,40 +1629,84 @@ function startMatchmaking(playerCount, entryFee, prizeAmount, roomTitle) {
   STATE.searchTimerSeconds = 0;
   const timerElem = document.getElementById('searchTimer');
   const pingElem = document.getElementById('searchPing');
+  const badgeEl = document.querySelector('.search-badge');
+  if (timerElem) timerElem.textContent = '00:00';
+  if (pingElem) pingElem.textContent = '24ms';
+  if (badgeEl) {
+    badgeEl.className = 'search-badge pulse';
+    badgeEl.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> MATCHMAKING ACTIVE';
+    badgeEl.style.background = '';
+    badgeEl.style.borderColor = '';
+    badgeEl.style.color = '';
+  }
   
   if (STATE.matchmakingInterval) clearInterval(STATE.matchmakingInterval);
-  
-  const timerRunner = setInterval(() => {
+  if (STATE.searchTimerRunner) clearInterval(STATE.searchTimerRunner);
+  if (STATE.matchCompleteTimeout) clearTimeout(STATE.matchCompleteTimeout);
+
+  const TOTAL_SEARCH_SECONDS = 15;
+  const opponentsNeeded = playerCount - 1;
+  // Distribute opponents smoothly across the 15-second search duration
+  const joinIntervalMs = opponentsNeeded > 0 ? Math.floor(14200 / opponentsNeeded) : 1000;
+  let slotIndex = 1;
+
+  // 1-second interval timer: counts every second from 00:00 up to 00:15
+  STATE.searchTimerRunner = setInterval(() => {
     STATE.searchTimerSeconds++;
     const mins = String(Math.floor(STATE.searchTimerSeconds / 60)).padStart(2, '0');
     const secs = String(STATE.searchTimerSeconds % 60).padStart(2, '0');
-    timerElem.textContent = `${mins}:${secs}`;
-    pingElem.textContent = `${Math.floor(20 + Math.random() * 12)}ms`;
+    if (timerElem) timerElem.textContent = `${mins}:${secs}`;
+    if (pingElem) pingElem.textContent = `${Math.floor(20 + Math.random() * 12)}ms`;
+
+    // At exactly 15 seconds: Matchmaking complete!
+    if (STATE.searchTimerSeconds >= TOTAL_SEARCH_SECONDS) {
+      clearInterval(STATE.searchTimerRunner);
+      clearInterval(STATE.matchmakingInterval);
+
+      // Ensure all player slots are filled
+      while (slotIndex < playerCount) {
+        const oppo = generateOpponent(slotIndex);
+        STATE.playersInRoom.push(oppo);
+        slotIndex++;
+      }
+      renderSlots(playerCount);
+
+      const countEl = document.getElementById('slotsCountText');
+      const barEl = document.getElementById('slotsBarFill');
+      if (countEl) countEl.textContent = `${playerCount} / ${playerCount}`;
+      if (barEl) barEl.style.width = '100%';
+
+      sounds.playMatchFound();
+      triggerHaptic('heavy');
+
+      const liveBadge = document.querySelector('.search-badge');
+      if (liveBadge) {
+        liveBadge.classList.remove('pulse');
+        liveBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> ALL PLAYERS READY!';
+        liveBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+        liveBadge.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+        liveBadge.style.color = '#34d399';
+      }
+
+      STATE.matchCompleteTimeout = setTimeout(launchCountdown, 900);
+    }
   }, 1000);
 
-  let slotIndex = 1;
-  const joinIntervalDelay = playerCount > 5 ? 650 : 900;
-
+  // Interval to gradually connect opponents across the 15-second background search
   STATE.matchmakingInterval = setInterval(() => {
-    if (slotIndex < playerCount) {
+    if (slotIndex < playerCount && STATE.searchTimerSeconds < TOTAL_SEARCH_SECONDS) {
       const oppo = generateOpponent(slotIndex);
       STATE.playersInRoom.push(oppo);
       slotIndex++;
 
       renderSlots(playerCount);
-      document.getElementById('slotsCountText').textContent = `${slotIndex} / ${playerCount}`;
-      document.getElementById('slotsBarFill').style.width = `${(slotIndex / playerCount) * 100}%`;
+      const countEl = document.getElementById('slotsCountText');
+      const barEl = document.getElementById('slotsBarFill');
+      if (countEl) countEl.textContent = `${slotIndex} / ${playerCount}`;
+      if (barEl) barEl.style.width = `${(slotIndex / playerCount) * 100}%`;
       triggerHaptic('light');
-
-      if (slotIndex === playerCount) {
-        clearInterval(STATE.matchmakingInterval);
-        clearInterval(timerRunner);
-        sounds.playMatchFound();
-        triggerHaptic('heavy');
-        setTimeout(launchCountdown, 900);
-      }
     }
-  }, joinIntervalDelay);
+  }, joinIntervalMs);
 }
 
 function renderSlots(totalSlots) {
@@ -1696,6 +1740,8 @@ function renderSlots(totalSlots) {
 
 function cancelMatchmaking() {
   if (STATE.matchmakingInterval) clearInterval(STATE.matchmakingInterval);
+  if (STATE.searchTimerRunner) clearInterval(STATE.searchTimerRunner);
+  if (STATE.matchCompleteTimeout) clearTimeout(STATE.matchCompleteTimeout);
   triggerHaptic('warning');
   showToast('Matchmaking cancelled');
   showScreen('screenLobby');

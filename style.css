@@ -2288,35 +2288,40 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 10px;
+  padding: 24px 10px 20px;
+  position: relative;
 }
 
 .radar-wrapper {
   position: relative;
-  width: 160px;
-  height: 160px;
-  margin-bottom: 16px;
+  width: 170px;
+  height: 170px;
+  margin: 12px auto 18px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 240, 255, 0.12) 0%, rgba(168, 85, 247, 0.06) 45%, transparent 72%);
+  box-shadow: 0 0 35px rgba(0, 240, 255, 0.2), inset 0 0 20px rgba(0, 240, 255, 0.1);
 }
 
 .radar-circle {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(0, 240, 255, 0.25);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
 }
-.circle-1 { width: 50px; height: 50px; }
-.circle-2 { width: 105px; height: 105px; border-style: dashed; }
-.circle-3 { width: 160px; height: 160px; border-color: rgba(0, 240, 255, 0.4); }
+.circle-1 { width: 55px; height: 55px; border-color: rgba(0, 240, 255, 0.55); }
+.circle-2 { width: 110px; height: 110px; border-style: dashed; border-color: rgba(168, 85, 247, 0.5); }
+.circle-3 { width: 170px; height: 170px; border-color: rgba(0, 240, 255, 0.65); }
 
 .radar-sweep {
   position: absolute;
-  width: 160px;
-  height: 160px;
+  width: 170px;
+  height: 170px;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, rgba(0, 240, 255, 0.4) 0deg, transparent 60deg);
-  animation: radarSpin 2s linear infinite;
+  background: conic-gradient(from 0deg, rgba(0, 240, 255, 0.45) 0deg, rgba(168, 85, 247, 0.2) 35deg, transparent 70deg);
+  animation: radarSpin 2.2s linear infinite;
 }
 
 @keyframes radarSpin {

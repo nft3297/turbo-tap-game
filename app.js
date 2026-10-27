@@ -1413,8 +1413,8 @@ function renderHistoryList() {
 // ================= ARENA DYNAMIC ROOMS ENGINE =================
 // ================= ARENA DYNAMIC ROOMS ENGINE (REAL-TIME LIVE SYNC) =================
 window.__ARENA_ROOMS = [
-  { id: 'trio', name: 'TRIO SHOWDOWN', desc: '3 Players Solo Knockout', players: 3, entryFee: 5, prize: 2, badge: 'FASTEST MATCH' },
-  { id: 'squad', name: 'SQUAD DOMINATION', desc: '5-Player Rush Elimination', players: 5, entryFee: 4, prize: 4, badge: 'SQUAD BATTLE' },
+  { id: 'trio', name: 'TRIO SHOWDOWN', desc: '3 Players Solo Knockout', players: 3, entryFee: 2, prize: 5, badge: 'FASTEST MATCH' },
+  { id: 'squad', name: 'SQUAD DOMINATION', desc: '5-Player Rush Elimination', players: 5, entryFee: 4, prize: 16, badge: 'SQUAD BATTLE' },
   { id: 'elite', name: 'ELITE SYNDICATE', desc: '8-Player Mega Clash', players: 8, entryFee: 7, prize: 7, badge: 'HIGH STAKES' },
   { id: 'royale', name: 'CHAMPIONS ROYALE', desc: '12-Player Ultimate Showdown', players: 12, entryFee: 15, prize: 15, badge: 'GRAND JACKPOT' }
 ];
@@ -1486,8 +1486,8 @@ function initRoomsLiveSync() {
 function joinArenaRoom(roomId) {
   const room = (window.__ARENA_ROOMS || []).find(r => r.id === roomId);
   const players = room?.players || (roomId === 'trio' ? 3 : roomId === 'squad' ? 5 : roomId === 'elite' ? 8 : 12);
-  const fee = room?.entryFee !== undefined ? parseFloat(room.entryFee) : (roomId === 'trio' ? 5 : roomId === 'squad' ? 4 : roomId === 'elite' ? 7 : 15);
-  const prize = room?.prize !== undefined ? parseFloat(room.prize) : fee;
+  const fee = room?.entryFee !== undefined ? parseFloat(room.entryFee) : (roomId === 'trio' ? 2 : roomId === 'squad' ? 4 : roomId === 'elite' ? 7 : 15);
+  const prize = room?.prize !== undefined ? parseFloat(room.prize) : (roomId === 'trio' ? 5 : roomId === 'squad' ? 16 : fee);
   const title = room?.name || (roomId === 'trio' ? 'Trio Showdown' : roomId === 'squad' ? 'Squad Domination' : roomId === 'elite' ? 'Elite Syndicate' : 'Champions Royale');
   startMatchmaking(players, fee, prize, title);
 }
@@ -2453,7 +2453,7 @@ async function finishBattle() {
     rewardBox.style.display = 'block';
     iconWrap.innerHTML = `<div class="result-trophy-ring"><i class="fa-solid fa-crown text-gold"></i></div>`;
     
-    // Battle Winnings credit directly to PROFIT WALLET!
+    // Battle Winnings credit directly to PROFIT WALLET and WITHDRAWAL WALLET!
     STATE.profitWallet = (STATE.profitWallet || 0) + STATE.currentRoom.prize;
     STATE.withdrawWallet = (STATE.withdrawWallet || 0) + STATE.currentRoom.prize;
 
@@ -2470,7 +2470,7 @@ async function finishBattle() {
     } catch (err) {}
 
     updateAllBalances();
-    addTransaction(`Won ${STATE.currentRoom.title} (Profit Wallet)`, `+$${STATE.currentRoom.prize.toFixed(2)}`, 'text-green');
+    addTransaction(`Won ${STATE.currentRoom.title} (Profit & Withdraw Wallet)`, `+$${STATE.currentRoom.prize.toFixed(2)}`, 'text-green');
     createConfetti();
   } else {
     triggerHaptic('warning');

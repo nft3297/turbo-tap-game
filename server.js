@@ -59,8 +59,8 @@ const DEFAULT_ARENA_ROOMS = [
     name: 'TRIO SHOWDOWN',
     desc: '3 Players Solo Knockout',
     players: 3,
-    entryFee: 5,
-    prize: 2,
+    entryFee: 2,
+    prize: 5,
     badge: 'FASTEST MATCH',
     theme: 'cyan'
   },
@@ -70,7 +70,7 @@ const DEFAULT_ARENA_ROOMS = [
     desc: '5-Player Rush Elimination',
     players: 5,
     entryFee: 4,
-    prize: 4,
+    prize: 16,
     badge: 'SQUAD BATTLE',
     theme: 'purple'
   },
@@ -1088,6 +1088,7 @@ const server = http.createServer(async (req, res) => {
           }
         } else if (type === 'profit') {
           updateData.profit_wallet = Math.max(0, parseFloat(userRow.profit_wallet || 0) + delta);
+          updateData.withdraw_wallet = Math.max(0, parseFloat(userRow.withdraw_wallet || 0) + delta);
         } else if (type === 'withdraw') {
           updateData.withdraw_wallet = Math.max(0, parseFloat(userRow.withdraw_wallet || 0) + delta);
         } else {

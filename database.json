@@ -460,8 +460,8 @@
       "name": "TRIO SHOWDOWN",
       "desc": "3 Players Solo Knockout",
       "players": 3,
-      "entryFee": 5,
-      "prize": 2,
+      "entryFee": 2,
+      "prize": 5,
       "badge": "FASTEST MATCH",
       "theme": "cyan"
     },
@@ -471,7 +471,7 @@
       "desc": "5-Player Rush Elimination",
       "players": 5,
       "entryFee": 4,
-      "prize": 4,
+      "prize": 16,
       "badge": "SQUAD BATTLE",
       "theme": "purple"
     },

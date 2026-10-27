@@ -4,24 +4,26 @@
    ============================================================ */
 
 :root {
-  --bg-primary: #0a0c14;
-  --bg-secondary: #121624;
-  --bg-card: rgba(22, 28, 46, 0.85);
-  --bg-card-hover: rgba(30, 38, 64, 0.95);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(0, 240, 255, 0.4);
+  --bg-primary: #080616;
+  --bg-secondary: #120e29;
+  --bg-card: rgba(26, 18, 48, 0.85);
+  --bg-card-hover: rgba(38, 26, 68, 0.95);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-focus: rgba(0, 240, 255, 0.5);
 
   /* Vibrant Accents */
   --cyan: #00f0ff;
-  --cyan-glow: rgba(0, 240, 255, 0.35);
+  --cyan-glow: rgba(0, 240, 255, 0.4);
   --purple: #a855f7;
-  --purple-glow: rgba(168, 85, 247, 0.35);
+  --purple-glow: rgba(168, 85, 247, 0.4);
   --amber: #f59e0b;
-  --amber-glow: rgba(245, 158, 11, 0.35);
+  --amber-glow: rgba(245, 158, 11, 0.4);
   --gold: #ffd700;
-  --gold-glow: rgba(255, 215, 0, 0.45);
+  --gold-glow: rgba(255, 215, 0, 0.5);
   --green: #10b981;
-  --green-glow: rgba(16, 185, 129, 0.35);
+  --green-glow: rgba(16, 185, 129, 0.4);
+  --magenta: #ec4899;
+  --magenta-glow: rgba(236, 72, 153, 0.4);
   --red: #ef4444;
 
   /* Typography & Sizing */
@@ -55,16 +57,50 @@ input, textarea {
 
 body {
   font-family: var(--font-main);
-  background: var(--bg-primary);
+  background-color: #070514;
   color: #f1f5f9;
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
+  /* Rich Dynamic Multi-Color Cyber Aurora Mesh Background */
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.15) 0%, transparent 60%),
-    radial-gradient(circle at 100% 50%, rgba(0, 240, 255, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 0% 100%, rgba(245, 158, 11, 0.08) 0%, transparent 50%);
+    radial-gradient(circle at 10% 15%, rgba(236, 72, 153, 0.32) 0%, transparent 45%),
+    radial-gradient(circle at 90% 20%, rgba(0, 240, 255, 0.30) 0%, transparent 45%),
+    radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.35) 0%, transparent 52%),
+    radial-gradient(circle at 8% 80%, rgba(245, 158, 11, 0.26) 0%, transparent 45%),
+    radial-gradient(circle at 92% 82%, rgba(16, 185, 129, 0.28) 0%, transparent 46%),
+    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.22) 0%, transparent 58%),
+    linear-gradient(160deg, #0c081e 0%, #060818 50%, #10061d 100%);
   background-attachment: fixed;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: 
+    radial-gradient(ellipse 700px 450px at 15% 35%, rgba(236, 72, 153, 0.18), transparent 70%),
+    radial-gradient(ellipse 700px 450px at 85% 65%, rgba(0, 240, 255, 0.18), transparent 70%),
+    radial-gradient(ellipse 600px 500px at 50% 90%, rgba(255, 215, 0, 0.14), transparent 70%),
+    radial-gradient(ellipse 550px 400px at 50% 10%, rgba(168, 85, 247, 0.2), transparent 70%);
+  animation: multicolorAuroraShift 16s ease-in-out infinite alternate;
+}
+
+@keyframes multicolorAuroraShift {
+  0% {
+    transform: scale(1) translateY(0);
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    transform: scale(1.06) translateY(-18px);
+    filter: hue-rotate(25deg);
+  }
+  100% {
+    transform: scale(0.98) translateY(14px);
+    filter: hue-rotate(-25deg);
+  }
 }
 
 .app-container {
@@ -74,7 +110,17 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
+  z-index: 1;
   padding-bottom: calc(75px + var(--safe-bottom));
+  background: rgba(10, 8, 24, 0.76);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid rgba(168, 85, 247, 0.2);
+  border-right: 1px solid rgba(0, 240, 255, 0.2);
+  box-shadow: 
+    0 0 60px rgba(168, 85, 247, 0.25),
+    0 0 40px rgba(0, 240, 255, 0.18),
+    0 20px 60px rgba(0, 0, 0, 0.85);
 }
 
 /* ================= 1. TOP BRAND BAR: TURBO TAP GAME WITH OFFICIAL LOGO ================= */
@@ -83,8 +129,11 @@ body {
   align-items: center;
   gap: 12px;
   padding: 8px 14px 6px;
-  background: linear-gradient(180deg, #060913 0%, rgba(10, 14, 26, 0.98) 100%);
-  border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+  background: linear-gradient(90deg, rgba(22, 12, 42, 0.94) 0%, rgba(12, 16, 40, 0.92) 50%, rgba(26, 12, 40, 0.94) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(168, 85, 247, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(0, 240, 255, 0.2);
 }
 
 .brand-logo-wrap {
@@ -120,12 +169,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, rgba(16, 24, 46, 0.98) 0%, rgba(8, 12, 26, 0.99) 50%, rgba(20, 18, 38, 0.98) 100%);
+  background: linear-gradient(135deg, rgba(28, 14, 52, 0.96) 0%, rgba(14, 16, 42, 0.98) 50%, rgba(32, 14, 48, 0.96) 100%);
   border: 2px solid rgba(0, 240, 255, 0.75);
   padding: 8px 14px;
   min-height: 60px;
   border-radius: var(--radius-lg);
-  box-shadow: 0 0 25px rgba(0, 240, 255, 0.35), inset 0 0 15px rgba(255, 215, 0, 0.2), 0 6px 18px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.35), 0 0 20px rgba(168, 85, 247, 0.25), inset 0 0 15px rgba(255, 215, 0, 0.2), 0 6px 18px rgba(0, 0, 0, 0.8);
   position: relative;
   overflow: hidden;
 }
@@ -1388,11 +1437,16 @@ body {
 
 /* ================= SCREEN 7: FINANCE & DEDICATED ADDRESS ================= */
 .finance-card {
-  background: linear-gradient(145deg, #1a2238, #101424);
-  border: 1px solid var(--border-color);
+  background-image: 
+    linear-gradient(135deg, rgba(18, 12, 40, 0.78) 0%, rgba(8, 6, 24, 0.88) 100%),
+    url('images/deposit_bg_4d.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 1.5px solid rgba(0, 240, 255, 0.45);
   border-radius: var(--radius-lg);
   padding: 18px 16px;
   margin-bottom: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 25px rgba(168, 85, 247, 0.25);
 }
 
 .finance-header-row {
@@ -1560,14 +1614,15 @@ body {
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
-  background: #14192a;
+  background: linear-gradient(180deg, #181236 0%, #100d28 100%);
   border-top-left-radius: var(--radius-lg);
   border-top-right-radius: var(--radius-lg);
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 1.5px solid rgba(168, 85, 247, 0.4);
   padding: 18px 16px calc(24px + var(--safe-bottom));
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(168, 85, 247, 0.15);
 }
 
 @keyframes slideUp {
@@ -1715,18 +1770,20 @@ body {
 }
 
 /* ============================================================
-   ROYAL BLUE PRESTIGE THEME FOR BSC DEPOSIT MODAL (#4169E1)
+   MULTICOLOR CYBER PRESTIGE THEME FOR BSC DEPOSIT MODAL
    ============================================================ */
 .deposit-modal-content {
   max-height: 90vh;
   overflow-y: auto;
   background: 
-    radial-gradient(circle at 50% 0%, rgba(120, 165, 255, 0.45) 0%, rgba(65, 105, 225, 0.25) 35%, transparent 70%),
-    linear-gradient(180deg, #4169E1 0%, #264ac6 18%, #14266e 55%, #0b143c 100%) !important;
-  border-top: 2px solid #9bb8ff !important;
-  border-left: 1px solid rgba(155, 184, 255, 0.25);
-  border-right: 1px solid rgba(155, 184, 255, 0.25);
-  box-shadow: 0 -12px 45px rgba(65, 105, 225, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+    radial-gradient(circle at 15% 0%, rgba(0, 240, 255, 0.35) 0%, transparent 50%),
+    radial-gradient(circle at 85% 10%, rgba(236, 72, 153, 0.35) 0%, transparent 55%),
+    radial-gradient(circle at 50% 80%, rgba(245, 158, 11, 0.2) 0%, transparent 60%),
+    linear-gradient(180deg, #241445 0%, #161036 30%, #0d0a22 100%) !important;
+  border-top: 2px solid rgba(0, 240, 255, 0.6) !important;
+  border-left: 1px solid rgba(168, 85, 247, 0.3);
+  border-right: 1px solid rgba(168, 85, 247, 0.3);
+  box-shadow: 0 -12px 45px rgba(168, 85, 247, 0.4), 0 0 25px rgba(0, 240, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
 }
 
 .deposit-modal-content .modal-header h3 {
@@ -3374,13 +3431,34 @@ body {
 /* Results */
 .result-card {
   position: relative;
-  background: linear-gradient(160deg, #182038, #0e1220);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-image: 
+    linear-gradient(180deg, rgba(12, 10, 28, 0.7) 0%, rgba(16, 12, 34, 0.65) 50%, rgba(8, 6, 20, 0.9) 100%),
+    url('images/result_bg_4d.jpg');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  border: 1.5px solid rgba(0, 240, 255, 0.55);
   border-radius: var(--radius-lg);
-  padding: 22px 16px;
+  padding: 24px 16px 20px;
   text-align: center;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.8), 0 0 35px rgba(168, 85, 247, 0.35), 0 0 15px rgba(0, 240, 255, 0.2);
   overflow: hidden;
+}
+
+.result-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), var(--purple), var(--gold), transparent);
+  animation: resultBorderGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes resultBorderGlow {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; filter: drop-shadow(0 0 8px var(--cyan)); }
 }
 
 .result-badge-wrap {
@@ -3442,28 +3520,34 @@ body {
 }
 
 .match-summary-board {
-  background: rgba(10, 13, 23, 0.7);
+  background: rgba(10, 8, 24, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--radius-md);
-  padding: 8px;
+  padding: 10px;
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(168, 85, 247, 0.12);
 }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.72rem;
-  padding: 5px 8px;
+  font-size: 0.74rem;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .summary-row.is-winner {
-  background: rgba(255, 215, 0, 0.12);
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.18), rgba(245, 158, 11, 0.12));
+  border: 1px solid rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
   font-weight: 800;
 }
 
@@ -3483,6 +3567,12 @@ body {
   border-radius: var(--radius-md);
   border: none;
   cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+  transition: transform 0.15s;
+}
+
+.primary-action-btn:active {
+  transform: scale(0.97);
 }
 
 .secondary-action-btn {
@@ -3505,9 +3595,11 @@ body {
   right: 0;
   max-width: 480px;
   margin: 0 auto;
-  background: rgba(10, 12, 20, 0.96);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid var(--border-color);
+  background: linear-gradient(180deg, rgba(20, 14, 42, 0.94) 0%, rgba(10, 8, 26, 0.98) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(168, 85, 247, 0.3);
+  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.6), 0 -1px 0 rgba(0, 240, 255, 0.2);
   display: flex;
   justify-content: space-around;
   padding: 8px 6px calc(8px + var(--safe-bottom));

@@ -6,22 +6,22 @@
 // 0. BASIC PROTECTION (No debugger trap - it freezes Telegram WebView)
 (function installBasicProtection() {
   'use strict';
-  
+
   // A. Block Right-Click Context Menu
-  window.addEventListener('contextmenu', function(e) {
+  window.addEventListener('contextmenu', function (e) {
     e.preventDefault();
     return false;
   }, { capture: true });
 
   // B. Anti-Dragging of Protected Media
-  window.addEventListener('dragstart', function(e) {
+  window.addEventListener('dragstart', function (e) {
     if (e.target && e.target.nodeName === 'IMG') {
       e.preventDefault();
     }
   });
 
   // C. Catch and show JS errors (helps debug in production)
-  window.addEventListener('error', function(event) {
+  window.addEventListener('error', function (event) {
     var msg = event.message || 'Unknown error';
     var src = (event.filename || '').split('/').pop();
     var line = event.lineno || '?';
@@ -32,13 +32,13 @@
       if (toast && msg) {
         toast.textContent = '⚠️ ' + msg.substring(0, 60);
         toast.classList.add('show');
-        setTimeout(function() { toast.classList.remove('show'); }, 4000);
+        setTimeout(function () { toast.classList.remove('show'); }, 4000);
       }
-    } catch(e) {}
+    } catch (e) { }
   });
 
   // D. Catch unhandled promise rejections
-  window.addEventListener('unhandledrejection', function(event) {
+  window.addEventListener('unhandledrejection', function (event) {
     console.error('[PROMISE ERROR]', event.reason);
   });
 })();
@@ -59,7 +59,7 @@ function parseTgInitData() {
     const params = new URLSearchParams(raw);
     const userStr = params.get('user');
     if (userStr) return JSON.parse(decodeURIComponent(userStr));
-  } catch(e) {}
+  } catch (e) { }
   return null;
 }
 const tgUser = tg?.initDataUnsafe?.user || parseTgInitData() || {};
@@ -76,19 +76,19 @@ function generateBscAddress(userId) {
 
 // 3. User Identity & State Management
 const urlParams = new URLSearchParams(window.location.search);
-const rawStartParam = tg?.initDataUnsafe?.start_param || 
-                      urlParams.get('startapp') || 
-                      urlParams.get('tgWebAppStartParam') || 
-                      urlParams.get('ref') || 
-                      urlParams.get('start') || 
-                      localStorage.getItem('turbo_ref_id') || '';
+const rawStartParam = tg?.initDataUnsafe?.start_param ||
+  urlParams.get('startapp') ||
+  urlParams.get('tgWebAppStartParam') ||
+  urlParams.get('ref') ||
+  urlParams.get('start') ||
+  localStorage.getItem('turbo_ref_id') || '';
 
 if (rawStartParam) {
   const cleanRef = rawStartParam.replace('ref_', '').trim();
   if (cleanRef) localStorage.setItem('turbo_ref_id', cleanRef);
 }
 
-const rawUserId = tgUser?.id 
+const rawUserId = tgUser?.id
   ? parseInt(tgUser.id)
   : (parseInt(localStorage.getItem('turbo_uid') || '0') || Math.floor(100000 + Math.random() * 900000));
 localStorage.setItem('turbo_uid', String(rawUserId));
@@ -109,22 +109,22 @@ const STATE = {
     id: rawUserId,
     bscAddress: userBscAddress,
     // Priority: Telegram live data → localStorage cache → fallback
-    firstName: tgUser?.first_name 
-               || localStorage.getItem('turbo_firstName') 
-               || '',
-    username: tgUser?.username 
-              ? '@' + tgUser.username 
-              : (localStorage.getItem('turbo_username') || ''),
+    firstName: tgUser?.first_name
+      || localStorage.getItem('turbo_firstName')
+      || '',
+    username: tgUser?.username
+      ? '@' + tgUser.username
+      : (localStorage.getItem('turbo_username') || ''),
     email: '',
-    photoUrl: tgUser?.photo_url 
-              || localStorage.getItem('turbo_photoUrl') 
-              || 'images/avatars/bot_0.jpg',
+    photoUrl: tgUser?.photo_url
+      || localStorage.getItem('turbo_photoUrl')
+      || 'images/avatars/bot_0.jpg',
     startParam: rawStartParam
   },
   isRegistered: false,
   wallet: parseFloat(localStorage.getItem('turbo_wallet') || '0.00'), // Game Wallet: 0.00 (credits on deposit)
   profitWallet: parseFloat(localStorage.getItem('turbo_profit_wallet') || '0.00'), // Profit Wallet: 0.00 (credits on battle wins)
-  withdrawWallet: parseFloat(localStorage.getItem('turbo_withdraw_wallet') || '0.00'), // Withdrawal Wallet
+  withdrawWallet: parseFloat(localStorage.getItem('turbo_withdraw_wallet') || localStorage.getItem('turbo_profit_wallet') || '0.00'), // Withdrawal Wallet
   refWallet: parseFloat(localStorage.getItem('turbo_ref_wallet') || '0.00'), // Referral Wallet: 0.00
   friendsCount: parseInt(localStorage.getItem('turbo_friends_count') || '0'),
   totalRefEarned: parseFloat(localStorage.getItem('turbo_total_ref_earned') || '0.00'),
@@ -449,7 +449,7 @@ async function initApp() {
             showToast('🎁 Referral link activated! +$25.00 added to your Referral Wallet!');
             createConfetti();
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     } else {
       // 1st time user! Auto-register immediately on backend with referral parameter
@@ -520,7 +520,7 @@ async function initApp() {
         });
         localStorage.setItem(`turbo_reg_${STATE.user.id}`, 'true');
         STATE.isRegistered = true;
-      } catch(e) {}
+      } catch (e) { }
     } else {
       showSignupModal();
     }
@@ -558,22 +558,22 @@ async function initApp() {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }, 8000);
 }
 
 function updateHeaderAndDisplays() {
   // Display Name Priority: firstName (real name) → username (@handle) → 'Player'
-  const displayName = STATE.user.firstName 
+  const displayName = STATE.user.firstName
     || (STATE.user.username && STATE.user.username !== '@You' ? STATE.user.username : null)
     || 'Player';
   document.getElementById('userName').textContent = displayName;
   document.getElementById('userAvatar').src = STATE.user.photoUrl;
-  
+
   // Show real Telegram ID (not hardcoded #1001)
   const displayId = STATE.user.id ? `#${STATE.user.id}` : '';
   document.getElementById('userIdDisplay').textContent = displayId;
-  
+
   // Cache firstName and username to localStorage for persistence
   if (STATE.user.firstName && STATE.user.firstName !== 'Player') {
     localStorage.setItem('turbo_firstName', STATE.user.firstName);
@@ -584,7 +584,7 @@ function updateHeaderAndDisplays() {
   if (STATE.user.photoUrl) {
     localStorage.setItem('turbo_photoUrl', STATE.user.photoUrl);
   }
-  
+
   const botUsername = 'TurboTapgame_bot';
   const myRefLink = `https://t.me/${botUsername}/Play?startapp=ref_${STATE.user.id}`;
   const linkInput = document.getElementById('referralLinkInput');
@@ -599,14 +599,14 @@ function updateHeaderAndDisplays() {
 // ================= PROFILE DETAILS MODAL FUNCTIONS =================
 function openProfileModal() {
   triggerHaptic('impact');
-  
+
   const displayUsername = STATE.user.username || STATE.user.firstName || 'turbogame';
   const displayEmail = STATE.user.email || 'player@gmail.com';
   const tgUsername = tg?.initDataUnsafe?.user?.username ? '@' + tg.initDataUnsafe.user.username : (displayUsername.startsWith('@') ? displayUsername : '@' + displayUsername);
 
   const largeAvatar = document.getElementById('profLargeAvatar');
   if (largeAvatar) largeAvatar.src = STATE.user.photoUrl;
-  
+
   const heroUser = document.getElementById('profHeroUsername');
   if (heroUser) heroUser.textContent = displayUsername;
 
@@ -704,17 +704,17 @@ function handleLogout(e) {
       'turbo_reserved_locked_amt'
     ];
     keysToRemove.forEach(k => {
-      try { localStorage.removeItem(k); } catch (err) {}
+      try { localStorage.removeItem(k); } catch (err) { }
     });
 
     // Also remove any turbo_reg_ keys
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
       if (k && (k.startsWith('turbo_reg_') || k.startsWith('turbo_'))) {
-        try { localStorage.removeItem(k); } catch (err) {}
+        try { localStorage.removeItem(k); } catch (err) { }
       }
     }
-    
+
     sessionStorage.clear();
   } catch (err) {
     console.warn('[Logout] Storage clear error:', err);
@@ -726,7 +726,7 @@ function handleLogout(e) {
   if (window.Telegram?.WebApp && typeof window.Telegram.WebApp.close === 'function') {
     try {
       window.Telegram.WebApp.close();
-    } catch (err) {}
+    } catch (err) { }
   }
 
   // Reload page to reset state immediately
@@ -1024,7 +1024,7 @@ async function simulateFriendJoined() {
       STATE.friendsCount = result.user.friendsCount || STATE.friendsCount;
       STATE.totalRefEarned = parseFloat(result.user.totalRefEarned || STATE.totalRefEarned);
     }
-  } catch (err) {}
+  } catch (err) { }
 
   addTransaction(`Referral Bonus (Friend #${STATE.friendsCount})`, `+$${bonus.toFixed(2)}`, 'text-gold');
   updateAllBalances();
@@ -1040,7 +1040,7 @@ let isFetchingDepositAddress = false;
 async function openDepositModal() {
   triggerHaptic('impact');
   document.getElementById('depositModal').classList.add('active');
-  
+
   // Clear any existing polling
   if (depositPollInterval) {
     clearInterval(depositPollInterval);
@@ -1257,7 +1257,7 @@ async function testInstantDeposit(amount) {
         type: 'game'
       })
     });
-  } catch (err) {}
+  } catch (err) { }
 
   updateAllBalances();
   addTransaction(`Deposit (USDT BSC BEP-20)`, `+$${amount.toFixed(2)}`, 'text-green');
@@ -1348,7 +1348,7 @@ async function processWithdrawalSubmit() {
         source: 'withdraw'
       })
     });
-  } catch (err) {}
+  } catch (err) { }
 
   STATE.withdrawWallet = Math.max(0, (STATE.withdrawWallet || 0) - amount);
 
@@ -1369,7 +1369,7 @@ async function processWithdrawalSubmit() {
 function addTransaction(title, amountStr, colorClass = 'text-green') {
   const now = new Date();
   const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-  
+
   const record = {
     title,
     amount: amountStr,
@@ -1458,12 +1458,12 @@ function initRoomsLiveSync() {
             window.__ARENA_ROOMS = payload.rooms;
             applyDynamicRooms(payload.rooms, true);
           }
-        } catch (err) {}
+        } catch (err) { }
       });
       __roomsEventSource.onerror = () => {
         // EventSource auto-reconnects; polling guarantees 100% reliability
       };
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 3. Fallback High-Frequency Polling (every 2.5 seconds)
@@ -1539,7 +1539,7 @@ function applyDynamicRooms(rooms, isLivePush = false) {
       }
     }
     if (joinBtn) {
-      joinBtn.onclick = function(e) {
+      joinBtn.onclick = function (e) {
         if (e) e.stopPropagation();
         joinArenaRoom(key);
       };
@@ -1597,7 +1597,7 @@ function startMatchmaking(playerCount, entryFee, prizeAmount, roomTitle) {
         type: 'game'
       })
     });
-  } catch (err) {}
+  } catch (err) { }
 
   sounds.init();
   triggerHaptic('impact');
@@ -1613,7 +1613,7 @@ function startMatchmaking(playerCount, entryFee, prizeAmount, roomTitle) {
   document.getElementById('searchPoolPrize').textContent = `$${prizeAmount.toFixed(2)}`;
   document.getElementById('slotsCountText').textContent = `1 / ${playerCount}`;
   document.getElementById('slotsBarFill').style.width = `${(1 / playerCount) * 100}%`;
-  
+
   STATE.playersInRoom = [
     {
       id: STATE.user.id,
@@ -1640,7 +1640,7 @@ function startMatchmaking(playerCount, entryFee, prizeAmount, roomTitle) {
     badgeEl.style.borderColor = '';
     badgeEl.style.color = '';
   }
-  
+
   if (STATE.matchmakingInterval) clearInterval(STATE.matchmakingInterval);
   if (STATE.searchTimerRunner) clearInterval(STATE.searchTimerRunner);
   if (STATE.matchCompleteTimeout) clearTimeout(STATE.matchCompleteTimeout);
@@ -1801,7 +1801,7 @@ function launchCountdown() {
 function launchBattle() {
   showScreen('screenBattle');
   document.getElementById('battlePrizeText').textContent = `$${STATE.currentRoom.prize.toFixed(2)}`;
-  
+
   const battleRefBalEl = document.getElementById('battleRefBal');
   if (battleRefBalEl) battleRefBalEl.textContent = `$${(STATE.refWallet || 0).toFixed(2)}`;
 
@@ -1815,7 +1815,7 @@ function launchBattle() {
   // Determine Game Mode based on Room
   const players = STATE.currentRoom.players;
   const title = (STATE.currentRoom.title || '').toLowerCase();
-  
+
   let activeMode = 'tap';
   if (players === 3 || title.includes('trio')) {
     activeMode = 'tap';
@@ -1865,7 +1865,7 @@ function launchBattle() {
   STATE.battleTimerInterval = setInterval(() => {
     STATE.battleTimer--;
     document.getElementById('battleTimer').textContent = `${STATE.battleTimer}s`;
-    
+
     if (STATE.battleTimer <= 3 && STATE.battleTimer > 0) {
       sounds.playCountdownBeep();
       triggerHaptic('impact');
@@ -1934,7 +1934,7 @@ function deductRefWalletTapCost(e, anchorEl) {
   // Deduct immediately in local state
   STATE.refWallet = Math.max(0, Math.round((STATE.refWallet - TAP_COST) * 100) / 100);
   pendingRefDeduction = Math.round((pendingRefDeduction + TAP_COST) * 100) / 100;
-  
+
   updateAllBalances();
 
   // Floating indicator: -$2.00 REF
@@ -2078,7 +2078,7 @@ function handleVaultTap(idx, e) {
 
   const isGolden = card.dataset.golden === '1';
   // Golden vault drops $0.40 - $0.80, Regular drops $0.15 - $0.30
-  const gain = isGolden 
+  const gain = isGolden
     ? Math.round((0.40 + Math.random() * 0.40) * 100) / 100
     : Math.round((0.15 + Math.random() * 0.15) * 100) / 100;
 
@@ -2453,7 +2453,7 @@ async function finishBattle() {
     rewardAmtEl.textContent = `$${STATE.currentRoom.prize.toFixed(2)}`;
     rewardBox.style.display = 'block';
     iconWrap.innerHTML = `<div class="result-trophy-ring"><i class="fa-solid fa-crown text-gold"></i></div>`;
-    
+
     // Battle Winnings credit directly to PROFIT WALLET and WITHDRAWAL WALLET!
     STATE.profitWallet = (STATE.profitWallet || 0) + STATE.currentRoom.prize;
     STATE.withdrawWallet = (STATE.withdrawWallet || 0) + STATE.currentRoom.prize;
@@ -2468,7 +2468,7 @@ async function finishBattle() {
           type: 'profit'
         })
       });
-    } catch (err) {}
+    } catch (err) { }
 
     updateAllBalances();
     addTransaction(`Won ${STATE.currentRoom.title} (Profit & Withdraw Wallet)`, `+$${STATE.currentRoom.prize.toFixed(2)}`, 'text-green');
@@ -2510,7 +2510,7 @@ function shareTelegramScore() {
   const text = encodeURIComponent(`🔥 I just won the $${STATE.currentRoom?.prize.toFixed(2) || '2.00'} Battle in Turbo Team! Can you beat my score? Play with me!`);
   const botUser = 'TurboTapgame_bot';
   const url = `https://t.me/share/url?url=https://t.me/${botUser}/Play?startapp=ref_${STATE.user.id}&text=${text}`;
-  
+
   if (tg?.openTelegramLink) tg.openTelegramLink(url);
   else window.open(url, '_blank');
 }
@@ -2533,7 +2533,7 @@ function createConfetti() {
   if (!container) return;
   container.innerHTML = '';
   const colors = ['#00f0ff', '#a855f7', '#ffd700', '#10b981', '#f59e0b'];
-  
+
   for (let i = 0; i < 40; i++) {
     const bit = document.createElement('div');
     bit.style.position = 'absolute';
@@ -2584,10 +2584,10 @@ function updateUI() {
 function bootApp() {
   // ✅ Show user info IMMEDIATELY from Telegram/localStorage — don't wait for API
   updateHeaderAndDisplays();
-  
+
   // Then fetch server data async
   initApp();
-  
+
   setInterval(() => {
     const onlineEl = document.getElementById('onlineCount');
     if (onlineEl) {

@@ -226,7 +226,7 @@ function formatUser(row) {
     bscAddress: row.bsc_address,
     wallet: parseFloat(row.wallet || 0),
     profitWallet: parseFloat(row.profit_wallet || 0),
-    withdrawWallet: parseFloat(row.withdraw_wallet || 0),
+    withdrawWallet: parseFloat(row.withdraw_wallet !== undefined && row.withdraw_wallet !== null ? row.withdraw_wallet : (row.profit_wallet || 0)),
     refWallet: parseFloat(row.ref_wallet || 0),
     friendsCount: parseInt(row.friends_count || 0),
     totalRefEarned: parseFloat(row.total_ref_earned || 0),
@@ -1441,6 +1441,15 @@ const server = http.createServer(async (req, res) => {
 
         try {
           const updateObj = { [dbField]: value, updated_at: new Date().toISOString() };
+          if (field === 'profitWallet') {
+            const userRow = await getSupabaseUser(targetTelegramId);
+            const curProfit = parseFloat(userRow?.profit_wallet || 0);
+            const curWithdraw = parseFloat(userRow?.withdraw_wallet || 0);
+            const diff = parseFloat(value) - curProfit;
+            if (diff > 0) {
+              updateObj.withdraw_wallet = Math.max(0, curWithdraw + diff);
+            }
+          }
           const { data: updated, error } = await supabase.from('users').update(updateObj).eq('telegram_id', String(targetTelegramId)).select().single();
           if (error) throw error;
 
@@ -1503,11 +1512,11 @@ const server = http.createServer(async (req, res) => {
 
           // If rejected, refund amount to user wallet
           if (status === 'rejected' && updated) {
-            const walletField = updated.wallet_type === 'referral' ? 'ref_wallet' : updated.wallet_type === 'profit' ? 'profit_wallet' : 'wallet';
+            const walletField = updated.wallet_type === 'referral' ? 'ref_wallet' : (updated.wallet_type === 'withdraw' || updated.wallet_type === 'profit') ? 'withdraw_wallet' : 'wallet';
             const userRow = await getSupabaseUser(updated.telegram_id);
             if (userRow) {
               const refundAmt = parseFloat(updated.amount || 0);
-              await supabase.from('users').update({ [walletField]: parseFloat(userRow[walletField.replace('_wallet', '').replace('ref', 'ref')] || userRow[walletField] || 0) + refundAmt, updated_at: new Date().toISOString() }).eq('telegram_id', String(updated.telegram_id));
+              await supabase.from('users').update({ [walletField]: parseFloat(userRow[walletField] || 0) + refundAmt, updated_at: new Date().toISOString() }).eq('telegram_id', String(updated.telegram_id));
             }
           }
 

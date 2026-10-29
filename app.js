@@ -268,102 +268,68 @@ function triggerHaptic(type = 'light') {
   }
 }
 
-// 5. Global Realistic Opponents Generator (World Countries + Authentic Indian Names)
-const GLOBAL_OPPONENTS_POOL = [
-  // 🇮🇳 INDIA (Authentic Indian Names)
-  { flag: '🇮🇳', country: 'IN', name: 'Aarav_Kumar', avatar: 'images/avatars/bot_0.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Rohit_Sharma', avatar: 'images/avatars/bot_1.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Priya_Verma', avatar: 'images/avatars/bot_2.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Vikram_Patel', avatar: 'images/avatars/bot_3.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Raj_Malhotra', avatar: 'images/avatars/bot_4.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Ananya_Singh', avatar: 'images/avatars/bot_5.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Arjun_Reddy', avatar: 'images/avatars/bot_6.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Kavita_Nair', avatar: 'images/avatars/bot_7.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Dev_Choudhary', avatar: 'images/avatars/bot_8.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Sneha_Gupta', avatar: 'images/avatars/bot_9.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Aditya_Joshi', avatar: 'images/avatars/bot_10.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Pooja_Mishra', avatar: 'images/avatars/bot_11.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Kabir_Verma', avatar: 'images/avatars/bot_12.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Sanjay_Yadav', avatar: 'images/avatars/bot_13.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Deepak_Patil', avatar: 'images/avatars/bot_14.jpg' },
-  { flag: '🇮🇳', country: 'IN', name: 'Rohan_Bose', avatar: 'images/avatars/bot_15.jpg' },
+// 5. Global Realistic Opponents Pool (Diverse Real-User Styles: Display Names, Usernames, Emojis, Gamer Tags)
+const REALISTIC_OPPONENTS_POOL = [
+  // Real Indian Names & Display Names
+  'Aman Verma', 'Vikram ⚡', 'Sneha Gupta', 'Pooja M.', 'Rohan Bose',
+  'Rahul Sharma', 'Ananya Singh', 'Kabir Verma', 'Sanjay Yadav', 'Deepak Patil',
+  'Aditya Joshi', 'Kavita Nair', 'Harsh Vardhan', 'Neha Sharma', 'Mohit 🔥',
+  'Alok', 'Mayank R.', 'Dev Choudhary', 'Aarav 🎯', 'Gaurav Kumar',
+  'Abhishek', 'Kunal Patel', 'Ritika S.', 'Vikas Jain', 'Pankaj_K',
 
-  // 🇺🇸 USA
-  { flag: '🇺🇸', country: 'US', name: 'Alex_NYC', avatar: 'images/avatars/bot_16.jpg' },
-  { flag: '🇺🇸', country: 'US', name: 'Jake_Texas', avatar: 'images/avatars/bot_17.jpg' },
-  { flag: '🇺🇸', country: 'US', name: 'Mason_Crypto', avatar: 'images/avatars/bot_18.jpg' },
-  { flag: '🇺🇸', country: 'US', name: 'Emily_Vegas', avatar: 'images/avatars/bot_19.jpg' },
-  { flag: '🇺🇸', country: 'US', name: 'Hunter_USA', avatar: 'images/avatars/bot_20.jpg' },
-  { flag: '🇺🇸', country: 'US', name: 'Brad_Miami', avatar: 'images/avatars/bot_21.jpg' },
+  // Real Telegram Usernames with @
+  '@rohit_sharma', '@siddharth_07', '@priya.verma', '@arjun_reddy', '@kartik_99',
+  '@sourabh_b', '@sunny98', '@neeraj_k', '@varun_singh', '@ankit_official',
+  '@manish_k', '@akash_gupta', '@chetan_v', '@amit_kumar91', '@naveen_r',
 
-  // 🇷🇺 RUSSIA
-  { flag: '🇷🇺', country: 'RU', name: 'Ivan_Moscow', avatar: 'images/avatars/bot_22.jpg' },
-  { flag: '🇷🇺', country: 'RU', name: 'Dmitry_Rus', avatar: 'images/avatars/bot_23.jpg' },
-  { flag: '🇷🇺', country: 'RU', name: 'Nikita_Cyber', avatar: 'images/avatars/bot_24.jpg' },
-  { flag: '🇷🇺', country: 'RU', name: 'Elena_Vostok', avatar: 'images/avatars/bot_25.jpg' },
-  { flag: '🇷🇺', country: 'RU', name: 'Sergei_Pro', avatar: 'images/avatars/bot_26.jpg' },
+  // Real Global International Names
+  'Lucas Silva', '@alex_miller', 'Oliver Smith', 'Elena 💎', '@dmitry_k',
+  'Mateo Santos', 'Chloe Bennett', '@max_berlin', 'Emily Watson', 'Felix Weber',
+  '@hamdan_dxb', 'Jack Robinson', '@pierre_dubois', 'Hana Tanaka', 'Antoine Laurent',
+  '@sergei_m', 'Brad Miller', '@kenji_t', 'Marco Rossi', '@zaid_al',
+  'Dmitry Rus', 'Jake_Texas', 'Liam Walker', 'Sophie Martin', 'Carlos Mendez',
 
-  // 🇬🇧 UK
-  { flag: '🇬🇧', country: 'GB', name: 'Oliver_London', avatar: 'images/avatars/bot_27.jpg' },
-  { flag: '🇬🇧', country: 'GB', name: 'Harry_UK', avatar: 'images/avatars/bot_28.jpg' },
-  { flag: '🇬🇧', country: 'GB', name: 'George_Fintech', avatar: 'images/avatars/bot_29.jpg' },
-  { flag: '🇬🇧', country: 'GB', name: 'Chloe_Brit', avatar: 'images/avatars/bot_30.jpg' },
+  // Gamer Tags & Web3 Handles
+  'ShadowHunter', '@CryptoWhale', 'ApexGamer', 'Vortex ⚡', '@CyberWolf',
+  'MoonRider 🚀', 'NinjaTap', '@TonMaster', 'LuckyStrike 🍀', 'StarLord',
+  '@GoldenBull', 'Phantom_X', 'CryptoKing 👑', 'Blaze 🔥', 'NightRider',
+  '@AlphaKnight', 'BitMaster', '@HyperTap', 'ZenGamer', 'GhostRider',
+  'SilentSniper', 'NeoMatrix', 'IronClad 🛡️', 'BullRun_X', 'TitanStrike',
 
-  // 🇦🇪 UAE / DUBAI
-  { flag: '🇦🇪', country: 'AE', name: 'Zaid_Dubai', avatar: 'images/avatars/bot_31.jpg' },
-  { flag: '🇦🇪', country: 'AE', name: 'Hamdan_UAE', avatar: 'images/avatars/bot_32.jpg' },
-  { flag: '🇦🇪', country: 'AE', name: 'Tariq_Crypto', avatar: 'images/avatars/bot_33.jpg' },
-  { flag: '🇦🇪', country: 'AE', name: 'Rashid_Gold', avatar: 'images/avatars/bot_34.jpg' },
-
-  // 🇧🇷 BRAZIL
-  { flag: '🇧🇷', country: 'BR', name: 'Lucas_Rio', avatar: 'images/avatars/bot_35.jpg' },
-  { flag: '🇧🇷', country: 'BR', name: 'Mateo_Brasil', avatar: 'images/avatars/bot_36.jpg' },
-  { flag: '🇧🇷', country: 'BR', name: 'Thiago_Santos', avatar: 'images/avatars/bot_37.jpg' },
-
-  // 🇩🇪 GERMANY
-  { flag: '🇩🇪', country: 'DE', name: 'Felix_Berlin', avatar: 'images/avatars/bot_38.jpg' },
-  { flag: '🇩🇪', country: 'DE', name: 'Max_Munich', avatar: 'images/avatars/bot_39.jpg' },
-  { flag: '🇩🇪', country: 'DE', name: 'Lukas_Crypto', avatar: 'images/avatars/bot_40.jpg' },
-
-  // 🇫🇷 FRANCE
-  { flag: '🇫🇷', country: 'FR', name: 'Antoine_Paris', avatar: 'images/avatars/bot_41.jpg' },
-  { flag: '🇫🇷', country: 'FR', name: 'Julien_Crypto', avatar: 'images/avatars/bot_42.jpg' },
-
-  // 🇯🇵 JAPAN
-  { flag: '🇯🇵', country: 'JP', name: 'Kenji_Tokyo', avatar: 'images/avatars/bot_43.jpg' },
-  { flag: '🇯🇵', country: 'JP', name: 'Ryota_Crypto', avatar: 'images/avatars/bot_44.jpg' },
-  { flag: '🇯🇵', country: 'JP', name: 'Hana_Nippon', avatar: 'images/avatars/bot_45.jpg' },
-
-  // 🇹🇷 TURKEY
-  { flag: '🇹🇷', country: 'TR', name: 'Emre_Istanbul', avatar: 'images/avatars/bot_46.jpg' },
-  { flag: '🇹🇷', country: 'TR', name: 'Burak_Trader', avatar: 'images/avatars/bot_47.jpg' },
-
-  // 🇳🇬 NIGERIA
-  { flag: '🇳🇬', country: 'NG', name: 'Chidi_Lagos', avatar: 'images/avatars/bot_48.jpg' },
-  { flag: '🇳🇬', country: 'NG', name: 'Emeka_Cash', avatar: 'images/avatars/bot_49.jpg' },
-
-  // 🇨🇦 CANADA
-  { flag: '🇨🇦', country: 'CA', name: 'Liam_Toronto', avatar: 'images/avatars/bot_50.jpg' },
-
-  // 🇦🇺 AUSTRALIA
-  { flag: '🇦🇺', country: 'AU', name: 'Jack_Sydney', avatar: 'images/avatars/bot_51.jpg' },
-
-  // 🇸🇬 SINGAPORE
-  { flag: '🇸🇬', country: 'SG', name: 'Darren_SG', avatar: 'images/avatars/bot_52.jpg' }
+  // Casual & Short Handles
+  '@alexp', '@sam_k', '@jason', '@david2024', '@lucky_7',
+  '@sara_m', '@tony_m', '@leo_99', '@vik_99', '@max_power',
+  '@johnny_b', '@dan_crypto', '@tommy_g', '@luke_sky'
 ];
 
+let usedMatchOpponents = new Set();
+let usedAvatarIndices = new Set();
+
+function resetOpponentPool() {
+  usedMatchOpponents.clear();
+  usedAvatarIndices.clear();
+}
+
 function generateOpponent(index) {
-  const botIdx = Math.floor(Math.random() * GLOBAL_OPPONENTS_POOL.length);
-  const bot = GLOBAL_OPPONENTS_POOL[botIdx];
-  const tagNum = Math.floor(10 + Math.random() * 89);
-  const fullName = `${bot.flag} @${bot.name}_${tagNum}`;
-  const avatarUrl = bot.avatar || `images/avatars/bot_${botIdx}.jpg`;
+  // Find an unused unique name for this match
+  const availableNames = REALISTIC_OPPONENTS_POOL.filter(n => !usedMatchOpponents.has(n));
+  const pool = availableNames.length > 0 ? availableNames : REALISTIC_OPPONENTS_POOL;
+  const pickedName = pool[Math.floor(Math.random() * pool.length)];
+  usedMatchOpponents.add(pickedName);
+
+  // Pick unique avatar between bot_0.jpg and bot_52.jpg
+  let avatarNum = Math.floor(Math.random() * 53);
+  let attempts = 0;
+  while (usedAvatarIndices.has(avatarNum) && attempts < 30) {
+    avatarNum = Math.floor(Math.random() * 53);
+    attempts++;
+  }
+  usedAvatarIndices.add(avatarNum);
+
   return {
     id: 'oppo_' + index + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-    name: fullName,
-    flag: bot.flag,
-    country: bot.country,
-    avatar: avatarUrl,
+    name: pickedName,
+    avatar: `images/avatars/bot_${avatarNum}.jpg`,
     score: 0,
     speed: 3 + Math.random() * 4
   };
@@ -1613,6 +1579,8 @@ function startMatchmaking(playerCount, entryFee, prizeAmount, roomTitle) {
   document.getElementById('searchPoolPrize').textContent = `$${prizeAmount.toFixed(2)}`;
   document.getElementById('slotsCountText').textContent = `1 / ${playerCount}`;
   document.getElementById('slotsBarFill').style.width = `${(1 / playerCount) * 100}%`;
+
+  resetOpponentPool();
 
   STATE.playersInRoom = [
     {

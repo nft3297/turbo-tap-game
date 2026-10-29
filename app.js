@@ -2482,13 +2482,18 @@ async function finishBattle() {
     iconWrap.innerHTML = `<div class="result-trophy-ring" style="border-color:#64748b;box-shadow:none;"><i class="fa-solid fa-shield-halved" style="color:#94a3b8;"></i></div>`;
   }
 
+  const winnerPrize = parseFloat(STATE.currentRoom?.prize || 0);
   const board = document.getElementById('matchSummaryBoard');
-  board.innerHTML = sorted.map((p, idx) => `
-    <div class="summary-row ${idx === 0 ? 'is-winner' : ''}">
-      <span>#${idx + 1} ${p.isUser ? 'YOU' : p.name}</span>
-      <span class="${idx === 0 ? 'text-gold' : ''}">$${p.score.toFixed(2)}</span>
-    </div>
-  `).join('');
+  board.innerHTML = sorted.map((p, idx) => {
+    const isFirst = idx === 0;
+    const rewardVal = isFirst ? winnerPrize : 0;
+    return `
+      <div class="summary-row ${isFirst ? 'is-winner' : ''}">
+        <span>#${idx + 1} ${p.isUser ? 'YOU' : p.name}</span>
+        <span class="${isFirst ? 'text-gold' : ''}">$${rewardVal.toFixed(2)}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 function returnToLobby() {

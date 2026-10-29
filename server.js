@@ -80,7 +80,7 @@ const DEFAULT_ARENA_ROOMS = [
     desc: '8-Player Mega Clash',
     players: 8,
     entryFee: 7,
-    prize: 7,
+    prize: 50,
     badge: 'HIGH STAKES',
     theme: 'amber'
   },
@@ -90,7 +90,7 @@ const DEFAULT_ARENA_ROOMS = [
     desc: '12-Player Ultimate Showdown',
     players: 12,
     entryFee: 15,
-    prize: 15,
+    prize: 170,
     badge: 'GRAND JACKPOT',
     theme: 'gold'
   }

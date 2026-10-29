@@ -1415,8 +1415,8 @@ function renderHistoryList() {
 window.__ARENA_ROOMS = [
   { id: 'trio', name: 'TRIO SHOWDOWN', desc: '3 Players Solo Knockout', players: 3, entryFee: 2, prize: 5, badge: 'FASTEST MATCH' },
   { id: 'squad', name: 'SQUAD DOMINATION', desc: '5-Player Rush Elimination', players: 5, entryFee: 4, prize: 16, badge: 'SQUAD BATTLE' },
-  { id: 'elite', name: 'ELITE SYNDICATE', desc: '8-Player Mega Clash', players: 8, entryFee: 7, prize: 7, badge: 'HIGH STAKES' },
-  { id: 'royale', name: 'CHAMPIONS ROYALE', desc: '12-Player Ultimate Showdown', players: 12, entryFee: 15, prize: 15, badge: 'GRAND JACKPOT' }
+  { id: 'elite', name: 'ELITE SYNDICATE', desc: '8-Player Mega Clash', players: 8, entryFee: 7, prize: 50, badge: 'HIGH STAKES' },
+  { id: 'royale', name: 'CHAMPIONS ROYALE', desc: '12-Player Ultimate Showdown', players: 12, entryFee: 15, prize: 170, badge: 'GRAND JACKPOT' }
 ];
 
 let __roomsSyncInterval = null;
@@ -1487,7 +1487,7 @@ function joinArenaRoom(roomId) {
   const room = (window.__ARENA_ROOMS || []).find(r => r.id === roomId);
   const players = room?.players || (roomId === 'trio' ? 3 : roomId === 'squad' ? 5 : roomId === 'elite' ? 8 : 12);
   const fee = room?.entryFee !== undefined ? parseFloat(room.entryFee) : (roomId === 'trio' ? 2 : roomId === 'squad' ? 4 : roomId === 'elite' ? 7 : 15);
-  const prize = room?.prize !== undefined ? parseFloat(room.prize) : (roomId === 'trio' ? 5 : roomId === 'squad' ? 16 : fee);
+  const prize = room?.prize !== undefined ? parseFloat(room.prize) : (roomId === 'trio' ? 5 : roomId === 'squad' ? 16 : roomId === 'elite' ? 50 : 170);
   const title = room?.name || (roomId === 'trio' ? 'Trio Showdown' : roomId === 'squad' ? 'Squad Domination' : roomId === 'elite' ? 'Elite Syndicate' : 'Champions Royale');
   startMatchmaking(players, fee, prize, title);
 }

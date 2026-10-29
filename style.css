@@ -2446,12 +2446,14 @@ body::before {
 }
 
 .slot-avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: #1e2640;
   object-fit: cover;
   margin-bottom: 4px;
+  border: 1.5px solid rgba(0, 240, 255, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .slot-name {

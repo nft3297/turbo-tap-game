@@ -207,6 +207,180 @@ async function sendTelegramMessage(chatId, text) {
   });
 }
 
+// ================= TELEGRAM BOT POLLER & /START INTERACTIVE HANDLER =================
+let telegramPollOffset = 0;
+let isPollingTelegram = false;
+
+async function sendTelegramReply(chatId, text, replyMarkup = null) {
+  const token = getTelegramBotToken();
+  if (!token || !chatId) return { ok: false, error: 'Token or ChatID missing' };
+
+  return new Promise((resolve) => {
+    try {
+      const payloadObj = {
+        chat_id: String(chatId),
+        text: text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: false
+      };
+      if (replyMarkup) {
+        payloadObj.reply_markup = replyMarkup;
+      }
+
+      const payload = JSON.stringify(payloadObj);
+      const req = https.request({
+        hostname: 'api.telegram.org',
+        port: 443,
+        path: `/bot${token}/sendMessage`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload)
+        },
+        timeout: 10000
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(data);
+            resolve(json);
+          } catch (e) {
+            resolve({ ok: false, error: e.message });
+          }
+        });
+      });
+
+      req.on('error', (err) => resolve({ ok: false, error: err.message }));
+      req.on('timeout', () => { req.destroy(); resolve({ ok: false, error: 'Timeout' }); });
+      req.write(payload);
+      req.end();
+    } catch (e) {
+      resolve({ ok: false, error: e.message });
+    }
+  });
+}
+
+async function handleTelegramMessage(msg) {
+  if (!msg || !msg.chat) return;
+  const chatId = msg.chat.id;
+  const text = (msg.text || '').trim();
+  const fromUser = msg.from || {};
+  const firstName = escapeHtml(fromUser.first_name || 'Champion');
+
+  // Handle /start or /start ref_XXXXX
+  if (text.startsWith('/start')) {
+    const parts = text.split(' ');
+    const startParam = (parts[1] || '').trim();
+    let refId = null;
+    if (startParam.startsWith('ref_')) {
+      refId = startParam.replace('ref_', '').trim();
+    }
+
+    const appBaseUrl = 'https://turbo-tap-game.onrender.com';
+    const webAppUrl = refId ? `${appBaseUrl}?startapp=ref_${refId}` : appBaseUrl;
+
+    const welcomeMsg = `🎮 <b>Welcome to Turbo Tap Game, ${firstName}!</b> ⚡\n\n` +
+      `⚔️ <b>Multiplayer Arena Battles:</b> Compete in 3P, 5P, 8P, and 12P fast-paced showdowns!\n` +
+      `💰 <b>Win Real Crypto:</b> Instant Binance Smart Chain (BSC BEP-20) payouts!\n` +
+      `🎁 <b>$25.00 Referral Bonus:</b> Earn $25.00 in your referral wallet for each friend you invite!\n\n` +
+      `👇 <b>Tap the button below to launch the game now:</b>`;
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          {
+            text: '🕹️ Play Turbo Tap Game',
+            web_app: { url: webAppUrl }
+          }
+        ],
+        [
+          {
+            text: '💬 Official Community',
+            url: 'https://t.me/turbotapgame_2nd'
+          },
+          {
+            text: '🆘 Support',
+            url: 'https://t.me/TurboSupport'
+          }
+        ]
+      ]
+    };
+
+    console.log(`[Telegram Bot] /start received from ${chatId} (${firstName}). Sending interactive game launcher...`);
+    await sendTelegramReply(chatId, welcomeMsg, keyboard);
+  } else if (text.startsWith('/help')) {
+    const helpMsg = `ℹ️ <b>Turbo Tap Game — Help & Info</b>\n\n` +
+      `1️⃣ Tap <b>"Play Turbo Tap Game"</b> below to open the game inside Telegram.\n` +
+      `2️⃣ Choose a battle arena: Trio ($2), Squad ($4), Elite ($7), or Royale ($15).\n` +
+      `3️⃣ Beat the timer and rivals to claim the Winner Reward!\n` +
+      `4️⃣ Invite friends to earn $25/ref.\n\n` +
+      `🆘 <b>Support:</b> @TurboSupport\n` +
+      `💬 <b>Community:</b> @turbotapgame_2nd`;
+    await sendTelegramReply(chatId, helpMsg, {
+      inline_keyboard: [
+        [{ text: '🕹️ Open Game', web_app: { url: 'https://turbo-tap-game.onrender.com' } }]
+      ]
+    });
+  }
+}
+
+async function pollTelegramUpdates() {
+  const token = getTelegramBotToken();
+  if (!token) {
+    // If token not configured yet, poll check every 8 seconds
+    setTimeout(pollTelegramUpdates, 8000);
+    return;
+  }
+
+  try {
+    const postData = JSON.stringify({
+      offset: telegramPollOffset,
+      timeout: 20,
+      allowed_updates: ['message', 'callback_query']
+    });
+
+    const req = https.request({
+      hostname: 'api.telegram.org',
+      port: 443,
+      path: `/bot${token}/getUpdates`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: 25000
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', async () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.ok && Array.isArray(json.result)) {
+            for (const upd of json.result) {
+              telegramPollOffset = Math.max(telegramPollOffset, upd.update_id + 1);
+              if (upd.message) {
+                await handleTelegramMessage(upd.message).catch(e => console.error('[Bot Msg Error]', e));
+              }
+            }
+          }
+        } catch (e) { }
+        setTimeout(pollTelegramUpdates, 1200);
+      });
+    });
+
+    req.on('error', () => setTimeout(pollTelegramUpdates, 4000));
+    req.on('timeout', () => { req.destroy(); setTimeout(pollTelegramUpdates, 1500); });
+    req.write(postData);
+    req.end();
+  } catch (err) {
+    setTimeout(pollTelegramUpdates, 5000);
+  }
+}
+
+// Launch background telegram poller
+setTimeout(pollTelegramUpdates, 3000);
+
 // Convert Supabase DB snake_case row to frontend camelCase user object
 function formatUser(row) {
   if (!row) return null;
@@ -455,6 +629,19 @@ const server = http.createServer(async (req, res) => {
         liveSyncClients.delete(res);
       });
       return;
+    }
+
+    // Telegram Bot Webhook Route (POST /api/telegram/webhook)
+    if (req.method === 'POST' && (reqPath === '/api/telegram/webhook' || reqPath === '/api/bot/webhook')) {
+      try {
+        if (data && data.message) {
+          await handleTelegramMessage(data.message);
+        }
+      } catch (err) {
+        console.error('[Telegram Webhook Error]', err.message);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true }));
     }
 
     // 1. Check / Get User Profile: GET /api/user?telegramId=123

@@ -1969,6 +1969,40 @@ function launchBattle() {
     activePanel.style.display = 'flex';
   }
 
+  // ================= CARD 1 (TRIO) WIN ALGORITHM & BACKGROUND BOOST ENGINE =================
+  // Rule: In Card 1 (Trio Showdown - 3 Players), if user plays 3 times, they win 1 time.
+  // As they keep playing further, they win intermittently ("bich bich mein win karega", ~33% win rate).
+  // Background boost formula leverages Referral Bonus to power user tap score and frenzy meter.
+  // Cards 2, 3, 4 strictly finish between Rank 2 and 6.
+  const isCard1 = (activeMode === 'tap') || (players === 3) || title.includes('trio');
+  STATE.isTrioWinRound = false;
+
+  if (isCard1) {
+    const stats = getCard1Stats();
+    const played = stats.totalPlayed || 0;
+    const lossStreak = stats.lossStreak || 0;
+
+    if (played === 2) {
+      // 3rd game: 100% Guaranteed Win! (Played 2 prior games -> 3rd game is Win!)
+      STATE.isTrioWinRound = true;
+    } else if (played < 2) {
+      // 1st and 2nd games: Non-winning (Ranks 2-3)
+      STATE.isTrioWinRound = false;
+    } else {
+      // Further games: "bich bich mein win karega"
+      if (lossStreak >= 2) {
+        // Guaranteed win after 2 non-wins (1 win every 3 games)
+        STATE.isTrioWinRound = true;
+      } else if (lossStreak === 1) {
+        // Intermittent chance (~30% chance on game 2)
+        STATE.isTrioWinRound = Math.random() < 0.30;
+      } else {
+        // Just won previous game: loss to prevent back-to-back predictability
+        STATE.isTrioWinRound = false;
+      }
+    }
+  }
+
   // Reset all players scores in room
   STATE.playersInRoom.forEach(p => p.score = 0.00);
   renderLiveBoard();
@@ -2014,6 +2048,8 @@ function launchBattle() {
   STATE.opponentsInterval = setInterval(() => {
     const prizeTarget = STATE.currentRoom.prize || 2.0;
     const userLive = STATE.userDollarScore || 0;
+    const isWinRound = STATE.isTrioWinRound;
+
     // 100 ticks over 25s (250ms interval)
     STATE.playersInRoom.forEach(p => {
       if (!p.isUser) {
@@ -2024,10 +2060,25 @@ function launchBattle() {
       }
     });
 
-    // Keep top bot competitive so user sees a thrilling close battle
     const rivals = STATE.playersInRoom.filter(p => !p.isUser);
-    if (rivals.length > 0 && userLive > 0 && rivals[0].score < userLive * 0.98) {
-      rivals[0].score = Math.round((userLive * (1.02 + Math.random() * 0.05)) * 100) / 100;
+    rivals.sort((a, b) => b.score - a.score);
+
+    if (rivals.length > 0 && userLive > 0) {
+      if (isCard1 && isWinRound) {
+        // Winning round in Card 1: User stays strictly in #1 lead! Rivals trail closely behind
+        if (rivals[0].score >= userLive * 0.95) {
+          rivals[0].score = Math.max(0, Math.round((userLive * (0.88 + Math.random() * 0.06)) * 100) / 100);
+        }
+        if (rivals[1] && rivals[1].score >= rivals[0].score) {
+          rivals[1].score = Math.max(0, Math.round((rivals[0].score * 0.88) * 100) / 100);
+        }
+      } else {
+        // Non-winning rounds (Cards 2, 3, 4 OR Card 1 non-winning round):
+        // Top rival stays ahead of user so user ends up #2 or lower
+        if (rivals[0].score < userLive * 0.98) {
+          rivals[0].score = Math.round((userLive * (1.02 + Math.random() * 0.05)) * 100) / 100;
+        }
+      }
     }
 
     renderLiveBoard();
@@ -2112,6 +2163,45 @@ function spawnFloatingRefCost(e, fallbackEl) {
   setTimeout(() => el.remove(), 750);
 }
 
+// ================= CARD 1 (TRIO) REFERRAL BOOST & STATS ENGINE =================
+function getCard1Stats() {
+  const uid = STATE.user?.id || 'guest';
+  try {
+    const raw = localStorage.getItem(`turbo_card1_stats_${uid}`);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { }
+  return { totalPlayed: 0, totalWins: 0, lossStreak: 0 };
+}
+
+function saveCard1Stats(stats) {
+  const uid = STATE.user?.id || 'guest';
+  try {
+    localStorage.setItem(`turbo_card1_stats_${uid}`, JSON.stringify(stats));
+  } catch (e) { }
+}
+
+function calculateRefBonusBoost(isWinRound) {
+  const refBal = Math.max(0, parseFloat(STATE.refWallet || 0));
+  // Background Referral Boost Formula:
+  // Math: User's referral bonus powers their tap surge and rush velocity
+  // e.g., $25 balance -> +$0.04 extra
+  // $129 balance -> +$0.07 extra
+  // $250+ balance -> +$0.10 extra
+  const refPower = refBal > 0 ? Math.min(0.12, 0.02 + (refBal / 250) * 0.08) : 0;
+  const winPush = isWinRound ? 0.04 : 0;
+  const tapDollarBoost = Math.round((refPower + winPush) * 100) / 100;
+
+  // Boost meter fill: default +5% per tap.
+  // With referral bonus, charges +7% to +10% per tap (frenzy activates twice as fast)
+  const boostMeterGain = refBal > 0 ? Math.min(10, Math.floor(5 + (refBal / 50))) : 5;
+
+  return {
+    tapDollarBoost,
+    boostMeterGain: isWinRound ? Math.max(boostMeterGain, 8) : boostMeterGain,
+    refBal
+  };
+}
+
 // ================= MODE 1: SPEED CASH TAP RACE (TRIO - 3P) =================
 function initTapMode() {
   document.getElementById('userLiveScore').textContent = '$0.00';
@@ -2125,7 +2215,12 @@ function handleOrbTap(e) {
   if (STATE.battleTimer <= 0) return;
   if (!deductRefWalletTapCost(e, document.getElementById('tapOrb'))) return;
 
-  const dollarGain = STATE.isBoostActive ? 0.15 : 0.05;
+  const isCard1 = STATE.activeGameMode === 'tap';
+  const boostInfo = calculateRefBonusBoost(STATE.isTrioWinRound);
+
+  // Referral boost applied to tap score in background formula
+  const baseGain = STATE.isBoostActive ? 0.16 : 0.06;
+  const dollarGain = Math.round((baseGain + (isCard1 ? boostInfo.tapDollarBoost : 0)) * 100) / 100;
   STATE.userDollarScore = Math.round((STATE.userDollarScore + dollarGain) * 100) / 100;
 
   const userObj = STATE.playersInRoom.find(p => p.isUser);
@@ -2141,10 +2236,11 @@ function handleOrbTap(e) {
     triggerHaptic('light');
   }
 
-  spawnFloatingText(e, `$${dollarGain.toFixed(2)}`, STATE.isBoostActive, document.getElementById('tapOrb'));
+  spawnFloatingText(e, `$${dollarGain.toFixed(2)}`, STATE.isBoostActive || boostInfo.tapDollarBoost > 0, document.getElementById('tapOrb'));
 
   if (!STATE.isBoostActive) {
-    STATE.boostMeter += 5;
+    const meterStep = isCard1 ? boostInfo.boostMeterGain : 5;
+    STATE.boostMeter += meterStep;
     if (STATE.boostMeter >= 100) {
       activateTurboBoost();
     } else {
@@ -2570,58 +2666,117 @@ async function finishBattle() {
   const userScore = STATE.userDollarScore || 0;
   if (userObj) userObj.score = userScore;
 
-  // RULE: In all 4 cards (Trio, Squad, Elite, Royale), original user ALWAYS finishes between Serial No. 2 and 6!
-  // Trio (3 players) -> Serial No. 2 or 3
-  // Squad (5 players) -> Serial No. 2 to 5
-  // Elite (8 players) -> Serial No. 2 to 6
-  // Royale (12 players) -> Serial No. 2 to 6
-  const totalPlayers = STATE.playersInRoom.length;
-  const maxRankAllowed = Math.min(6, totalPlayers);
-  const minRankAllowed = 2;
-  const targetRank = Math.floor(Math.random() * (maxRankAllowed - minRankAllowed + 1)) + minRankAllowed;
+  const isCard1 = (STATE.currentRoom?.players === 3) ||
+    ((STATE.currentRoom?.title || '').toLowerCase().includes('trio')) ||
+    (STATE.activeGameMode === 'tap');
+  const isTrioWin = isCard1 && STATE.isTrioWinRound;
+  const winnerPrize = parseFloat(STATE.currentRoom?.prize || 0);
 
-  // Separate non-user bots
   const rivals = STATE.playersInRoom.filter(p => !p.isUser);
   rivals.sort((a, b) => b.score - a.score);
 
-  // Exactly (targetRank - 1) rivals must score higher than user
-  const numAbove = targetRank - 1;
-  const winnerPrize = parseFloat(STATE.currentRoom?.prize || 0);
+  let isWinner = false;
 
-  // Bot #1 (Winner bot) always has the highest score
-  const topBotScore = Math.max(
-    Math.round((userScore + 0.35 + Math.random() * 0.45) * 100) / 100,
-    Math.round((winnerPrize * 0.75 + Math.random() * 0.5) * 100) / 100,
-    1.60
-  );
-  if (rivals[0]) {
-    rivals[0].score = topBotScore;
-  }
+  if (isTrioWin) {
+    // ===== CARD 1 TRIO WINNER VICTORY FLOW =====
+    isWinner = true;
 
-  // Intermediate bots between #1 and user (if targetRank is 3, 4, 5, or 6)
-  for (let i = 1; i < numAbove; i++) {
-    const fraction = (numAbove - i) / numAbove;
-    const interpolated = userScore + (topBotScore - userScore) * fraction * 0.88;
-    rivals[i].score = Math.round(interpolated * 100) / 100;
-  }
+    // User gets highest score
+    const winningScore = Math.max(userScore, 3.20);
+    if (userObj) userObj.score = winningScore;
 
-  // User's score confirmed
-  if (userObj) {
-    userObj.score = userScore;
-  }
+    // Rivals scored strictly lower than user
+    if (rivals[0]) {
+      rivals[0].score = Math.max(0, Math.round((winningScore - 0.25 - Math.random() * 0.20) * 100) / 100);
+    }
+    if (rivals[1]) {
+      const r0 = rivals[0] ? rivals[0].score : (winningScore - 0.30);
+      rivals[1].score = Math.max(0, Math.round((r0 - 0.20 - Math.random() * 0.15) * 100) / 100);
+    }
 
-  // Bots below user must score strictly less than user
-  for (let i = numAbove; i < rivals.length; i++) {
-    const step = i - numAbove + 1;
-    const lowerScore = Math.max(0, Math.round((userScore - (step * 0.16 + Math.random() * 0.1)) * 100) / 100);
-    rivals[i].score = lowerScore;
+    // Credit Prize to Profit Wallet & Withdraw Wallet ($5.00)
+    STATE.profitWallet = Math.round((STATE.profitWallet + winnerPrize) * 100) / 100;
+    STATE.withdrawWallet = Math.round((STATE.withdrawWallet + winnerPrize) * 100) / 100;
+    updateAllBalances();
+
+    // Record Transaction in History
+    addTransaction(`Arena Victory: ${STATE.currentRoom?.title || 'Trio Showdown'}`, `+$${winnerPrize.toFixed(2)}`, 'text-emerald');
+
+    // Sync Prize with Backend Server
+    try {
+      fetch('/api/wallet/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telegramId: STATE.user.id,
+          amount: winnerPrize,
+          type: 'profit'
+        })
+      });
+    } catch (err) { }
+
+    // Update Persistent Card 1 Stats: Win Recorded
+    const stats = getCard1Stats();
+    stats.totalPlayed = (stats.totalPlayed || 0) + 1;
+    stats.totalWins = (stats.totalWins || 0) + 1;
+    stats.lossStreak = 0;
+    saveCard1Stats(stats);
+
+  } else {
+    // ===== NON-WINNING FLOW (Cards 2, 3, 4 OR Card 1 Non-Win) =====
+    isWinner = false;
+
+    // RULE: Original user ALWAYS finishes strictly between Serial No. 2 and 6!
+    // Trio (3 players) -> Serial No. 2 or 3
+    // Squad (5 players) -> Serial No. 2 to 5
+    // Elite (8 players) -> Serial No. 2 to 6
+    // Royale (12 players) -> Serial No. 2 to 6
+    const totalPlayers = STATE.playersInRoom.length;
+    const maxRankAllowed = Math.min(6, totalPlayers);
+    const minRankAllowed = 2;
+    const targetRank = Math.floor(Math.random() * (maxRankAllowed - minRankAllowed + 1)) + minRankAllowed;
+
+    const numAbove = targetRank - 1;
+    const topBotScore = Math.max(
+      Math.round((userScore + 0.35 + Math.random() * 0.45) * 100) / 100,
+      Math.round((winnerPrize * 0.75 + Math.random() * 0.5) * 100) / 100,
+      1.60
+    );
+    if (rivals[0]) {
+      rivals[0].score = topBotScore;
+    }
+
+    for (let i = 1; i < numAbove; i++) {
+      const fraction = (numAbove - i) / numAbove;
+      const interpolated = userScore + (topBotScore - userScore) * fraction * 0.88;
+      rivals[i].score = Math.round(interpolated * 100) / 100;
+    }
+
+    if (userObj) {
+      userObj.score = userScore;
+    }
+
+    for (let i = numAbove; i < rivals.length; i++) {
+      const step = i - numAbove + 1;
+      const lowerScore = Math.max(0, Math.round((userScore - (step * 0.16 + Math.random() * 0.1)) * 100) / 100);
+      rivals[i].score = lowerScore;
+    }
+
+    if (isCard1) {
+      // Update Persistent Card 1 Stats: Non-win recorded
+      const stats = getCard1Stats();
+      stats.totalPlayed = (stats.totalPlayed || 0) + 1;
+      stats.lossStreak = (stats.lossStreak || 0) + 1;
+      saveCard1Stats(stats);
+    }
   }
 
   // Sort players list by final score descending
   STATE.playersInRoom = [userObj, ...rivals];
   const sorted = [...STATE.playersInRoom].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
-    // Tie-break: user stays in target rank position
+    if (isWinner && a.isUser) return -1;
+    if (isWinner && b.isUser) return 1;
     if (a.isUser) return 1;
     if (b.isUser) return -1;
     return 0;
@@ -2637,12 +2792,25 @@ async function finishBattle() {
   const rewardBox = document.getElementById('rewardBox');
   const iconWrap = document.getElementById('resultIconWrap');
 
-  triggerHaptic('warning');
-  titleEl.textContent = `FINISHED #${userRank}`;
-  titleEl.style.color = '#cbd5e1';
-  subEl.textContent = 'Good fight! You almost took 1st place.';
-  rewardBox.style.display = 'none';
-  iconWrap.innerHTML = `<div class="result-trophy-ring" style="border-color:#64748b;box-shadow:none;"><i class="fa-solid fa-shield-halved" style="color:#94a3b8;"></i></div>`;
+  if (isWinner) {
+    sounds.playVictory();
+    triggerHaptic('heavy');
+    createConfetti();
+
+    titleEl.textContent = 'VICTORY!';
+    titleEl.style.color = '#10b981';
+    subEl.textContent = `Congratulations! You claimed the $${winnerPrize.toFixed(2)} prize pool!`;
+    rewardBox.style.display = 'block';
+    if (rewardAmtEl) rewardAmtEl.textContent = `$${winnerPrize.toFixed(2)}`;
+    iconWrap.innerHTML = `<div class="result-trophy-ring"><i class="fa-solid fa-trophy" style="color:#fbbf24;"></i></div>`;
+  } else {
+    triggerHaptic('warning');
+    titleEl.textContent = `FINISHED #${userRank}`;
+    titleEl.style.color = '#cbd5e1';
+    subEl.textContent = 'Good fight! You almost took 1st place.';
+    rewardBox.style.display = 'none';
+    iconWrap.innerHTML = `<div class="result-trophy-ring" style="border-color:#64748b;box-shadow:none;"><i class="fa-solid fa-shield-halved" style="color:#94a3b8;"></i></div>`;
+  }
 
   const board = document.getElementById('matchSummaryBoard');
   board.innerHTML = sorted.map((p, idx) => {

@@ -488,7 +488,7 @@ const server = http.createServer(async (req, res) => {
               createdAt: depData.created_at
             };
           }
-        } catch (e) {}
+        } catch (e) { }
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ exists: true, user: formatUser(userRow), latestDeposit }));
@@ -545,7 +545,7 @@ const server = http.createServer(async (req, res) => {
           dedicatedAddress = localDB.users[telegramId].plisioDeposit.pay_address;
           paymentId = localDB.users[telegramId].plisioDeposit.payment_id;
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // If user already has a dedicated Plisio address, return it immediately (1 user = 1 permanent address & QR)
       if (dedicatedAddress) {
@@ -728,7 +728,7 @@ const server = http.createServer(async (req, res) => {
                 `⚡ <b>Status:</b> Completed\n\n` +
                 `⚔️ <i>Jump into Turbo Team Battle and multiply your coins!</i>\n` +
                 `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
-              sendTelegramMessage(telegramId, depMsg).catch(() => {});
+              sendTelegramMessage(telegramId, depMsg).catch(() => { });
 
               res.writeHead(200, { 'Content-Type': 'application/json' });
               return res.end(JSON.stringify({
@@ -791,7 +791,7 @@ const server = http.createServer(async (req, res) => {
                 `💰 <b>New Game Balance:</b> $${updatedWallet.toFixed(2)}\n` +
                 `⛓️ <b>Network:</b> BSC (BEP-20)\n\n` +
                 `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
-              sendTelegramMessage(telegramId, bscDepMsg).catch(() => {});
+              sendTelegramMessage(telegramId, bscDepMsg).catch(() => { });
 
               res.writeHead(200, { 'Content-Type': 'application/json' });
               return res.end(JSON.stringify({
@@ -921,7 +921,7 @@ const server = http.createServer(async (req, res) => {
               `💰 <b>New Game Balance:</b> $${newBal.toFixed(2)}\n` +
               `⚡ <b>Status:</b> Finished\n\n` +
               `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
-            sendTelegramMessage(targetTelegramId, ipnDepMsg).catch(() => {});
+            sendTelegramMessage(targetTelegramId, ipnDepMsg).catch(() => { });
           }
         }
 
@@ -1230,7 +1230,7 @@ const server = http.createServer(async (req, res) => {
           `📍 <b>BSC Address:</b> <code>${cleanAddress}</code>\n` +
           `⏳ <b>Status:</b> Pending Admin Approval\n\n` +
           `<i>You will receive another message as soon as the payout is approved!</i>`;
-        sendTelegramMessage(telegramId, wdReqMsg).catch(() => {});
+        sendTelegramMessage(telegramId, wdReqMsg).catch(() => { });
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ success: true, withdrawal: withdrawRecord, user: formatUser(updatedUser || userRow) }));
@@ -1534,7 +1534,7 @@ const server = http.createServer(async (req, res) => {
                 `✅ <b>Status:</b> Completed\n\n` +
                 `<i>Thank you for playing Turbo Tap Game! Keep tapping and winning! ⚔️</i>\n` +
                 `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
-              sendTelegramMessage(updated.telegram_id, compMsg).catch(() => {});
+              sendTelegramMessage(updated.telegram_id, compMsg).catch(() => { });
             } else if (status === 'rejected') {
               const rejMsg = `🎮 <b>Turbo Tap Game — Withdrawal Request Update</b> ⚠️\n\n` +
                 `Hello <b>${userName}</b>,\n` +
@@ -1542,7 +1542,7 @@ const server = http.createServer(async (req, res) => {
                 `💰 <b>Refund:</b> The full amount of $${parseFloat(updated.amount || 0).toFixed(2)} has been refunded back to your wallet.\n` +
                 `⚠️ <b>Notice:</b> Please ensure your BSC address is valid and contact support if you need assistance.\n\n` +
                 `🆘 <b>Support:</b> @TurboSupport`;
-              sendTelegramMessage(updated.telegram_id, rejMsg).catch(() => {});
+              sendTelegramMessage(updated.telegram_id, rejMsg).catch(() => { });
             }
           }
 
@@ -1591,7 +1591,7 @@ const server = http.createServer(async (req, res) => {
             `💵 <b>Credited Amount:</b> $${amt.toFixed(2)}\n` +
             `💰 <b>New Game Balance:</b> $${newWallet.toFixed(2)}\n\n` +
             `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
-          sendTelegramMessage(targetTelegramId, adminDepMsg).catch(() => {});
+          sendTelegramMessage(targetTelegramId, adminDepMsg).catch(() => { });
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, user: formatUser(updated), message: `$${amt} credited to user ${targetTelegramId}` }));
@@ -1706,11 +1706,11 @@ const server = http.createServer(async (req, res) => {
           })();
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ 
-            success: true, 
-            broadcast, 
-            totalRecipients: recipients.length, 
-            message: `Broadcast message sent to ${recipients.length} registered users on Telegram!` 
+          return res.end(JSON.stringify({
+            success: true,
+            broadcast,
+            totalRecipients: recipients.length,
+            message: `Broadcast message sent to ${recipients.length} registered users on Telegram!`
           }));
         } catch (e) {
           res.writeHead(500, { 'Content-Type': 'application/json' });

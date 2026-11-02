@@ -1626,10 +1626,26 @@ function startMatchmaking(playerCount, entryFee, prizeAmount, roomTitle) {
   prizeAmount = parseFloat(prizeAmount);
   if (isNaN(prizeAmount)) prizeAmount = entryFee;
 
-  // Check if user has sufficient deposit in Game Wallet
-  if ((STATE.wallet || 0) < entryFee) {
+  const gameBal = Math.max(0, parseFloat(STATE.wallet || 0));
+  const withdrawBal = Math.max(0, parseFloat(STATE.withdrawWallet || 0));
+
+  let deductGame = 0;
+  let deductWithdraw = 0;
+
+  // Wallet Funding Priority:
+  // 1. If Game Wallet has sufficient funds, use Game Wallet.
+  // 2. If Game Wallet is 0 or low (<= $1 or < entryFee), allow playing from Withdraw Wallet!
+  // 3. If neither alone covers it, combine Game Wallet + Withdraw Wallet if total is enough!
+  if (gameBal >= entryFee) {
+    deductGame = entryFee;
+  } else if (withdrawBal >= entryFee) {
+    deductWithdraw = entryFee;
+  } else if ((gameBal + withdrawBal) >= entryFee) {
+    deductGame = gameBal;
+    deductWithdraw = Math.round((entryFee - gameBal) * 100) / 100;
+  } else {
     triggerHaptic('warning');
-    showToast(`⚠️ Insufficient Game Wallet ($${(STATE.wallet || 0).toFixed(2)})! Deposit $${entryFee.toFixed(2)} to play.`);
+    showToast(`⚠️ Insufficient balance! Game ($${gameBal.toFixed(2)}) & Withdraw ($${withdrawBal.toFixed(2)}). Deposit $${entryFee.toFixed(2)} to play.`);
     openDepositModal();
     return;
   }
@@ -1642,22 +1658,73 @@ function startMatchmaking(playerCount, entryFee, prizeAmount, roomTitle) {
     return;
   }
 
-  // Deduct entry fee from Game Wallet (deposited funds)
-  STATE.wallet = Math.max(0, (STATE.wallet || 0) - entryFee);
-  updateAllBalances();
-  addTransaction(`Arena Entry: ${roomTitle}`, `-$${entryFee.toFixed(2)}`, 'text-amber');
+  // Deduct entry fee from appropriate wallet(s)
+  if (deductGame > 0 && deductWithdraw === 0) {
+    STATE.wallet = Math.max(0, gameBal - deductGame);
+    updateAllBalances();
+    addTransaction(`Arena Entry: ${roomTitle} (Game Wallet)`, `-$${deductGame.toFixed(2)}`, 'text-amber');
 
-  try {
-    fetch('/api/wallet/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        telegramId: STATE.user.id,
-        amount: -entryFee,
-        type: 'game'
-      })
-    });
-  } catch (err) { }
+    try {
+      fetch('/api/wallet/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telegramId: STATE.user.id,
+          amount: -deductGame,
+          type: 'game'
+        })
+      });
+    } catch (err) { }
+  } else if (deductWithdraw > 0 && deductGame === 0) {
+    STATE.withdrawWallet = Math.max(0, withdrawBal - deductWithdraw);
+    updateAllBalances();
+    addTransaction(`Arena Entry: ${roomTitle} (Withdraw Wallet)`, `-$${deductWithdraw.toFixed(2)}`, 'text-purple');
+    showToast(`🎮 Entry fee ($${deductWithdraw.toFixed(2)}) paid from Withdraw Wallet!`);
+
+    try {
+      fetch('/api/wallet/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telegramId: STATE.user.id,
+          amount: -deductWithdraw,
+          type: 'withdraw'
+        })
+      });
+    } catch (err) { }
+  } else {
+    // Combined partial deduction
+    STATE.wallet = Math.max(0, gameBal - deductGame);
+    STATE.withdrawWallet = Math.max(0, withdrawBal - deductWithdraw);
+    updateAllBalances();
+    addTransaction(`Arena Entry: ${roomTitle} (Game + Withdraw)`, `-$${entryFee.toFixed(2)}`, 'text-purple');
+    showToast(`🎮 Paid: $${deductGame.toFixed(2)} (Game) + $${deductWithdraw.toFixed(2)} (Withdraw)`);
+
+    try {
+      if (deductGame > 0) {
+        fetch('/api/wallet/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegramId: STATE.user.id,
+            amount: -deductGame,
+            type: 'game'
+          })
+        });
+      }
+      if (deductWithdraw > 0) {
+        fetch('/api/wallet/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegramId: STATE.user.id,
+            amount: -deductWithdraw,
+            type: 'withdraw'
+          })
+        });
+      }
+    } catch (err) { }
+  }
 
   sounds.init();
   triggerHaptic('impact');

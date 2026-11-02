@@ -48,7 +48,8 @@
   user-select: none;
 }
 
-input, textarea {
+input,
+textarea {
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
@@ -63,7 +64,7 @@ body {
   overflow-x: hidden;
   position: relative;
   /* Rich Dynamic Multi-Color Cyber Aurora Mesh Background */
-  background-image: 
+  background-image:
     radial-gradient(circle at 10% 15%, rgba(236, 72, 153, 0.32) 0%, transparent 45%),
     radial-gradient(circle at 90% 20%, rgba(0, 240, 255, 0.30) 0%, transparent 45%),
     radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.35) 0%, transparent 52%),
@@ -80,7 +81,7 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: 
+  background:
     radial-gradient(ellipse 700px 450px at 15% 35%, rgba(236, 72, 153, 0.18), transparent 70%),
     radial-gradient(ellipse 700px 450px at 85% 65%, rgba(0, 240, 255, 0.18), transparent 70%),
     radial-gradient(ellipse 600px 500px at 50% 90%, rgba(255, 215, 0, 0.14), transparent 70%),
@@ -93,10 +94,12 @@ body::before {
     transform: scale(1) translateY(0);
     filter: hue-rotate(0deg);
   }
+
   50% {
     transform: scale(1.06) translateY(-18px);
     filter: hue-rotate(25deg);
   }
+
   100% {
     transform: scale(0.98) translateY(14px);
     filter: hue-rotate(-25deg);
@@ -117,7 +120,7 @@ body::before {
   -webkit-backdrop-filter: blur(24px);
   border-left: 1px solid rgba(168, 85, 247, 0.2);
   border-right: 1px solid rgba(0, 240, 255, 0.2);
-  box-shadow: 
+  box-shadow:
     0 0 60px rgba(168, 85, 247, 0.25),
     0 0 40px rgba(0, 240, 255, 0.18),
     0 20px 60px rgba(0, 0, 0, 0.85);
@@ -192,8 +195,14 @@ body::before {
 }
 
 @keyframes brandShineSweep {
-  0% { left: -100%; }
-  35%, 100% { left: 160%; }
+  0% {
+    left: -100%;
+  }
+
+  35%,
+  100% {
+    left: 160%;
+  }
 }
 
 .brand-title-wrap {
@@ -274,6 +283,7 @@ body::before {
     font-size: 0.82rem;
     right: 6px;
   }
+
   .brand-title-wrap {
     padding: 0 20px;
   }
@@ -284,7 +294,7 @@ body::before {
   display: flex;
   align-items: center;
   gap: 12px;
-  background-image: 
+  background-image:
     linear-gradient(90deg, rgba(6, 10, 22, 0.74) 0%, rgba(10, 16, 32, 0.58) 50%, rgba(6, 10, 22, 0.78) 100%),
     url('images/profile_bg.jpg');
   background-size: cover;
@@ -491,7 +501,7 @@ body::before {
 
 /* 1. Main Game Wallet Background Artwork */
 .game-pill {
-  background-image: 
+  background-image:
     linear-gradient(135deg, rgba(6, 12, 24, 0.72) 0%, rgba(4, 18, 32, 0.82) 100%),
     url('images/wallet_game.jpg');
   border: 1.5px solid rgba(0, 240, 255, 0.65);
@@ -505,7 +515,7 @@ body::before {
 
 /* 2. Referral Bonus Wallet Background Artwork */
 .ref-pill {
-  background-image: 
+  background-image:
     linear-gradient(135deg, rgba(20, 14, 4, 0.72) 0%, rgba(26, 18, 5, 0.82) 100%),
     url('images/wallet_ref.jpg');
   border: 1.5px solid rgba(255, 215, 0, 0.65);
@@ -519,7 +529,7 @@ body::before {
 
 /* 3. Profit Wallet Background Artwork */
 .profit-pill {
-  background-image: 
+  background-image:
     linear-gradient(135deg, rgba(4, 18, 12, 0.72) 0%, rgba(6, 26, 16, 0.82) 100%),
     url('images/wallet_profit.jpg');
   border: 1.5px solid rgba(16, 185, 129, 0.65);
@@ -533,7 +543,7 @@ body::before {
 
 /* 4. Withdrawal Wallet Background Artwork */
 .withdraw-pill {
-  background-image: 
+  background-image:
     linear-gradient(135deg, rgba(18, 8, 28, 0.72) 0%, rgba(24, 10, 36, 0.82) 100%),
     url('images/wallet_withdraw.jpg');
   border: 1.5px solid rgba(168, 85, 247, 0.65);
@@ -689,13 +699,20 @@ body::before {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ================= HERO BANNER (EPIC 8K 4D ARTWORK) ================= */
 .hero-banner {
-  background-image: 
+  background-image:
     linear-gradient(180deg, rgba(6, 10, 22, 0.2) 0%, rgba(8, 12, 26, 0.38) 45%, rgba(6, 9, 20, 0.85) 100%),
     url('images/hero_bg.jpg');
   background-size: cover;
@@ -735,8 +752,17 @@ body::before {
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
 }
 
 .hero-title {
@@ -763,7 +789,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  background-image: 
+  background-image:
     linear-gradient(90deg, rgba(10, 14, 26, 0.5) 0%, rgba(18, 12, 28, 0.4) 50%, rgba(10, 14, 26, 0.5) 100%),
     url('images/stats_bg.jpg');
   background-size: cover;
@@ -809,11 +835,25 @@ body::before {
 }
 
 
-.text-gold { color: var(--gold) !important; }
-.text-cyan { color: var(--cyan) !important; }
-.text-purple { color: var(--purple) !important; }
-.text-amber { color: var(--amber) !important; }
-.text-green { color: var(--green) !important; }
+.text-gold {
+  color: var(--gold) !important;
+}
+
+.text-cyan {
+  color: var(--cyan) !important;
+}
+
+.text-purple {
+  color: var(--purple) !important;
+}
+
+.text-amber {
+  color: var(--amber) !important;
+}
+
+.text-green {
+  color: var(--green) !important;
+}
 
 /* Rooms Section */
 .section-heading {
@@ -871,7 +911,7 @@ body::before {
 
 /* 100% Vivid Crystal-Clear Artwork (Zero Blur, High Contrast) */
 .room-card.room-trio {
-  background-image: 
+  background-image:
     linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(4, 8, 16, 0.8) 100%),
     url('images/card_trio.jpg');
   border: 1.5px solid rgba(0, 240, 255, 0.65);
@@ -879,7 +919,7 @@ body::before {
 }
 
 .room-card.room-squad {
-  background-image: 
+  background-image:
     linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(10, 5, 18, 0.8) 100%),
     url('images/card_squad.jpg');
   border: 1.5px solid rgba(168, 85, 247, 0.7);
@@ -887,7 +927,7 @@ body::before {
 }
 
 .room-card.room-elite {
-  background-image: 
+  background-image:
     linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(14, 8, 4, 0.8) 100%),
     url('images/card_elite.jpg');
   border: 1.5px solid rgba(245, 158, 11, 0.7);
@@ -895,7 +935,7 @@ body::before {
 }
 
 .room-card.room-royale {
-  background-image: 
+  background-image:
     linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(15, 11, 3, 0.8) 100%),
     url('images/card_royale.jpg');
   border: 1.5px solid rgba(255, 215, 0, 0.8);
@@ -939,10 +979,26 @@ body::before {
   background: rgba(10, 12, 20, 0.85);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
-.cyan-badge { color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.6); }
-.purple-badge { color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.6); }
-.amber-badge { color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.6); }
-.gold-badge { color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.7); }
+
+.cyan-badge {
+  color: var(--cyan);
+  border: 1px solid rgba(0, 240, 255, 0.6);
+}
+
+.purple-badge {
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.6);
+}
+
+.amber-badge {
+  color: #fde68a;
+  border: 1px solid rgba(245, 158, 11, 0.6);
+}
+
+.gold-badge {
+  color: var(--gold);
+  border: 1px solid rgba(255, 215, 0, 0.7);
+}
 
 .room-players-tag {
   font-family: var(--font-display);
@@ -982,10 +1038,26 @@ body::before {
   flex-shrink: 0;
   background: rgba(0, 0, 0, 0.6);
 }
-.cyan-box { color: var(--cyan); border: 1px solid rgba(0, 240, 255, 0.5); }
-.purple-box { color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.5); }
-.amber-box { color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.5); }
-.gold-box { color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.6); }
+
+.cyan-box {
+  color: var(--cyan);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+}
+
+.purple-box {
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.5);
+}
+
+.amber-box {
+  color: #fde68a;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+}
+
+.gold-box {
+  color: var(--gold);
+  border: 1px solid rgba(255, 215, 0, 0.6);
+}
 
 .room-name {
   font-family: var(--font-display);
@@ -1034,10 +1106,22 @@ body::before {
   font-size: 1.3rem;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
 }
-.cyan-val { color: var(--cyan); }
-.purple-val { color: #d8b4fe; }
-.amber-val { color: #fde68a; }
-.gold-val { color: var(--gold); }
+
+.cyan-val {
+  color: var(--cyan);
+}
+
+.purple-val {
+  color: #d8b4fe;
+}
+
+.amber-val {
+  color: #fde68a;
+}
+
+.gold-val {
+  color: var(--gold);
+}
 
 
 .join-btn {
@@ -1053,10 +1137,25 @@ body::before {
   cursor: pointer;
 }
 
-.cyan-btn { background: linear-gradient(135deg, #00f0ff, #0284c7); color: #04101e; }
-.purple-btn { background: linear-gradient(135deg, #c084fc, #9333ea); color: #fff; }
-.amber-btn { background: linear-gradient(135deg, #fbbf24, #d97706); color: #1e1102; }
-.gold-btn { background: linear-gradient(135deg, #ffd700, #b45309); color: #1a0f00; }
+.cyan-btn {
+  background: linear-gradient(135deg, #00f0ff, #0284c7);
+  color: #04101e;
+}
+
+.purple-btn {
+  background: linear-gradient(135deg, #c084fc, #9333ea);
+  color: #fff;
+}
+
+.amber-btn {
+  background: linear-gradient(135deg, #fbbf24, #d97706);
+  color: #1e1102;
+}
+
+.gold-btn {
+  background: linear-gradient(135deg, #ffd700, #b45309);
+  color: #1a0f00;
+}
 
 /* Referral Promo Banner Card */
 .ref-promo-card {
@@ -1105,7 +1204,7 @@ body::before {
 /* 1. Box 1: Referral Bonus Header Card (4D Cyber Gold Vault) */
 .ref-wallet-header {
   position: relative;
-  background: 
+  background:
     linear-gradient(160deg, rgba(22, 16, 36, 0.74) 0%, rgba(8, 10, 22, 0.88) 100%),
     url('images/ref_banner_4d.jpg') center/cover no-repeat;
   border: 1.5px solid rgba(255, 215, 0, 0.6);
@@ -1217,7 +1316,7 @@ body::before {
 /* 2. Box 2: Share Invite Link Card (4D Cyber Cyan Network) */
 .ref-link-card {
   position: relative;
-  background: 
+  background:
     linear-gradient(150deg, rgba(5, 14, 32, 0.76) 0%, rgba(4, 10, 24, 0.88) 100%),
     url('images/ref_link_4d.jpg') center/cover no-repeat;
   border: 1.5px solid rgba(0, 240, 255, 0.55);
@@ -1345,7 +1444,7 @@ body::before {
 /* 3. Box 3: How Referrals Work Card (4D Cyber Purple Portal) */
 .how-it-works-card {
   position: relative;
-  background: 
+  background:
     linear-gradient(150deg, rgba(22, 10, 38, 0.78) 0%, rgba(7, 5, 20, 0.9) 100%),
     url('images/ref_steps_4d.jpg') center/cover no-repeat;
   border: 1.5px solid rgba(168, 85, 247, 0.55);
@@ -1415,7 +1514,8 @@ body::before {
 }
 
 /* Generic Fallback for other cards */
-.deposit-preview-card, .history-card {
+.deposit-preview-card,
+.history-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -1437,7 +1537,7 @@ body::before {
 
 /* ================= SCREEN 7: FINANCE & DEDICATED ADDRESS ================= */
 .finance-card {
-  background-image: 
+  background-image:
     linear-gradient(135deg, rgba(18, 12, 40, 0.78) 0%, rgba(8, 6, 24, 0.88) 100%),
     url('images/deposit_bg_4d.jpg');
   background-size: cover;
@@ -1635,6 +1735,7 @@ body::before {
     transform: translateY(-25px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -1684,6 +1785,7 @@ body::before {
   gap: 8px;
   margin-bottom: 14px;
 }
+
 .bsc-single-banner b {
   color: var(--gold);
 }
@@ -1695,6 +1797,7 @@ body::before {
   margin-top: 5px;
   text-align: left;
 }
+
 .input-hint b {
   color: var(--cyan);
 }
@@ -1786,7 +1889,7 @@ body::before {
 .deposit-modal-content {
   max-height: 94vh;
   overflow-y: auto;
-  background: 
+  background:
     radial-gradient(circle at 15% 0%, rgba(0, 240, 255, 0.35) 0%, transparent 50%),
     radial-gradient(circle at 85% 10%, rgba(236, 72, 153, 0.35) 0%, transparent 55%),
     radial-gradient(circle at 50% 80%, rgba(245, 158, 11, 0.2) 0%, transparent 60%),
@@ -1927,11 +2030,14 @@ body::before {
 }
 
 @keyframes pulseGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(0.9);
     opacity: 0.6;
     box-shadow: 0 0 4px #10b981;
   }
+
   50% {
     transform: scale(1.2);
     opacity: 1;
@@ -2038,7 +2144,8 @@ body::before {
   margin-bottom: 14px;
 }
 
-.withdraw-source-box label, .form-group label {
+.withdraw-source-box label,
+.form-group label {
   font-size: 0.72rem;
   color: #cbd5e1;
   font-weight: 700;
@@ -2362,9 +2469,25 @@ body::before {
   border: 1px solid rgba(0, 240, 255, 0.35);
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
 }
-.circle-1 { width: 55px; height: 55px; border-color: rgba(0, 240, 255, 0.55); }
-.circle-2 { width: 110px; height: 110px; border-style: dashed; border-color: rgba(168, 85, 247, 0.5); }
-.circle-3 { width: 170px; height: 170px; border-color: rgba(0, 240, 255, 0.65); }
+
+.circle-1 {
+  width: 55px;
+  height: 55px;
+  border-color: rgba(0, 240, 255, 0.55);
+}
+
+.circle-2 {
+  width: 110px;
+  height: 110px;
+  border-style: dashed;
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+.circle-3 {
+  width: 170px;
+  height: 170px;
+  border-color: rgba(0, 240, 255, 0.65);
+}
 
 .radar-sweep {
   position: absolute;
@@ -2376,8 +2499,13 @@ body::before {
 }
 
 @keyframes radarSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .radar-center-icon {
@@ -2491,9 +2619,19 @@ body::before {
 }
 
 @keyframes popIn {
-  0% { transform: scale(0.6); opacity: 0; }
-  80% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+
+  80% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .slot-avatar {
@@ -2553,7 +2691,7 @@ body::before {
   border-radius: 26px;
   padding: 30px 18px 24px;
   text-align: center;
-  box-shadow: 
+  box-shadow:
     0 0 35px rgba(6, 182, 212, 0.45),
     0 0 80px rgba(139, 92, 246, 0.35),
     inset 0 0 40px rgba(6, 182, 212, 0.2);
@@ -2584,8 +2722,14 @@ body::before {
 }
 
 @keyframes laserLightSweep {
-  0% { left: -100%; }
-  50%, 100% { left: 160%; }
+  0% {
+    left: -100%;
+  }
+
+  50%,
+  100% {
+    left: 160%;
+  }
 }
 
 .countdown-content-wrap {
@@ -2663,8 +2807,15 @@ body::before {
 }
 
 @keyframes orbPulse {
-  0% { transform: scale(0.88); opacity: 0.65; }
-  100% { transform: scale(1.18); opacity: 1; }
+  0% {
+    transform: scale(0.88);
+    opacity: 0.65;
+  }
+
+  100% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
 }
 
 .countdown-svg-ring {
@@ -2698,7 +2849,7 @@ body::before {
   font-size: 4.8rem;
   font-weight: 900;
   color: #ffffff;
-  text-shadow: 
+  text-shadow:
     0 0 20px #06b6d4,
     0 0 40px rgba(6, 182, 212, 0.85),
     0 0 65px rgba(139, 92, 246, 0.7);
@@ -2712,15 +2863,25 @@ body::before {
 }
 
 @keyframes tickShockwave {
-  0% { transform: scale(1.35); filter: brightness(1.6); }
-  50% { transform: scale(0.95); }
-  100% { transform: scale(1); filter: brightness(1); }
+  0% {
+    transform: scale(1.35);
+    filter: brightness(1.6);
+  }
+
+  50% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
 }
 
 .huge-countdown.countdown-go {
   font-size: 3.8rem;
   color: #ffd700;
-  text-shadow: 
+  text-shadow:
     0 0 25px #ffd700,
     0 0 50px rgba(255, 215, 0, 0.95),
     0 0 80px rgba(16, 185, 129, 0.9);
@@ -2728,9 +2889,19 @@ body::before {
 }
 
 @keyframes goExplosion {
-  0% { transform: scale(0.5); opacity: 0; }
-  60% { transform: scale(1.3); opacity: 1; }
-  100% { transform: scale(1.1); }
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1.1);
+  }
 }
 
 .countdown-modal-box .countdown-tip {
@@ -2853,9 +3024,11 @@ body::before {
 .opponents-list::-webkit-scrollbar {
   width: 4px;
 }
+
 .opponents-list::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .opponents-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
@@ -2953,8 +3126,18 @@ body::before {
   opacity: 0.3;
   pointer-events: none;
 }
-.ring-pulse.r1 { width: 210px; height: 210px; animation: ringPulse 2s infinite ease-out; }
-.ring-pulse.r2 { width: 230px; height: 230px; animation: ringPulse 2s infinite 0.7s ease-out; }
+
+.ring-pulse.r1 {
+  width: 210px;
+  height: 210px;
+  animation: ringPulse 2s infinite ease-out;
+}
+
+.ring-pulse.r2 {
+  width: 230px;
+  height: 230px;
+  animation: ringPulse 2s infinite 0.7s ease-out;
+}
 
 .battle-orb {
   width: 175px;
@@ -3024,8 +3207,15 @@ body::before {
 }
 
 @keyframes floatUp {
-  0% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -60px) scale(1.3); }
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -60px) scale(1.3);
+  }
 }
 
 .floating-ref-cost {
@@ -3046,10 +3236,12 @@ body::before {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1.1);
   }
+
   45% {
     opacity: 0.95;
     transform: translate(-50%, -15%) scale(1);
   }
+
   100% {
     opacity: 0;
     transform: translate(-50%, 18px) scale(0.85);
@@ -3111,8 +3303,15 @@ body::before {
 }
 
 @keyframes fadeInMode {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- Mode 1: Cash Tap Race (Trio 3P) --- */
@@ -3122,6 +3321,7 @@ body::before {
   flex-direction: column;
   align-items: center;
 }
+
 #gameMode-tap.active {
   display: flex;
 }
@@ -3150,14 +3350,16 @@ body::before {
   gap: 5px;
 }
 
-.user-vault-score, .user-royale-score {
+.user-vault-score,
+.user-royale-score {
   font-size: 0.88rem;
   font-family: var(--font-display);
   font-weight: 800;
   color: #94a3b8;
 }
 
-.user-vault-score b, .user-royale-score b {
+.user-vault-score b,
+.user-royale-score b {
   color: #10b981;
   text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
@@ -3200,8 +3402,16 @@ body::before {
 }
 
 @keyframes goldPulse {
-  0%, 100% { border-color: rgba(255, 215, 0, 0.5); }
-  50% { border-color: rgba(255, 215, 0, 1); box-shadow: 0 0 25px rgba(255, 215, 0, 0.5); }
+
+  0%,
+  100% {
+    border-color: rgba(255, 215, 0, 0.5);
+  }
+
+  50% {
+    border-color: rgba(255, 215, 0, 1);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+  }
 }
 
 .vault-card.cracked {
@@ -3209,9 +3419,18 @@ body::before {
 }
 
 @keyframes vaultCrack {
-  0% { transform: scale(0.9); }
-  50% { transform: scale(1.12); filter: brightness(1.6); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.9);
+  }
+
+  50% {
+    transform: scale(1.12);
+    filter: brightness(1.6);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .vault-icon {
@@ -3233,7 +3452,8 @@ body::before {
   color: #94a3b8;
 }
 
-.vault-mode-tip, .royale-tip {
+.vault-mode-tip,
+.royale-tip {
   font-size: 0.7rem;
   color: #94a3b8;
   text-align: center;
@@ -3303,9 +3523,19 @@ body::before {
 }
 
 @keyframes shakeCrash {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-4px);
+  }
+
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 .crash-display-box {
@@ -3338,8 +3568,13 @@ body::before {
 }
 
 @keyframes rocketPulseFly {
-  0% { transform: translateY(0) rotate(-15deg); }
-  100% { transform: translateY(-16px) rotate(-30deg); }
+  0% {
+    transform: translateY(0) rotate(-15deg);
+  }
+
+  100% {
+    transform: translateY(-16px) rotate(-30deg);
+  }
 }
 
 .crash-rocket-wrap.crashed {
@@ -3465,8 +3700,15 @@ body::before {
 }
 
 @keyframes popToken {
-  0% { transform: scale(0); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .royale-token-icon {
@@ -3489,7 +3731,7 @@ body::before {
 /* Results */
 .result-card {
   position: relative;
-  background-image: 
+  background-image:
     linear-gradient(180deg, rgba(12, 10, 28, 0.7) 0%, rgba(16, 12, 34, 0.65) 50%, rgba(8, 6, 20, 0.9) 100%),
     url('images/result_bg_4d.jpg');
   background-size: cover;
@@ -3515,8 +3757,14 @@ body::before {
 }
 
 @keyframes resultBorderGlow {
-  0% { opacity: 0.6; }
-  100% { opacity: 1; filter: drop-shadow(0 0 8px var(--cyan)); }
+  0% {
+    opacity: 0.6;
+  }
+
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px var(--cyan));
+  }
 }
 
 .result-badge-wrap {
@@ -4094,13 +4342,13 @@ body::before {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
-.setting-switch input:checked + .setting-slider {
+.setting-switch input:checked+.setting-slider {
   background: linear-gradient(135deg, var(--cyan), #3b82f6);
   border-color: var(--cyan);
   box-shadow: 0 0 12px var(--cyan-glow);
 }
 
-.setting-switch input:checked + .setting-slider:before {
+.setting-switch input:checked+.setting-slider:before {
   transform: translateX(20px);
   background-color: #ffffff;
 }
@@ -4242,9 +4490,18 @@ body::before {
 }
 
 @keyframes pulseDot {
-  0% { opacity: 0.4; }
-  50% { opacity: 1; transform: scale(1.2); }
-  100% { opacity: 0.4; }
+  0% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+
+  100% {
+    opacity: 0.4;
+  }
 }
 
 /* ================= 6. FLOATING PERSISTENT TELEGRAM JOIN BUTTON ================= */
@@ -4294,10 +4551,12 @@ body::before {
     box-shadow: 0 4px 18px rgba(34, 158, 217, 0.65), 0 0 0 0 rgba(42, 171, 238, 0.55);
     transform: scale(1);
   }
+
   50% {
     box-shadow: 0 6px 24px rgba(34, 158, 217, 0.85), 0 0 0 10px rgba(42, 171, 238, 0);
     transform: scale(1.06);
   }
+
   100% {
     box-shadow: 0 4px 18px rgba(34, 158, 217, 0.65), 0 0 0 0 rgba(42, 171, 238, 0);
     transform: scale(1);
@@ -4320,7 +4579,7 @@ body::before {
   margin: auto !important;
   position: relative !important;
   overflow: hidden !important;
-  background: 
+  background:
     linear-gradient(180deg, rgba(5, 12, 26, 0.45) 0%, rgba(3, 7, 18, 0.88) 100%),
     url('images/deposit_bg_4d.jpg') center top / cover no-repeat !important;
   border: 1.5px solid rgba(16, 185, 129, 0.6) !important;
@@ -4338,6 +4597,7 @@ body::before {
     opacity: 0;
     transform: scale(0.92) translateZ(0);
   }
+
   100% {
     opacity: 1;
     transform: scale(1) translateZ(0);
@@ -4406,10 +4666,13 @@ body::before {
 }
 
 @keyframes pulseSuccessRing {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
   }
+
   50% {
     transform: scale(1.08);
     box-shadow: 0 0 35px rgba(16, 185, 129, 0.7);
@@ -4450,7 +4713,7 @@ body::before {
 .success-amount-card {
   position: relative !important;
   overflow: hidden !important;
-  background: 
+  background:
     linear-gradient(135deg, rgba(6, 28, 22, 0.72) 0%, rgba(4, 18, 28, 0.82) 100%),
     url('images/deposit_amt_4d.jpg') center center / cover no-repeat !important;
   border: 1.5px solid rgba(16, 185, 129, 0.55) !important;
@@ -4488,7 +4751,7 @@ body::before {
 .success-meta-list {
   position: relative !important;
   overflow: hidden !important;
-  background: 
+  background:
     linear-gradient(135deg, rgba(4, 10, 26, 0.82) 0%, rgba(3, 7, 20, 0.9) 100%),
     url('images/deposit_meta_4d.jpg') center center / cover no-repeat !important;
   border: 1.5px solid rgba(0, 240, 255, 0.35) !important;
@@ -4548,13 +4811,23 @@ body::before {
 
 /* Live Card Instant Update Animation */
 @keyframes cardLivePulse {
-  0% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.025); filter: brightness(1.3); box-shadow: 0 0 25px rgba(0, 240, 255, 0.6); }
-  100% { transform: scale(1); filter: brightness(1); }
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.025);
+    filter: brightness(1.3);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
 }
 
 .card-live-pulse {
   animation: cardLivePulse 1.2s ease-out;
 }
-
-

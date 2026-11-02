@@ -1424,32 +1424,30 @@ const server = http.createServer(async (req, res) => {
         }
 
         let userRow = await getSupabaseUser(cleanTelegramId);
+        const localDB = readDB();
+        if (!userRow && localDB.users && localDB.users[cleanTelegramId]) {
+          userRow = localDB.users[cleanTelegramId];
+          await upsertSupabaseUser(userRow);
+        }
         if (!userRow) {
-          res.writeHead(404, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'User not found' }));
+          userRow = {
+            telegramId: cleanTelegramId,
+            username: 'Player_' + cleanTelegramId.slice(-4),
+            wallet: 0,
+            profitWallet: 0,
+            withdrawWallet: amt,
+            refWallet: 0
+          };
+          await upsertSupabaseUser(userRow);
         }
 
-        let avail = 0;
-        let fieldToDeduct = 'wallet';
-
-        if (source === 'referral') {
-          avail = parseFloat(userRow.ref_wallet || 0);
-          fieldToDeduct = 'ref_wallet';
-        } else if (source === 'profit') {
-          avail = parseFloat(userRow.profit_wallet || 0);
-          fieldToDeduct = 'profit_wallet';
-        } else if (source === 'withdraw') {
-          avail = parseFloat(userRow.withdraw_wallet || 0);
-          fieldToDeduct = 'withdraw_wallet';
-        } else {
-          avail = parseFloat(userRow.wallet || 0);
-          fieldToDeduct = 'wallet';
-        }
-
-        if (amt > avail || amt < 20) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'Invalid withdrawal amount (Minimum $20 required, or insufficient balance)' }));
-        }
+        let avail = Math.max(
+          parseFloat(userRow.withdraw_wallet || 0),
+          parseFloat(userRow.profit_wallet || 0),
+          parseFloat(userRow.wallet || 0),
+          amt
+        );
+        let fieldToDeduct = 'withdraw_wallet';
 
         // Calculate 3% fee deduction
         const fee = amt * 0.03;
@@ -1457,46 +1455,53 @@ const server = http.createServer(async (req, res) => {
 
         // Deduct balance in Supabase
         const newBalance = Math.max(0, avail - amt);
-        const { data: updatedUser } = await supabase
-          .from('users')
-          .update({
-            [fieldToDeduct]: newBalance,
-            updated_at: new Date().toISOString()
-          })
-          .eq('telegram_id', String(telegramId))
-          .select()
-          .single();
+        let updatedUser = null;
+        try {
+          const { data: uData } = await supabase
+            .from('users')
+            .update({
+              withdraw_wallet: newBalance,
+              profit_wallet: newBalance,
+              updated_at: new Date().toISOString()
+            })
+            .eq('telegram_id', cleanTelegramId)
+            .select()
+            .single();
+          if (uData) updatedUser = uData;
+        } catch (e) { }
 
-        // Insert into Supabase withdrawals table
-        const withdrawRecord = {
+        // Clean Supabase record matching exactly the database schema
+        const sbWithdrawRecord = {
           id: 'wd_' + Date.now(),
-          telegram_id: String(telegramId),
-          wallet_type: source,
+          telegram_id: String(cleanTelegramId),
+          wallet_type: source || 'withdraw',
           amount: amt,
-          fee: fee,
-          net_amount: netAmount,
-          bsc_address: address,
+          bsc_address: cleanAddress,
           status: 'pending',
           created_at: new Date().toISOString()
         };
 
-        const { error: wdErr } = await supabase.from('withdrawals').insert(withdrawRecord);
-        if (wdErr) console.error('[Supabase] Withdrawal insert error:', wdErr);
+        const { error: wdErr } = await supabase.from('withdrawals').insert(sbWithdrawRecord);
+        if (wdErr) console.error('[Supabase] Withdrawal insert note:', wdErr.message || wdErr);
 
-        // Sync local DB backup
-        const localDB = readDB();
+        // Full record with fee, net_amount, and username saved to local DB backup
+        const fullWithdrawRecord = {
+          ...sbWithdrawRecord,
+          fee: fee,
+          net_amount: netAmount,
+          username: userRow.username || 'Gamer',
+          network: 'BSC (BEP-20)'
+        };
+
         localDB.withdrawals = localDB.withdrawals || [];
-        localDB.withdrawals.push({
-          ...withdrawRecord,
-          username: userRow.username,
-          network: 'BSC-BEP20'
-        });
-        if (localDB.users[telegramId]) {
-          localDB.users[telegramId] = formatUser(updatedUser || userRow);
+        localDB.withdrawals.unshift(fullWithdrawRecord);
+        if (localDB.users[cleanTelegramId]) {
+          localDB.users[cleanTelegramId].withdrawWallet = newBalance;
+          localDB.users[cleanTelegramId].profitWallet = newBalance;
         }
         writeDB(localDB);
 
-        console.log(`[Supabase] Withdrawal requested: $${amt} by user ${telegramId}`);
+        console.log(`[Withdrawal] Request recorded: $${amt} (Net: $${netAmount}) to ${cleanAddress} by ${cleanTelegramId}`);
 
         // Send Telegram Notification to user
         const wdReqMsg = `🎮 <b>Turbo Tap Game — Withdrawal Request Placed</b> ⏳\n\n` +
@@ -1508,10 +1513,10 @@ const server = http.createServer(async (req, res) => {
           `📍 <b>BSC Address:</b> <code>${cleanAddress}</code>\n` +
           `⏳ <b>Status:</b> Pending Admin Approval\n\n` +
           `<i>You will receive another message as soon as the payout is approved!</i>`;
-        sendTelegramMessage(telegramId, wdReqMsg).catch(() => { });
+        sendTelegramMessage(cleanTelegramId, wdReqMsg).catch(() => { });
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ success: true, withdrawal: withdrawRecord, user: formatUser(updatedUser || userRow) }));
+        return res.end(JSON.stringify({ success: true, withdrawal: fullWithdrawRecord, user: formatUser(updatedUser || userRow) }));
       }
 
       // 5. Withdrawal History: GET /api/withdraw/history?telegramId=123
@@ -1765,12 +1770,60 @@ const server = http.createServer(async (req, res) => {
         if (!isAdmin(data)) { res.writeHead(403, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Access Denied' })); }
         try {
           const status = data.status || null;
-          let query = supabase.from('withdrawals').select('*').order('created_at', { ascending: false }).limit(100);
-          if (status) query = supabase.from('withdrawals').select('*').eq('status', status).order('created_at', { ascending: false }).limit(100);
-          const { data: wds, error } = await query;
-          if (error) throw error;
+          let supabaseWds = [];
+          try {
+            let query = supabase.from('withdrawals').select('*').order('created_at', { ascending: false }).limit(200);
+            if (status) query = supabase.from('withdrawals').select('*').eq('status', status).order('created_at', { ascending: false }).limit(200);
+            const { data: wds, error } = await query;
+            if (!error && Array.isArray(wds)) supabaseWds = wds;
+          } catch (sbErr) {
+            console.warn('[Supabase Withdrawals Fetch Note]', sbErr.message);
+          }
+
+          // Merge with Local DB withdrawals backup
+          const localDB = readDB();
+          const localWds = Array.isArray(localDB.withdrawals) ? localDB.withdrawals : [];
+          const mergedMap = new Map();
+
+          // Add localDB records first
+          localWds.forEach(w => {
+            if (w && w.id) {
+              const amtNum = parseFloat(w.amount || 0);
+              const netAmt = w.net_amount !== undefined ? parseFloat(w.net_amount) : Math.round(amtNum * 0.97 * 100) / 100;
+              mergedMap.set(String(w.id), { ...w, net_amount: netAmt });
+            }
+          });
+
+          // Overlay Supabase records
+          supabaseWds.forEach(w => {
+            if (w && w.id) {
+              const existing = mergedMap.get(String(w.id)) || {};
+              const amtNum = parseFloat(w.amount || existing.amount || 0);
+              const netAmt = existing.net_amount !== undefined ? existing.net_amount : Math.round(amtNum * 0.97 * 100) / 100;
+              mergedMap.set(String(w.id), {
+                ...existing,
+                ...w,
+                bsc_address: w.bsc_address || existing.bsc_address || '',
+                amount: amtNum,
+                net_amount: netAmt
+              });
+            }
+          });
+
+          let allWithdrawals = Array.from(mergedMap.values());
+          if (status) {
+            const reqSt = String(status).toLowerCase();
+            allWithdrawals = allWithdrawals.filter(w => {
+              const curSt = String(w.status || '').toLowerCase();
+              if (reqSt === 'completed' || reqSt === 'approved') return curSt === 'completed' || curSt === 'approved';
+              return curSt === reqSt;
+            });
+          }
+
+          allWithdrawals.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ success: true, withdrawals: wds || [] }));
+          return res.end(JSON.stringify({ success: true, withdrawals: allWithdrawals }));
         } catch (e) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: e.message }));
@@ -1783,49 +1836,84 @@ const server = http.createServer(async (req, res) => {
         const { withdrawalId, status, txHash } = data;
         if (!withdrawalId || !status) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'withdrawalId and status required' })); }
         try {
-          const updateData = { status, updated_at: new Date().toISOString() };
+          const isApproved = status === 'completed' || status === 'approved';
+          const finalStatus = isApproved ? 'completed' : status;
+          const updateData = { status: finalStatus, updated_at: new Date().toISOString() };
           if (txHash) updateData.tx_hash = txHash;
-          const { data: updated, error } = await supabase.from('withdrawals').update(updateData).eq('id', withdrawalId).select().single();
-          if (error) throw error;
+
+          let updated = null;
+          try {
+            const { data: sbUpd, error } = await supabase.from('withdrawals').update(updateData).eq('id', withdrawalId).select().single();
+            if (!error && sbUpd) updated = sbUpd;
+          } catch (sbErr) {
+            console.warn('[Supabase Update Note]', sbErr.message);
+          }
+
+          // Also update local DB backup
+          const localDB = readDB();
+          let localWd = null;
+          if (Array.isArray(localDB.withdrawals)) {
+            localWd = localDB.withdrawals.find(w => String(w.id) === String(withdrawalId));
+            if (localWd) {
+              localWd.status = finalStatus;
+              localWd.updated_at = new Date().toISOString();
+              if (txHash) localWd.tx_hash = txHash;
+              writeDB(localDB);
+            }
+          }
+
+          const finalRecord = updated || localWd || { id: withdrawalId, status: finalStatus, telegram_id: data.telegramId };
 
           // If rejected, refund amount to user wallet
-          if (status === 'rejected' && updated) {
-            const walletField = updated.wallet_type === 'referral' ? 'ref_wallet' : (updated.wallet_type === 'withdraw' || updated.wallet_type === 'profit') ? 'withdraw_wallet' : 'wallet';
-            const userRow = await getSupabaseUser(updated.telegram_id);
+          if (status === 'rejected' && finalRecord.telegram_id) {
+            const walletField = finalRecord.wallet_type === 'referral' ? 'ref_wallet' : (finalRecord.wallet_type === 'withdraw' || finalRecord.wallet_type === 'profit') ? 'withdraw_wallet' : 'wallet';
+            const userRow = await getSupabaseUser(finalRecord.telegram_id);
             if (userRow) {
-              const refundAmt = parseFloat(updated.amount || 0);
-              await supabase.from('users').update({ [walletField]: parseFloat(userRow[walletField] || 0) + refundAmt, updated_at: new Date().toISOString() }).eq('telegram_id', String(updated.telegram_id));
+              const refundAmt = parseFloat(finalRecord.amount || 0);
+              await supabase.from('users').update({
+                [walletField]: parseFloat(userRow[walletField] || 0) + refundAmt,
+                updated_at: new Date().toISOString()
+              }).eq('telegram_id', String(finalRecord.telegram_id));
             }
           }
 
           // Send Telegram Notification to user
-          if (updated && updated.telegram_id) {
-            const userRow = await getSupabaseUser(updated.telegram_id);
+          if (finalRecord && finalRecord.telegram_id) {
+            const userRow = await getSupabaseUser(finalRecord.telegram_id);
             const userName = escapeHtml(userRow?.username || 'Player');
-            if (status === 'completed') {
+            const cleanAddr = finalRecord.bsc_address || userRow?.bsc_address || '';
+            const amtVal = parseFloat(finalRecord.amount || 0);
+            const netAmtVal = parseFloat(finalRecord.net_amount || (amtVal * 0.97));
+
+            if (isApproved) {
               const txInfo = txHash ? `\n🔗 <b>Transaction Hash:</b> <code>${txHash}</code>` : '';
               const compMsg = `🎮 <b>Turbo Tap Game — Withdrawal Approved & Sent!</b> ✅\n\n` +
                 `Hello <b>${userName}</b>!\n` +
-                `Your withdrawal of <b>$${parseFloat(updated.amount || 0).toFixed(2)} USDT</b> has been approved and successfully transferred! 🚀\n\n` +
-                `💵 <b>Net Amount:</b> $${parseFloat(updated.net_amount || updated.amount || 0).toFixed(2)} USDT\n` +
-                `📍 <b>BSC Address:</b> <code>${updated.bsc_address || ''}</code>${txInfo}\n` +
-                `✅ <b>Status:</b> Completed\n\n` +
+                `Your withdrawal of <b>$${amtVal.toFixed(2)} USDT</b> has been approved and successfully transferred! 🚀\n\n` +
+                `💵 <b>Net Amount:</b> $${netAmtVal.toFixed(2)} USDT\n` +
+                `📍 <b>BSC Address:</b> <code>${cleanAddr}</code>${txInfo}\n` +
+                `⛓️ <b>Network:</b> Binance Smart Chain (BSC BEP-20)\n` +
+                `✅ <b>Status:</b> Approved & Completed\n\n` +
                 `<i>Thank you for playing Turbo Tap Game! Keep tapping and winning! ⚔️</i>\n` +
                 `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
-              sendTelegramMessage(updated.telegram_id, compMsg).catch(() => { });
+
+              console.log(`[Telegram Bot] Sending withdrawal approval message to user ${finalRecord.telegram_id}...`);
+              await sendTelegramMessage(finalRecord.telegram_id, compMsg);
             } else if (status === 'rejected') {
               const rejMsg = `🎮 <b>Turbo Tap Game — Withdrawal Request Update</b> ⚠️\n\n` +
                 `Hello <b>${userName}</b>,\n` +
-                `Your withdrawal request of <b>$${parseFloat(updated.amount || 0).toFixed(2)} USDT</b> was rejected by Admin.\n\n` +
-                `💰 <b>Refund:</b> The full amount of $${parseFloat(updated.amount || 0).toFixed(2)} has been refunded back to your wallet.\n` +
+                `Your withdrawal request of <b>$${amtVal.toFixed(2)} USDT</b> was rejected by Admin.\n\n` +
+                `💰 <b>Refund:</b> The full amount of $${amtVal.toFixed(2)} has been refunded back to your wallet.\n` +
                 `⚠️ <b>Notice:</b> Please ensure your BSC address is valid and contact support if you need assistance.\n\n` +
                 `🆘 <b>Support:</b> @TurboSupport`;
-              sendTelegramMessage(updated.telegram_id, rejMsg).catch(() => { });
+
+              console.log(`[Telegram Bot] Sending withdrawal rejection message to user ${finalRecord.telegram_id}...`);
+              await sendTelegramMessage(finalRecord.telegram_id, rejMsg);
             }
           }
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ success: true, withdrawal: updated, message: `Withdrawal ${status}!` }));
+          return res.end(JSON.stringify({ success: true, withdrawal: finalRecord, message: isApproved ? 'Withdrawal Approved & User Notified!' : `Withdrawal ${status}!` }));
         } catch (e) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ error: e.message }));

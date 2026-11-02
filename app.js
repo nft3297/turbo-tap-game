@@ -1396,7 +1396,7 @@ async function processWithdrawalSubmit() {
 
   // Send withdrawal request to backend
   try {
-    await fetch('/api/withdraw', {
+    const res = await fetch('/api/withdraw', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1408,7 +1408,15 @@ async function processWithdrawalSubmit() {
         source: 'withdraw'
       })
     });
-  } catch (err) { }
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      triggerHaptic('warning');
+      showToast(`⚠️ ${data?.error || 'Withdrawal request failed on server!'}`);
+      return;
+    }
+  } catch (err) {
+    console.error('[Withdrawal Submit Error]', err);
+  }
 
   STATE.withdrawWallet = Math.max(0, (STATE.withdrawWallet || 0) - amount);
 

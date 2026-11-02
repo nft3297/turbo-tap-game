@@ -708,26 +708,108 @@ async function del(tid,uname){
   if(!confirm(`DELETE user "${uname}" (ID: ${tid})?\n\nThis is IRREVERSIBLE!`))return;
   try{await ap('/api/admin/user/delete',{targetTelegramId:tid});toast('User deleted!','ok');loadUsers(uPage);}catch(e){toast('Error','err');}
 }
+function copyToClipboard(text, el) {
+  if (!text) return;
+  const doFeedback = () => {
+    toast('✅ BSC Address copied: ' + text.slice(0, 10) + '...', 'ok');
+    if (el) {
+      const origHtml = el.innerHTML;
+      el.innerHTML = '<i class="fas fa-check" style="color:var(--ok)"></i> Copied!';
+      setTimeout(() => { el.innerHTML = origHtml; }, 2000);
+    }
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(doFeedback).catch(() => {
+      fallbackCopyText(text);
+      doFeedback();
+    });
+  } else {
+    fallbackCopyText(text);
+    doFeedback();
+  }
+}
+
+function fallbackCopyText(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  ta.remove();
+}
+
 async function loadWD(){
   const st=document.getElementById('wdf')?.value||'';
   const tb=document.getElementById('wdt');
   tb.innerHTML='<tr class="lr"><td colspan="8"><div class="spin"></div></td></tr>';
   try{
     const d=await ap('/api/admin/withdrawals',{status:st||null});
-    if(!d.withdrawals?.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:28px">No withdrawals</td></tr>';return;}
+    if(!d.withdrawals?.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:28px">No withdrawals found</td></tr>';return;}
     tb.innerHTML=d.withdrawals.map(w=>{
-      const sc=w.status==='completed'?'bg':w.status==='pending'?'by':'br';
-      const addr=w.bsc_address?(w.bsc_address.slice(0,10)+'...'+w.bsc_address.slice(-6)):'';
-      const actions=w.status==='pending'
-        ? `<div style="display:flex;gap:5px"><button class="btn bsm bok" onclick="pWD('${w.id}','completed')"><i class="fas fa-check"></i></button><button class="btn bsm ber" onclick="pWD('${w.id}','rejected')"><i class="fas fa-times"></i></button></div>`
-        : `<span style="font-size:12px;color:var(--t3)">${w.status}</span>`;
-      return `<tr><td><div class="uid">${w.telegram_id}</div></td><td style="font-weight:700;color:var(--t1)">$${(+w.amount||0).toFixed(2)}</td><td style="color:var(--ok)">$${(+w.net_amount||0).toFixed(2)}</td><td><span style="font-size:11px;font-family:monospace;color:var(--t3)">${addr}</span></td><td><span class="badge bb">${w.wallet_type||'main'}</span></td><td><span class="badge ${sc}">${w.status}</span></td><td style="font-size:11px;color:var(--t3)">${fd(w.created_at)}</td><td>${actions}</td></tr>`;
+      const isApproved = w.status==='completed' || w.status==='approved';
+      const isPending = w.status==='pending';
+      const sc = isApproved ? 'bg' : isPending ? 'by' : 'br';
+      const statusLabel = isApproved ? '<i class="fas fa-check-circle"></i> Approved' : isPending ? '<i class="fas fa-clock"></i> Pending' : '<i class="fas fa-times-circle"></i> Rejected';
+      
+      const fullAddr = String(w.bsc_address || '').trim();
+      const addrHtml = fullAddr ? `
+        <div style="display:flex;align-items:center;gap:6px;min-width:340px;max-width:440px">
+          <code style="font-size:11px;font-family:monospace;color:#a5b4fc;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);padding:4px 8px;border-radius:6px;word-break:break-all;user-select:all;cursor:pointer;flex:1" onclick="copyToClipboard('${fullAddr}', this)" title="Click to copy full address">${fullAddr}</code>
+          <button class="btn bsm" onclick="copyToClipboard('${fullAddr}', this)" style="padding:4px 8px;font-size:11px;white-space:nowrap;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18)" title="Copy Full Address">
+            <i class="fas fa-copy"></i> Copy
+          </button>
+        </div>` : '<span style="color:var(--t3)">—</span>';
+
+      const actions = isPending
+        ? `<div style="display:flex;gap:6px">
+             <button class="btn bsm bok" onclick="pWD('${w.id}','completed')" title="Approve Withdrawal & Send Telegram Notification"><i class="fas fa-check"></i> Approve</button>
+             <button class="btn bsm ber" onclick="pWD('${w.id}','rejected')" title="Reject & Refund"><i class="fas fa-times"></i> Reject</button>
+           </div>`
+        : `<span style="font-size:12px;font-weight:700;color:${isApproved ? 'var(--ok)' : 'var(--err)'}">${statusLabel}</span>`;
+
+      const netAmount = w.net_amount !== undefined ? (+w.net_amount || 0) : ((+w.amount || 0) * 0.97);
+
+      return `<tr>
+        <td><div class="uid">${w.telegram_id}</div>${w.username ? `<div style="font-size:11px;color:var(--t3);margin-top:2px">@${E(w.username)}</div>` : ''}</td>
+        <td style="font-weight:700;color:var(--t1)">$${(+w.amount||0).toFixed(2)}</td>
+        <td style="color:var(--ok);font-weight:700">$${netAmount.toFixed(2)}</td>
+        <td>${addrHtml}</td>
+        <td><span class="badge bb">${w.wallet_type||'withdraw'}</span></td>
+        <td><span class="badge ${sc}">${statusLabel}</span></td>
+        <td style="font-size:11px;color:var(--t3);white-space:nowrap">${fd(w.created_at)}</td>
+        <td>${actions}</td>
+      </tr>`;
     }).join('');
-  }catch(e){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--err);padding:28px">Error</td></tr>';}
+  }catch(e){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--err);padding:28px">Error loading withdrawals</td></tr>';}
 }
+
 async function pWD(id,st){
-  const tx=st==='completed'?prompt('Enter TX Hash (optional):')||null:null;
-  try{const r=await ap('/api/admin/withdrawal/update',{withdrawalId:id,status:st,txHash:tx});toast(r.message||'Updated!',st==='completed'?'ok':'wrn');loadWD();}catch(e){toast('Error','err');}
+  let tx = null;
+  if(st==='completed'){
+    const doApprove = confirm('Approve this withdrawal?\n\nA confirmation notification will automatically be sent to the user on Telegram.');
+    if(!doApprove) return;
+    tx = prompt('Enter BSC Transaction Hash (Optional, or click OK to approve directly):');
+    if(tx === null) return; // Cancelled
+  } else if(st==='rejected'){
+    const doReject = confirm('Reject this withdrawal and refund the full amount back to the user?');
+    if(!doReject) return;
+  }
+
+  try{
+    const r=await ap('/api/admin/withdrawal/update',{withdrawalId:id,status:st,txHash:tx||null});
+    if(r.success){
+      toast(st==='completed' ? '✅ Withdrawal Approved & User Notified on Telegram!' : '⚠️ Withdrawal Rejected & Amount Refunded!', st==='completed'?'ok':'wrn');
+      loadWD();
+      loadDash();
+    } else {
+      toast(r.error||'Failed to update withdrawal','err');
+    }
+  }catch(e){
+    toast('Error updating withdrawal status','err');
+  }
 }
 async function loadDeps(){
   const tb=document.getElementById('dpt');

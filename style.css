@@ -1589,24 +1589,29 @@ body::before {
   font-weight: 800;
 }
 
-/* ================= MODAL: DEPOSIT WITH QR ================= */
+/* ================= MODAL: GLOBAL POPUP POSITIONING (ALWAYS OPENS AT TOP) ================= */
 .app-modal {
   display: none;
   position: fixed;
   inset: 0;
   z-index: 100;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .app-modal.active {
-  display: flex;
-  align-items: flex-end;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding: 10px 10px calc(24px + var(--safe-bottom)) !important;
 }
 
 .modal-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.78);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .modal-content {
@@ -1615,19 +1620,25 @@ body::before {
   max-width: 480px;
   margin: 0 auto;
   background: linear-gradient(180deg, #181236 0%, #100d28 100%);
-  border-top-left-radius: var(--radius-lg);
-  border-top-right-radius: var(--radius-lg);
-  border-top: 1.5px solid rgba(168, 85, 247, 0.4);
-  padding: 18px 16px calc(24px + var(--safe-bottom));
-  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  max-height: 90vh;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid rgba(168, 85, 247, 0.4);
+  padding: 18px 16px 20px;
+  animation: modalSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 94vh;
   overflow-y: auto;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(168, 85, 247, 0.15);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(168, 85, 247, 0.2);
+  z-index: 1;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+@keyframes modalSlideDown {
+  from {
+    transform: translateY(-25px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-header {
@@ -1773,17 +1784,16 @@ body::before {
    MULTICOLOR CYBER PRESTIGE THEME FOR BSC DEPOSIT MODAL
    ============================================================ */
 .deposit-modal-content {
-  max-height: 90vh;
+  max-height: 94vh;
   overflow-y: auto;
   background: 
     radial-gradient(circle at 15% 0%, rgba(0, 240, 255, 0.35) 0%, transparent 50%),
     radial-gradient(circle at 85% 10%, rgba(236, 72, 153, 0.35) 0%, transparent 55%),
     radial-gradient(circle at 50% 80%, rgba(245, 158, 11, 0.2) 0%, transparent 60%),
     linear-gradient(180deg, #241445 0%, #161036 30%, #0d0a22 100%) !important;
-  border-top: 2px solid rgba(0, 240, 255, 0.6) !important;
-  border-left: 1px solid rgba(168, 85, 247, 0.3);
-  border-right: 1px solid rgba(168, 85, 247, 0.3);
-  box-shadow: 0 -12px 45px rgba(168, 85, 247, 0.4), 0 0 25px rgba(0, 240, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.6) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 12px 45px rgba(168, 85, 247, 0.4), 0 0 25px rgba(0, 240, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
 }
 
 .deposit-modal-content .modal-header h3 {
@@ -2241,9 +2251,10 @@ body::before {
 /* ================= 1ST TIME SIGN UP MODAL ================= */
 .signup-content {
   text-align: center;
-  border-top: 2px solid var(--cyan);
-  box-shadow: 0 -10px 40px var(--cyan-glow);
-  padding: 24px 20px calc(28px + var(--safe-bottom));
+  border: 1.5px solid var(--cyan);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px var(--cyan-glow);
+  padding: 24px 20px 24px;
 }
 
 .signup-badge {
@@ -3715,9 +3726,10 @@ body::before {
 
 /* ================= PROFILE DETAILS MODAL ================= */
 .profile-modal-content {
-  border-top: 2px solid var(--cyan);
-  box-shadow: 0 -10px 40px var(--cyan-glow);
-  padding: 20px 16px calc(24px + var(--safe-bottom));
+  border: 1.5px solid var(--cyan);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px var(--cyan-glow);
+  padding: 20px 16px 20px;
 }
 
 .profile-hero-card {
@@ -3903,9 +3915,10 @@ body::before {
 /* ================= 1ST TIME SIGN UP MODAL ================= */
 .signup-content {
   text-align: center;
-  border-top: 2px solid var(--cyan);
-  box-shadow: 0 -10px 40px var(--cyan-glow);
-  padding: 24px 20px calc(28px + var(--safe-bottom));
+  border: 1.5px solid var(--cyan);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px var(--cyan-glow);
+  padding: 24px 20px 24px;
 }
 
 .signup-badge {
@@ -3977,10 +3990,11 @@ body::before {
 
 /* ================= 5. SETTINGS & PREFERENCES MODAL ================= */
 .settings-modal-content {
-  border-top: 2px solid var(--purple);
-  box-shadow: 0 -10px 45px var(--purple-glow);
-  padding: 20px 16px calc(24px + var(--safe-bottom));
-  max-height: 85vh;
+  border: 1.5px solid var(--purple);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 45px var(--purple-glow);
+  padding: 20px 16px 20px;
+  max-height: 94vh;
   display: flex;
   flex-direction: column;
 }
@@ -4294,9 +4308,9 @@ body::before {
    CENTERED DEPOSIT SUCCESSFUL MODAL POPUP
    ============================================================ */
 .app-modal.center-modal {
-  align-items: center !important;
+  align-items: flex-start !important;
   justify-content: center !important;
-  padding: 18px !important;
+  padding: 14px 10px calc(24px + var(--safe-bottom)) !important;
 }
 
 .success-popup-card {

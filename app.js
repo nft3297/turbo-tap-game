@@ -610,7 +610,13 @@ function openProfileModal() {
   const profEarned = document.getElementById('profRefEarned');
   if (profEarned) profEarned.textContent = `$${(STATE.totalRefEarned || 0).toFixed(2)}`;
 
-  document.getElementById('profileModal')?.classList.add('active');
+  const profModal = document.getElementById('profileModal');
+  if (profModal) {
+    profModal.classList.add('active');
+    profModal.scrollTop = 0;
+    const content = profModal.querySelector('.modal-content');
+    if (content) content.scrollTop = 0;
+  }
 }
 
 function closeProfileModal() {
@@ -724,7 +730,13 @@ function openSettingsModal() {
   const effectsToggle = document.getElementById('settingEffectsToggle');
   if (effectsToggle) effectsToggle.checked = STATE.effectsEnabled !== false;
 
-  document.getElementById('settingsModal')?.classList.add('active');
+  const setModal = document.getElementById('settingsModal');
+  if (setModal) {
+    setModal.classList.add('active');
+    setModal.scrollTop = 0;
+    const content = setModal.querySelector('.modal-content');
+    if (content) content.scrollTop = 0;
+  }
 }
 
 function closeSettingsModal() {
@@ -812,6 +824,9 @@ function showSignupModal() {
   if (userField && !userField.value) userField.value = defName;
 
   modal.classList.add('active');
+  modal.scrollTop = 0;
+  const content = modal.querySelector('.modal-content');
+  if (content) content.scrollTop = 0;
 }
 
 async function handleRegistrationSubmit(e) {
@@ -1005,7 +1020,13 @@ let isFetchingDepositAddress = false;
 
 async function openDepositModal() {
   triggerHaptic('impact');
-  document.getElementById('depositModal').classList.add('active');
+  const modal = document.getElementById('depositModal');
+  if (modal) {
+    modal.classList.add('active');
+    modal.scrollTop = 0;
+    const content = modal.querySelector('.modal-content');
+    if (content) content.scrollTop = 0;
+  }
 
   // Clear any existing polling
   if (depositPollInterval) {
@@ -1175,6 +1196,9 @@ function showDepositSuccessModal(amount) {
   const modal = document.getElementById('depositSuccessModal');
   if (modal) {
     modal.classList.add('active');
+    modal.scrollTop = 0;
+    const content = modal.querySelector('.modal-content');
+    if (content) content.scrollTop = 0;
     triggerHaptic('success');
     sounds.playVictory();
     createConfetti();
@@ -1235,7 +1259,13 @@ async function testInstantDeposit(amount) {
 function openWithdrawModal() {
   triggerHaptic('impact');
   STATE.withdrawSource = 'withdraw';
-  document.getElementById('withdrawModal').classList.add('active');
+  const modal = document.getElementById('withdrawModal');
+  if (modal) {
+    modal.classList.add('active');
+    modal.scrollTop = 0;
+    const content = modal.querySelector('.modal-content');
+    if (content) content.scrollTop = 0;
+  }
   updateWithdrawCalculation();
 }
 

@@ -2013,6 +2013,7 @@ function launchBattle() {
   // In 15 seconds, opponents gradually gain dollar values matching the target prize pool!
   STATE.opponentsInterval = setInterval(() => {
     const prizeTarget = STATE.currentRoom.prize || 2.0;
+    const userLive = STATE.userDollarScore || 0;
     // 60 ticks over 15s (250ms interval)
     STATE.playersInRoom.forEach(p => {
       if (!p.isUser) {
@@ -2022,6 +2023,13 @@ function launchBattle() {
         p.score = Math.round((p.score + gain) * 100) / 100;
       }
     });
+
+    // Keep top bot competitive so user sees a thrilling close battle
+    const rivals = STATE.playersInRoom.filter(p => !p.isUser);
+    if (rivals.length > 0 && userLive > 0 && rivals[0].score < userLive * 0.98) {
+      rivals[0].score = Math.round((userLive * (1.02 + Math.random() * 0.05)) * 100) / 100;
+    }
+
     renderLiveBoard();
   }, 250);
 }
@@ -2559,11 +2567,67 @@ async function finishBattle() {
   if (STATE.battleTimerInterval) clearInterval(STATE.battleTimerInterval);
 
   const userObj = STATE.playersInRoom.find(p => p.isUser);
-  if (userObj) userObj.score = STATE.userDollarScore || 0;
+  const userScore = STATE.userDollarScore || 0;
+  if (userObj) userObj.score = userScore;
 
-  const sorted = [...STATE.playersInRoom].sort((a, b) => b.score - a.score);
+  // RULE: In all 4 cards (Trio, Squad, Elite, Royale), original user ALWAYS finishes between Serial No. 2 and 6!
+  // Trio (3 players) -> Serial No. 2 or 3
+  // Squad (5 players) -> Serial No. 2 to 5
+  // Elite (8 players) -> Serial No. 2 to 6
+  // Royale (12 players) -> Serial No. 2 to 6
+  const totalPlayers = STATE.playersInRoom.length;
+  const maxRankAllowed = Math.min(6, totalPlayers);
+  const minRankAllowed = 2;
+  const targetRank = Math.floor(Math.random() * (maxRankAllowed - minRankAllowed + 1)) + minRankAllowed;
+
+  // Separate non-user bots
+  const rivals = STATE.playersInRoom.filter(p => !p.isUser);
+  rivals.sort((a, b) => b.score - a.score);
+
+  // Exactly (targetRank - 1) rivals must score higher than user
+  const numAbove = targetRank - 1;
+  const winnerPrize = parseFloat(STATE.currentRoom?.prize || 0);
+
+  // Bot #1 (Winner bot) always has the highest score
+  const topBotScore = Math.max(
+    Math.round((userScore + 0.35 + Math.random() * 0.45) * 100) / 100,
+    Math.round((winnerPrize * 0.75 + Math.random() * 0.5) * 100) / 100,
+    1.60
+  );
+  if (rivals[0]) {
+    rivals[0].score = topBotScore;
+  }
+
+  // Intermediate bots between #1 and user (if targetRank is 3, 4, 5, or 6)
+  for (let i = 1; i < numAbove; i++) {
+    const fraction = (numAbove - i) / numAbove;
+    const interpolated = userScore + (topBotScore - userScore) * fraction * 0.88;
+    rivals[i].score = Math.round(interpolated * 100) / 100;
+  }
+
+  // User's score confirmed
+  if (userObj) {
+    userObj.score = userScore;
+  }
+
+  // Bots below user must score strictly less than user
+  for (let i = numAbove; i < rivals.length; i++) {
+    const step = i - numAbove + 1;
+    const lowerScore = Math.max(0, Math.round((userScore - (step * 0.16 + Math.random() * 0.1)) * 100) / 100);
+    rivals[i].score = lowerScore;
+  }
+
+  // Sort players list by final score descending
+  STATE.playersInRoom = [userObj, ...rivals];
+  const sorted = [...STATE.playersInRoom].sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    // Tie-break: user stays in target rank position
+    if (a.isUser) return 1;
+    if (b.isUser) return -1;
+    return 0;
+  });
+
   const userRank = sorted.findIndex(p => p.isUser) + 1;
-  const isWinner = userRank === 1;
 
   showScreen('screenResult');
 
@@ -2573,45 +2637,13 @@ async function finishBattle() {
   const rewardBox = document.getElementById('rewardBox');
   const iconWrap = document.getElementById('resultIconWrap');
 
-  if (isWinner) {
-    sounds.playVictory();
-    triggerHaptic('success');
-    titleEl.textContent = 'VICTORY!';
-    titleEl.style.color = '#ffd700';
-    subEl.textContent = `You conquered the ${STATE.currentRoom.players}-Player room!`;
-    rewardAmtEl.textContent = `$${STATE.currentRoom.prize.toFixed(2)}`;
-    rewardBox.style.display = 'block';
-    iconWrap.innerHTML = `<div class="result-trophy-ring"><i class="fa-solid fa-crown text-gold"></i></div>`;
+  triggerHaptic('warning');
+  titleEl.textContent = `FINISHED #${userRank}`;
+  titleEl.style.color = '#cbd5e1';
+  subEl.textContent = 'Good fight! You almost took 1st place.';
+  rewardBox.style.display = 'none';
+  iconWrap.innerHTML = `<div class="result-trophy-ring" style="border-color:#64748b;box-shadow:none;"><i class="fa-solid fa-shield-halved" style="color:#94a3b8;"></i></div>`;
 
-    // Battle Winnings credit directly to PROFIT WALLET and WITHDRAWAL WALLET!
-    STATE.profitWallet = (STATE.profitWallet || 0) + STATE.currentRoom.prize;
-    STATE.withdrawWallet = (STATE.withdrawWallet || 0) + STATE.currentRoom.prize;
-
-    try {
-      await fetch('/api/wallet/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          telegramId: STATE.user.id,
-          amount: STATE.currentRoom.prize,
-          type: 'profit'
-        })
-      });
-    } catch (err) { }
-
-    updateAllBalances();
-    addTransaction(`Won ${STATE.currentRoom.title} (Profit & Withdraw Wallet)`, `+$${STATE.currentRoom.prize.toFixed(2)}`, 'text-green');
-    createConfetti();
-  } else {
-    triggerHaptic('warning');
-    titleEl.textContent = `FINISHED #${userRank}`;
-    titleEl.style.color = '#cbd5e1';
-    subEl.textContent = 'Good fight! You almost took 1st place.';
-    rewardBox.style.display = 'none';
-    iconWrap.innerHTML = `<div class="result-trophy-ring" style="border-color:#64748b;box-shadow:none;"><i class="fa-solid fa-shield-halved" style="color:#94a3b8;"></i></div>`;
-  }
-
-  const winnerPrize = parseFloat(STATE.currentRoom?.prize || 0);
   const board = document.getElementById('matchSummaryBoard');
   board.innerHTML = sorted.map((p, idx) => {
     const isFirst = idx === 0;

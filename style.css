@@ -2155,6 +2155,46 @@ body::before {
   border-color: var(--cyan);
 }
 
+.input-with-action-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-action-wrap .form-input {
+  padding-right: 80px;
+}
+
+.input-inline-btn.paste-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.22), rgba(99, 102, 241, 0.28));
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  color: var(--cyan);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  z-index: 2;
+  user-select: none;
+}
+
+.input-inline-btn.paste-btn:active {
+  transform: translateY(-50%) scale(0.92);
+  background: rgba(0, 240, 255, 0.35);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
 .withdraw-fee-summary {
   background: rgba(10, 13, 23, 0.6);
   border-radius: var(--radius-md);

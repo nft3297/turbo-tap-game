@@ -19,7 +19,7 @@
   <!-- QRCode.js for Deposit Address QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
-  <link rel="stylesheet" href="style.css?v=3.6">
+  <link rel="stylesheet" href="style.css?v=3.7">
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
@@ -859,9 +859,17 @@
 
             <!-- Destination Address Input (BSC BEP-20 only) -->
             <div class="form-group">
-              <label for="withdrawAddressInput">Your USDT (BSC BEP-20) Wallet Address:</label>
-              <input type="text" id="withdrawAddressInput" class="form-input"
-                placeholder="Paste your 0x... BSC BEP-20 address" spellcheck="false">
+              <div class="form-label-row">
+                <label for="withdrawAddressInput">Your USDT (BSC BEP-20) Wallet Address:</label>
+                <span class="max-btn" onclick="pasteWithdrawAddress()"><i class="fa-solid fa-paste"></i> PASTE</span>
+              </div>
+              <div class="input-with-action-wrap">
+                <input type="text" id="withdrawAddressInput" class="form-input"
+                  placeholder="Paste your 0x... BSC BEP-20 address" spellcheck="false">
+                <button type="button" class="input-inline-btn paste-btn" onclick="pasteWithdrawAddress()" title="Paste from clipboard">
+                  <i class="fa-solid fa-paste"></i> PASTE
+                </button>
+              </div>
               <span class="input-hint"><i class="fa-solid fa-info-circle"></i> Must start with <b>0x</b> (Binance Smart
                 Chain BEP-20)</span>
             </div>
@@ -1358,7 +1366,7 @@
   </script>
 
   <!-- Production Engine -->
-  <script src="app.js?v=3.9"></script>
+  <script src="app.js?v=4.0"></script>
 </body>
 
 </html>

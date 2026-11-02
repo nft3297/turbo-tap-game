@@ -1250,6 +1250,70 @@ function setMaxWithdraw() {
   updateWithdrawCalculation();
 }
 
+// Paste BSC BEP-20 Address directly from Clipboard
+async function pasteWithdrawAddress() {
+  triggerHaptic('light');
+  const inputEl = document.getElementById('withdrawAddressInput');
+  if (!inputEl) return;
+
+  const handlePastedText = (rawText) => {
+    if (!rawText || typeof rawText !== 'string' || rawText.trim().length === 0) {
+      showToast('⚠️ Clipboard is empty or permission denied');
+      return;
+    }
+    const cleanAddress = rawText.trim();
+    inputEl.value = cleanAddress;
+    inputEl.focus();
+    triggerHaptic('success');
+    showToast('📋 Address pasted!');
+
+    if (!/^0x[a-fA-F0-9]{40}$/.test(cleanAddress)) {
+      setTimeout(() => {
+        showToast('⚠️ Note: BSC address must start with 0x (42 characters)');
+      }, 1200);
+    }
+  };
+
+  // 1. Priority: Official Telegram WebApp Clipboard API
+  if (tg && typeof tg.readTextFromClipboard === 'function') {
+    try {
+      tg.readTextFromClipboard((clipText) => {
+        if (clipText && typeof clipText === 'string' && clipText.trim().length > 0) {
+          handlePastedText(clipText);
+        } else {
+          fallbackClipboardRead(handlePastedText);
+        }
+      });
+      return;
+    } catch (err) {
+      console.warn('tg.readTextFromClipboard error:', err);
+    }
+  }
+
+  // 2. Fallback: Browser Navigator Clipboard
+  fallbackClipboardRead(handlePastedText);
+}
+
+async function fallbackClipboardRead(callback) {
+  if (navigator?.clipboard && typeof navigator.clipboard.readText === 'function') {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.trim().length > 0) {
+        callback(text);
+        return;
+      }
+    } catch (err) {
+      console.warn('navigator.clipboard.readText error:', err);
+    }
+  }
+
+  // 3. Last Fallback: Native Prompt dialog if browser blocks clipboard access
+  const manual = prompt('Paste your BSC BEP-20 (0x...) wallet address:');
+  if (manual) {
+    callback(manual);
+  }
+}
+
 document.addEventListener('input', (e) => {
   if (e.target && e.target.id === 'withdrawAmountInput') {
     updateWithdrawCalculation();

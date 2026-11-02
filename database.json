@@ -427,7 +427,7 @@
     "battleEntryFee": 10,
     "battleWinMultiplier": 1.8,
     "maxBattleBoost": 100,
-    "battleDuration": 15,
+    "battleDuration": 25,
     "maintenanceMode": false,
     "welcomeMessage": "Welcome to Turbo Team Battle! 🚀",
     "botName": "Turbo Team Battle",

@@ -142,7 +142,7 @@ const STATE = {
   matchmakingInterval: null,
   searchTimerSeconds: 0,
   playersInRoom: [],
-  battleTimer: 15,
+  battleTimer: 25,
   battleTimerInterval: null,
   opponentsInterval: null,
   userTaps: 0,
@@ -1938,7 +1938,7 @@ function launchBattle() {
   STATE.userTaps = 0;
   STATE.boostMeter = 0;
   STATE.isBoostActive = false;
-  STATE.battleTimer = 15;
+  STATE.battleTimer = 25;
   document.getElementById('battleTimer').textContent = `${STATE.battleTimer}s`;
 
   // Determine Game Mode based on Room
@@ -2010,15 +2010,15 @@ function launchBattle() {
   }, 1000);
 
   // Realistic Opponent AI Dollar Accumulation
-  // In 15 seconds, opponents gradually gain dollar values matching the target prize pool!
+  // In 25 seconds, opponents gradually gain dollar values matching the target prize pool!
   STATE.opponentsInterval = setInterval(() => {
     const prizeTarget = STATE.currentRoom.prize || 2.0;
     const userLive = STATE.userDollarScore || 0;
-    // 60 ticks over 15s (250ms interval)
+    // 100 ticks over 25s (250ms interval)
     STATE.playersInRoom.forEach(p => {
       if (!p.isUser) {
         const speedFactor = (p.speed || 8) / 10;
-        const tickBase = (prizeTarget / 60) * speedFactor;
+        const tickBase = (prizeTarget / 100) * speedFactor;
         const gain = Math.random() * tickBase * 1.55;
         p.score = Math.round((p.score + gain) * 100) / 100;
       }

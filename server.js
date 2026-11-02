@@ -381,6 +381,97 @@ async function pollTelegramUpdates() {
 // Launch background telegram poller
 setTimeout(pollTelegramUpdates, 3000);
 
+// Auto-configure Webhook and Persistent "Play" Menu Button
+async function initTelegramBotDefaults() {
+  const token = getTelegramBotToken();
+  if (!token) return;
+
+  // 1. Set Chat Menu Button (Persistent "Play Turbo Tap 🕹️" button in chat)
+  try {
+    const menuPayload = JSON.stringify({
+      menu_button: {
+        type: 'web_app',
+        text: 'Play Turbo Tap 🕹️',
+        web_app: {
+          url: 'https://turbo-tap-game.onrender.com'
+        }
+      }
+    });
+
+    const menuReq = https.request({
+      hostname: 'api.telegram.org',
+      port: 443,
+      path: `/bot${token}/setChatMenuButton`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(menuPayload)
+      },
+      timeout: 10000
+    }, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.ok) console.log('[Telegram Bot] Persistent WebApp Menu Button successfully configured!');
+        } catch (e) { }
+      });
+    });
+    menuReq.on('error', () => { });
+    menuReq.write(menuPayload);
+    menuReq.end();
+  } catch (err) { }
+
+  // 2. Set Webhook to Render (Direct instant push for /start)
+  try {
+    const webhookUrl = 'https://turbo-tap-game.onrender.com/api/telegram/webhook';
+    const whPayload = JSON.stringify({
+      url: webhookUrl,
+      drop_pending_updates: true,
+      allowed_updates: ['message', 'callback_query']
+    });
+
+    const whReq = https.request({
+      hostname: 'api.telegram.org',
+      port: 443,
+      path: `/bot${token}/setWebhook`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(whPayload)
+      },
+      timeout: 10000
+    }, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.ok) {
+            console.log(`[Telegram Bot] Webhook successfully set to ${webhookUrl}`);
+          } else {
+            console.warn('[Telegram Bot] setWebhook note:', json.description);
+            setTimeout(pollTelegramUpdates, 2000);
+          }
+        } catch (e) {
+          setTimeout(pollTelegramUpdates, 2000);
+        }
+      });
+    });
+    whReq.on('error', (err) => {
+      console.warn('[Telegram Bot] setWebhook error:', err.message);
+      setTimeout(pollTelegramUpdates, 2000);
+    });
+    whReq.write(whPayload);
+    whReq.end();
+  } catch (err) {
+    setTimeout(pollTelegramUpdates, 2000);
+  }
+}
+
+setTimeout(initTelegramBotDefaults, 2500);
+
 // Convert Supabase DB snake_case row to frontend camelCase user object
 function formatUser(row) {
   if (!row) return null;

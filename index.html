@@ -484,9 +484,9 @@
                 </div>
               </button>
             </div>
-            <div class="boost-meter-container">
+            <div class="boost-meter-container" id="boostMeterContainer" onclick="handleBoostBarTap(event)" ontouchstart="handleBoostBarTap(event)" title="Tap to Activate Boost & Win!">
               <div class="boost-label">
-                <span><i class="fa-solid fa-bolt"></i> 3X CASH FRENZY</span>
+                <span><i class="fa-solid fa-bolt"></i> 3X CASH FRENZY (TAP TO BOOST)</span>
                 <span id="boostPercent">0%</span>
               </div>
               <div class="boost-track">
@@ -714,10 +714,12 @@
           <div class="about-hero-card">
             <div class="about-glow"></div>
             <div class="about-hero-top-row">
-              <div class="about-badge"><i class="fa-solid fa-circle-info"></i> <span id="txtAboutHeroBadge">OFFICIAL GUIDE & RULES</span></div>
+              <div class="about-badge"><i class="fa-solid fa-circle-info"></i> <span id="txtAboutHeroBadge">OFFICIAL
+                  GUIDE & RULES</span></div>
               <div class="about-lang-box" title="Change Language / भाषा बदलें">
                 <i class="fa-solid fa-globe text-cyan"></i>
-                <select id="aboutLangSelect" class="about-lang-select" onchange="switchAboutLanguage(this.value)" aria-label="Select Language">
+                <select id="aboutLangSelect" class="about-lang-select" onchange="switchAboutLanguage(this.value)"
+                  aria-label="Select Language">
                   <option value="en" selected>English 🇬🇧</option>
                   <option value="hi">हिन्दी (Hindi) 🇮🇳</option>
                   <option value="ru">Русский (Russian) 🇷🇺</option>
@@ -734,7 +736,8 @@
               </div>
             </div>
             <h2 class="about-title">TURBO TAP ARENA</h2>
-            <p class="about-subtitle" id="txtAboutHeroSub">Live 25-Second Web3 Multiplayer Tap Arena • BSC BEP-20 Powered</p>
+            <p class="about-subtitle" id="txtAboutHeroSub">Live 25-Second Web3 Multiplayer Tap Arena • BSC BEP-20
+              Powered</p>
           </div>
 
           <!-- Dynamic Language Content Area -->
@@ -1360,8 +1363,7 @@
 
     function checkAndShowAdminBtn() {
       // Get Telegram user ID
-      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-      const uid = String(tgUser?.id || localStorage.getItem('turbo_uid') || '');
+      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;st uid = String(tgUser?.id || localStorage.getItem('turbo_uid') || '');
       const btn = document.getElementById('adminAccessBtn');
       if (btn && uid === ADMIN_TID) {
         btn.style.display = 'flex';

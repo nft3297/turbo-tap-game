@@ -3255,6 +3255,28 @@ body::before {
 .boost-meter-container {
   width: 100%;
   max-width: 300px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition: transform 0.15s, filter 0.2s;
+}
+
+.boost-meter-container:active {
+  transform: scale(0.97);
+}
+
+.boost-meter-container.active-pulse {
+  animation: boostGlowPulse 0.9s infinite alternate;
+}
+
+@keyframes boostGlowPulse {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+  }
+  100% {
+    filter: drop-shadow(0 0 16px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 25px rgba(0, 240, 255, 0.6));
+  }
 }
 
 .boost-label {

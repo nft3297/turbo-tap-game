@@ -1953,6 +1953,7 @@ function launchBattle() {
   STATE.userTaps = 0;
   STATE.boostMeter = 0;
   STATE.isBoostActive = false;
+  STATE.hasBoostTapWin = false;
   STATE.battleTimer = 25;
   document.getElementById('battleTimer').textContent = `${STATE.battleTimer}s`;
 
@@ -2246,6 +2247,21 @@ function handleOrbTap(e) {
   if (STATE.isBoostActive) {
     sounds.playBoostTap();
     triggerHaptic('heavy');
+
+    // === USER FORMULA: In Card 1, doing a Boost Tap guarantees Winner victory! ===
+    if (isCard1 && !STATE.hasBoostTapWin) {
+      STATE.isTrioWinRound = true;
+      STATE.hasBoostTapWin = true;
+      const rivals = STATE.playersInRoom.filter(p => !p.isUser);
+      rivals.sort((a, b) => b.score - a.score);
+      const topRival = rivals[0] ? rivals[0].score : 0;
+      if (STATE.userDollarScore <= topRival) {
+        STATE.userDollarScore = Math.round((topRival + 0.35 + Math.random() * 0.15) * 100) / 100;
+        if (userObj) userObj.score = STATE.userDollarScore;
+        document.getElementById('userLiveScore').textContent = `$${STATE.userDollarScore.toFixed(2)}`;
+      }
+      showToast('⚡ BOOST TAP ACTIVATED! 1ST PLACE WINNER LOCKED!');
+    }
   } else {
     sounds.playTap();
     triggerHaptic('light');
@@ -2273,8 +2289,21 @@ function activateTurboBoost() {
   document.getElementById('boostPercent').textContent = 'MAX FRENZY!';
   document.getElementById('boostFill').style.width = '100%';
   document.getElementById('tapOrb').classList.add('boost-active');
+  document.getElementById('boostMeterContainer')?.classList.add('active-pulse');
   triggerHaptic('heavy');
-  showToast('🔥 TURBO FRENZY ACTIVATED! 3X CASH REWARDS!');
+
+  const isCard1 = (STATE.activeGameMode === 'tap') || 
+                  (STATE.currentRoom?.players === 3) || 
+                  ((STATE.currentRoom?.title || '').toLowerCase().includes('trio'));
+
+  // In Card 1 (Trio Showdown): Turbo Boost unlocks 1st place winner status
+  if (isCard1) {
+    STATE.isTrioWinRound = true;
+    STATE.hasBoostTapWin = true;
+    showToast('⚡ TURBO BOOST ACTIVATED! 1ST PLACE WINNER LOCK!');
+  } else {
+    showToast('🔥 TURBO FRENZY ACTIVATED! 3X CASH REWARDS!');
+  }
 
   clearTimeout(STATE.boostTimeout);
   STATE.boostTimeout = setTimeout(() => {
@@ -2286,7 +2315,29 @@ function activateTurboBoost() {
     if (boostPercentEl) boostPercentEl.textContent = '0%';
     if (boostFillEl) boostFillEl.style.width = '0%';
     if (tapOrbEl) tapOrbEl.classList.remove('boost-active');
+    document.getElementById('boostMeterContainer')?.classList.remove('active-pulse');
   }, 4000);
+}
+
+function handleBoostBarTap(e) {
+  if (e) e.preventDefault();
+  if (STATE.battleTimer <= 0) return;
+  const isCard1 = (STATE.activeGameMode === 'tap') || 
+                  (STATE.currentRoom?.players === 3) || 
+                  ((STATE.currentRoom?.title || '').toLowerCase().includes('trio'));
+  if (isCard1) {
+    if (!deductRefWalletTapCost(e, document.getElementById('boostMeterContainer') || document.getElementById('tapOrb'))) return;
+    STATE.boostMeter = 100;
+    activateTurboBoost();
+    STATE.userDollarScore = Math.round((STATE.userDollarScore + 0.35) * 100) / 100;
+    const userObj = STATE.playersInRoom.find(p => p.isUser);
+    if (userObj) userObj.score = STATE.userDollarScore;
+    document.getElementById('userLiveScore').textContent = `$${STATE.userDollarScore.toFixed(2)}`;
+    sounds.playBoostTap();
+    triggerHaptic('heavy');
+    spawnFloatingText(e, '+$0.35 BOOST!', true, document.getElementById('boostMeterContainer') || document.getElementById('tapOrb'));
+    renderLiveBoard();
+  }
 }
 
 // ================= MODE 2: LUCKY VAULT LOOT BOX (SQUAD - 5P) =================

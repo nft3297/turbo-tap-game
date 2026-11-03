@@ -1158,14 +1158,14 @@ function renderAboutCardsHtml(t) {
 }
 
 // Global Switcher
-window.switchAboutLanguage = function(lang) {
+window.switchAboutLanguage = function (lang) {
   if (!window.ABOUT_I18N || !window.ABOUT_I18N[lang]) {
     lang = 'en'; // English is strictly default
   }
-  
+
   try {
     localStorage.setItem('turbo_about_lang', lang);
-  } catch(e) {}
+  } catch (e) { }
 
   const select = document.getElementById('aboutLangSelect');
   if (select && select.value !== lang) {
@@ -1194,7 +1194,8 @@ window.switchAboutLanguage = function(lang) {
 };
 
 // Auto-initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const defaultLang = localStorage.getItem('turbo_about_lang') || 'en';
   window.switchAboutLanguage(defaultLang);
 });
+

@@ -19,7 +19,7 @@
   <!-- QRCode.js for Deposit Address QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
-  <link rel="stylesheet" href="style.css?v=3.9">
+  <link rel="stylesheet" href="style.css?v=4.0">
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
@@ -1463,44 +1463,44 @@
       </div>
 
     </main>
-
-    <!-- Floating Persistent Telegram Community Join Button (Always visible) -->
-    <a href="https://t.me/turbotapgame_2nd" target="_blank" rel="noopener noreferrer" id="floatingTelegramBtn"
-      class="floating-telegram-btn" onclick="joinTelegramGroup(event)" title="Join Official Telegram Group">
-      <i class="fa-brands fa-telegram"></i>
-    </a>
-
-    <!-- Bottom Navigation Bar (6 Main Sections) -->
-    <nav class="bottom-nav">
-      <button class="nav-btn active" id="navArenaBtn" onclick="navigateTo('screenLobby')">
-        <i class="fa-solid fa-gamepad"></i>
-        <span>Arena</span>
-      </button>
-      <button class="nav-btn" id="navReferralBtn" onclick="navigateTo('screenReferral')">
-        <i class="fa-solid fa-gift"></i>
-        <span>Referral</span>
-      </button>
-      <button class="nav-btn" id="navWalletBtn" onclick="navigateTo('screenWallet')">
-        <i class="fa-solid fa-wallet"></i>
-        <span>Wallet</span>
-      </button>
-      <button class="nav-btn" onclick="openDepositModal()">
-        <i class="fa-solid fa-circle-down"></i>
-        <span>Deposit</span>
-      </button>
-      <button class="nav-btn" id="navSettingsBtn" onclick="openSettingsModal()">
-        <i class="fa-solid fa-gear"></i>
-        <span>Settings</span>
-      </button>
-      <button class="nav-btn" id="navAboutBtn" onclick="navigateTo('screenAbout')">
-        <i class="fa-solid fa-circle-info"></i>
-        <span>About</span>
-      </button>
-    </nav>
-
-    <!-- Notification Toast -->
-    <div id="appToast" class="app-toast"></div>
   </div>
+
+  <!-- Floating Persistent Telegram Community Join Button (Always visible) -->
+  <a href="https://t.me/turbotapgame_2nd" target="_blank" rel="noopener noreferrer" id="floatingTelegramBtn"
+    class="floating-telegram-btn" onclick="joinTelegramGroup(event)" title="Join Official Telegram Group">
+    <i class="fa-brands fa-telegram"></i>
+  </a>
+
+  <!-- Bottom Navigation Bar (6 Main Sections) -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="navArenaBtn" onclick="navigateTo('screenLobby')">
+      <i class="fa-solid fa-gamepad"></i>
+      <span>Arena</span>
+    </button>
+    <button class="nav-btn" id="navReferralBtn" onclick="navigateTo('screenReferral')">
+      <i class="fa-solid fa-gift"></i>
+      <span>Referral</span>
+    </button>
+    <button class="nav-btn" id="navWalletBtn" onclick="navigateTo('screenWallet')">
+      <i class="fa-solid fa-wallet"></i>
+      <span>Wallet</span>
+    </button>
+    <button class="nav-btn" onclick="openDepositModal()">
+      <i class="fa-solid fa-circle-down"></i>
+      <span>Deposit</span>
+    </button>
+    <button class="nav-btn" id="navSettingsBtn" onclick="openSettingsModal()">
+      <i class="fa-solid fa-gear"></i>
+      <span>Settings</span>
+    </button>
+    <button class="nav-btn" id="navAboutBtn" onclick="navigateTo('screenAbout')">
+      <i class="fa-solid fa-circle-info"></i>
+      <span>About</span>
+    </button>
+  </nav>
+
+  <!-- Notification Toast -->
+  <div id="appToast" class="app-toast"></div>
 
   <!-- ======= SECRET ADMIN PANEL MODAL (Hidden from public, loaded via iframe) ======= -->
   <div id="adminPanelModal"

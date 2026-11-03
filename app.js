@@ -353,7 +353,13 @@ function navigateTo(screenId) {
   }
   else if (screenId === 'screenReferral') document.getElementById('navReferralBtn')?.classList.add('active');
   else if (screenId === 'screenWallet') document.getElementById('navWalletBtn')?.classList.add('active');
-  else if (screenId === 'screenAbout') document.getElementById('navAboutBtn')?.classList.add('active');
+  else if (screenId === 'screenAbout') {
+    document.getElementById('navAboutBtn')?.classList.add('active');
+    if (typeof switchAboutLanguage === 'function') {
+      const curLang = localStorage.getItem('turbo_about_lang') || 'en';
+      switchAboutLanguage(curLang);
+    }
+  }
 }
 
 // 7. Initialize User and Backend Authentication

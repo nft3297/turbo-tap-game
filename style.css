@@ -4948,6 +4948,61 @@ body::before {
   pointer-events: none;
 }
 
+.about-hero-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.about-lang-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(14, 10, 32, 0.95);
+  border: 1.5px solid rgba(0, 240, 255, 0.45);
+  border-radius: 20px;
+  padding: 3px 9px 3px 8px;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.2s;
+}
+
+.about-lang-box:hover,
+.about-lang-box:focus-within {
+  border-color: #00f0ff;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.45);
+}
+
+.about-lang-select {
+  background: transparent;
+  border: none;
+  color: #00f0ff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.about-lang-select option {
+  background: #0d0a22;
+  color: #f1f5f9;
+  font-size: 0.78rem;
+  padding: 6px 10px;
+}
+
+#aboutDynamicCards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  transition: opacity 0.2s ease;
+}
+
 .about-badge {
   display: inline-flex;
   align-items: center;
@@ -4960,7 +5015,7 @@ body::before {
   letter-spacing: 1.2px;
   padding: 4px 14px;
   border-radius: 20px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
   text-transform: uppercase;
 }
 

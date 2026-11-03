@@ -713,243 +713,33 @@
           <!-- Header Hero -->
           <div class="about-hero-card">
             <div class="about-glow"></div>
-            <div class="about-badge"><i class="fa-solid fa-circle-info"></i> OFFICIAL GUIDE & RULES</div>
+            <div class="about-hero-top-row">
+              <div class="about-badge"><i class="fa-solid fa-circle-info"></i> <span id="txtAboutHeroBadge">OFFICIAL GUIDE & RULES</span></div>
+              <div class="about-lang-box" title="Change Language / भाषा बदलें">
+                <i class="fa-solid fa-globe text-cyan"></i>
+                <select id="aboutLangSelect" class="about-lang-select" onchange="switchAboutLanguage(this.value)" aria-label="Select Language">
+                  <option value="en" selected>English 🇬🇧</option>
+                  <option value="hi">हिन्दी (Hindi) 🇮🇳</option>
+                  <option value="ru">Русский (Russian) 🇷🇺</option>
+                  <option value="es">Español (Spanish) 🇪🇸</option>
+                  <option value="zh">中文 (Chinese) 🇨🇳</option>
+                  <option value="ar">العربية (Arabic) 🇦🇪</option>
+                  <option value="fr">Français (French) 🇫🇷</option>
+                  <option value="pt">Português (Portuguese) 🇧🇷</option>
+                  <option value="id">Bahasa Indonesia 🇮🇩</option>
+                  <option value="vi">Tiếng Việt 🇻🇳</option>
+                  <option value="de">Deutsch 🇩🇪</option>
+                  <option value="bn">বাংলা (Bengali) 🇧🇩</option>
+                </select>
+              </div>
+            </div>
             <h2 class="about-title">TURBO TAP ARENA</h2>
-            <p class="about-subtitle">Live 25-Second Web3 Multiplayer Tap Arena • BSC BEP-20 Powered</p>
+            <p class="about-subtitle" id="txtAboutHeroSub">Live 25-Second Web3 Multiplayer Tap Arena • BSC BEP-20 Powered</p>
           </div>
 
-          <!-- Section 1: Game Kaise Khelega & Rules -->
-          <div class="about-card">
-            <div class="about-card-header">
-              <div class="about-card-icon cyan"><i class="fa-solid fa-gamepad"></i></div>
-              <div>
-                <h3 class="about-card-h3">GAME KAISE KHELEGA & BATTLE RULES</h3>
-                <span class="about-card-sub">25-Second Real-Time PvP Speed Arena</span>
-              </div>
-            </div>
-
-            <div class="about-content">
-              <p class="about-lead">Turbo Tap ek high-speed live multiplayer battle arena hai jahan aap real players ke sath real-time me speed-tapping compete karte hain aur direct cash prize jeette hain!</p>
-
-              <div class="about-step-list">
-                <div class="about-step-item">
-                  <div class="step-num">1</div>
-                  <div class="step-desc">
-                    <b>Arena Select Karein:</b> Apni pasand ka Battle Room Card chunein (Trio $2, Squad $4, Elite $7, ya Champions $15).
-                  </div>
-                </div>
-                <div class="about-step-item">
-                  <div class="step-num">2</div>
-                  <div class="step-desc">
-                    <b>Auto Matchmaking:</b> System turant real active players search karke aapko live arena room me connect karega.
-                  </div>
-                </div>
-                <div class="about-step-item">
-                  <div class="step-num">3</div>
-                  <div class="step-desc">
-                    <b>25-Second Rapid Tap Battle:</b> 3-2-1 countdown ke baad live <b>25 seconds</b> ka match shuru hota hai. Screen ke glowing core pe jitna fast tap karenge, utna zyada Dollar Score banega!
-                  </div>
-                </div>
-                <div class="about-step-item">
-                  <div class="step-num">4</div>
-                  <div class="step-desc">
-                    <b>Rankings & Instant Cash Payout:</b> Timer 0.0s hote hi highest dollar score wala player match win karega aur reward turant aapke wallet me add ho jayega!
-                  </div>
-                </div>
-              </div>
-
-              <!-- 4 Battle Arenas Grid -->
-              <div class="about-rooms-box">
-                <div class="about-subhead"><i class="fa-solid fa-trophy text-gold"></i> 4 OFFICIAL BATTLE ARENAS & REWARDS</div>
-                <div class="about-rooms-grid">
-                  <div class="about-room-card room-trio">
-                    <div class="arc-head">
-                      <span class="arc-badge">⚡ Fastest</span>
-                      <span class="arc-players"><i class="fa-solid fa-users"></i> 3 Players</span>
-                    </div>
-                    <div class="arc-name">TRIO SHOWDOWN</div>
-                    <div class="arc-entry">Entry: <b>$2.00</b></div>
-                    <div class="arc-reward text-cyan">Winner: <b>$5.00 Cash</b></div>
-                  </div>
-                  <div class="about-room-card room-squad">
-                    <div class="arc-head">
-                      <span class="arc-badge hot">🔥 Popular</span>
-                      <span class="arc-players"><i class="fa-solid fa-users"></i> 5 Players</span>
-                    </div>
-                    <div class="arc-name">SQUAD DOMINATION</div>
-                    <div class="arc-entry">Entry: <b>$4.00</b></div>
-                    <div class="arc-reward text-purple">Winner: <b>$16.00 Cash</b></div>
-                  </div>
-                  <div class="about-room-card room-elite">
-                    <div class="arc-head">
-                      <span class="arc-badge elite">💎 High Stakes</span>
-                      <span class="arc-players"><i class="fa-solid fa-users"></i> 8 Players</span>
-                    </div>
-                    <div class="arc-name">ELITE SYNDICATE</div>
-                    <div class="arc-entry">Entry: <b>$7.00</b></div>
-                    <div class="arc-reward text-green">Winner: <b>$50.00 Cash</b></div>
-                  </div>
-                  <div class="about-room-card room-champ">
-                    <div class="arc-head">
-                      <span class="arc-badge crown">👑 Mega Jackpot</span>
-                      <span class="arc-players"><i class="fa-solid fa-users"></i> 12 Players</span>
-                    </div>
-                    <div class="arc-name">CHAMPIONS ROYALE</div>
-                    <div class="arc-entry">Entry: <b>$15.00</b></div>
-                    <div class="arc-reward text-gold">Jackpot: <b>$170.00 Pool</b></div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Wallet Auto-Fallback Rule -->
-              <div class="about-highlight-box blue-glow">
-                <i class="fa-solid fa-wallet text-cyan"></i>
-                <div class="ahb-text">
-                  <b>Smart Wallet Auto-Deduction Rule:</b>
-                  <span>Match entry fee pehle aapke <b>Game Wallet</b> se deduct hoti hai. Agar aapke Game Wallet me balance <b>$0 ho jaye ya $1 bache</b>, to system automatically aapke <b>Withdraw Wallet</b> se entry fee deduct karke match me join kara dega, taki aapka game kabhi na ruke!</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section 2: Referral Bonus Kaise Use Karega -->
-          <div class="about-card">
-            <div class="about-card-header">
-              <div class="about-card-icon gold"><i class="fa-solid fa-gift"></i></div>
-              <div>
-                <h3 class="about-card-h3">REFERRAL BONUS KAISE USE KAREGA</h3>
-                <span class="about-card-sub">Earn $25 Per Friend + In-Battle Power Boosts</span>
-              </div>
-            </div>
-
-            <div class="about-content">
-              <div class="about-feature-row">
-                <div class="afr-icon"><i class="fa-solid fa-user-plus text-gold"></i></div>
-                <div class="afr-info">
-                  <b>Har Referral Par +$25.00 Instant Bonus:</b>
-                  <span>Apna personal invite link doston, groups ya channels me share karein. Har naye active player ke join karne par aapke Referral Wallet me turant <b>+$25.00</b> credit ho jata hai.</span>
-                </div>
-              </div>
-
-              <div class="about-feature-row">
-                <div class="afr-icon"><i class="fa-solid fa-bolt text-cyan"></i></div>
-                <div class="afr-info">
-                  <b>Live Battle Background Boost Formula:</b>
-                  <span>Live 25-second matches me referral bonus background me auto-consume ($2 per tap) hokar aapke score ko <b>+$0.50 se +$2.50 per tap boost</b> deta hai! Isse aap opponents ko aasani se pachhad kar Card 1 aur sabhi arenas me win kar sakte hain.</span>
-                </div>
-              </div>
-
-              <div class="about-feature-row">
-                <div class="afr-icon"><i class="fa-solid fa-gauge-high text-purple"></i></div>
-                <div class="afr-info">
-                  <b>2X Turbo Frenzy Multiplier Charge:</b>
-                  <span>Referral bonus hone par Frenzy Multiplier meter normal se double speed se charge hota hai, jisse match ke critical 10 seconds me <b>3X Super Tap Multiplier</b> unlock hota hai!</span>
-                </div>
-              </div>
-
-              <div class="about-feature-row">
-                <div class="afr-icon"><i class="fa-solid fa-hand-holding-dollar text-green"></i></div>
-                <div class="afr-info">
-                  <b>Direct Cash Earnings & Withdrawal:</b>
-                  <span>Referral boost se match win karne par saari winnings direct aapke <b>Withdraw Wallet</b> me chali jaati hain, jise aap direct apne BSC BEP-20 address par withdraw kar sakte hain.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section 3: Deposit & Withdrawal Rules -->
-          <div class="about-card">
-            <div class="about-card-header">
-              <div class="about-card-icon green"><i class="fa-solid fa-money-bill-transfer"></i></div>
-              <div>
-                <h3 class="about-card-h3">DEPOSIT & WITHDRAWAL RULES</h3>
-                <span class="about-card-sub">Strictly Binance Smart Chain (BSC BEP-20)</span>
-              </div>
-            </div>
-
-            <div class="about-content">
-              <!-- Deposit Rules -->
-              <div class="rules-block deposit-rules">
-                <div class="rb-title text-cyan"><i class="fa-solid fa-circle-down"></i> DEPOSIT RULES (BSC BEP-20)</div>
-                <ul class="about-list">
-                  <li><b>Network:</b> Strictly <b>Binance Smart Chain (BSC BEP-20) USDT/BNB</b>. Kisi anya network (jaise TRC-20, ERC-20, Polygon) se bhejha gaya deposit recover nahi ho sakta.</li>
-                  <li><b>Minimum Deposit:</b> Minimum deposit amount sirf <b>$1.00 USD</b> hai.</li>
-                  <li><b>Dedicated QR & Address:</b> Deposit popup me aapka permanent dedicated BSC address aur QR code milta hai.</li>
-                  <li><b>Instant Auto-Credit:</b> Blockchain block confirmation (15 - 60 seconds) ke baad deposit automatically aapke <b>Game Wallet</b> me credit ho jata hai.</li>
-                </ul>
-              </div>
-
-              <!-- Withdrawal Rules -->
-              <div class="rules-block withdraw-rules">
-                <div class="rb-title text-green"><i class="fa-solid fa-money-bill-wave"></i> WITHDRAWAL RULES (BSC BEP-20)</div>
-                <ul class="about-list">
-                  <li><b>Eligible Wallet:</b> Withdrawals sirf aapke <b>Withdraw Wallet</b> balance se process kiye jaate hain.</li>
-                  <li><b>Minimum Withdrawal:</b> Minimum payout amount <b>$20.00 USD</b> hai.</li>
-                  <li><b>Valid BSC Address:</b> Sirf valid <b>BSC BEP-20</b> address (jo <code>0x</code> se shuru hota hai) enter karein. 1-click PASTE button se address aasani se paste karein.</li>
-                  <li><b>Platform Fee:</b> 3% platform gas & network verification fee automatically deduct hoti hai.</li>
-                  <li><b>Instant Admin Approval & Telegram Notification:</b> Request submit karne par status <b>Pending</b> dikhayega. Admin approval hote hi status <b>Approved</b> ho jayega aur aapke personal Telegram par live confirmation notification message deliver hoga.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section 4: DISCLAIMER IN SEPARATE BOX (ALAG BOX MEIN) -->
-          <div class="about-disclaimer-box">
-            <div class="disclaimer-header">
-              <div class="disclaimer-icon-wrap">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-              </div>
-              <div>
-                <h3 class="disclaimer-title">LEGAL DISCLAIMER & FAIR PLAY NOTICE</h3>
-                <span class="disclaimer-sub">Kripya participate karne se pehle savdhani se padhein</span>
-              </div>
-            </div>
-
-            <div class="disclaimer-body">
-              <div class="disclaimer-item">
-                <i class="fa-solid fa-shield-halved"></i>
-                <div>
-                  <b>18+ Age Restriction (Umar Pratibandh):</b>
-                  <p>Ye platform sirf 18 saal ya usse adhik umar ke users ke liye sanrachit hai. Kam umar ke users ko is platform par participate karne ki anumati nahi hai.</p>
-                </div>
-              </div>
-
-              <div class="disclaimer-item">
-                <i class="fa-solid fa-award"></i>
-                <div>
-                  <b>100% Skill-Based Multiplayer Gaming:</b>
-                  <p>Turbo Tap ek 100% skill-based competitive gaming platform hai. Match ka parinam poori tarah khiladi ki tap speed, reaction time aur in-game strategy par nirbhar karta hai. Ye koi lottery ya luck-based gambling platform nahi hai.</p>
-                </div>
-              </div>
-
-              <div class="disclaimer-item">
-                <i class="fa-solid fa-network-wired"></i>
-                <div>
-                  <b>Blockchain Irreversibility & Address Responsibility:</b>
-                  <p>Binance Smart Chain (BSC BEP-20) par blockchain transactions irreversible (na badalne yogya) hoti hain. Withdrawal submit karne se pehle apna 0x... address hamesha dhyan se check karein. Kisi galat address par bhejhe gaye assets ko platform recover nahi kar sakta.</p>
-                </div>
-              </div>
-
-              <div class="disclaimer-item">
-                <i class="fa-solid fa-ban"></i>
-                <div>
-                  <b>Anti-Cheat & Fair Play Policy:</b>
-                  <p>Autoclicker apps, bot scripts, memory injection, emulator exploits ya multiple fake account abuse poori tarah pratibandhit hai. Aisa karte paaye jaane par user ka account turant permanently ban kar diya jayega aur balances forfeit ho jayenge.</p>
-                </div>
-              </div>
-
-              <div class="disclaimer-item">
-                <i class="fa-solid fa-circle-exclamation"></i>
-                <div>
-                  <b>Financial Responsibility & Prudence:</b>
-                  <p>Crypto assets market risks ke adheen hain. Game sirf manoranjan (entertainment) ke liye khelein aur hamesha wahi amount participate karein jise aap afford kar sakte hain. Platform kisi bhi financial return ki guarantee nahi deta.</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="disclaimer-footer">
-              <i class="fa-solid fa-lock"></i> Secured by Binance Smart Chain • End-to-End Cryptographic Verification
-            </div>
+          <!-- Dynamic Language Content Area -->
+          <div id="aboutDynamicCards">
+            <!-- Rendered automatically by about-i18n.js in English by default or selected language -->
           </div>
 
         </div>
@@ -1632,8 +1422,11 @@
     });
   </script>
 
+  <!-- Multi-Language i18n Engine for About Guide -->
+  <script src="about-i18n.js?v=1.0"></script>
+
   <!-- Production Engine -->
-  <script src="app.js?v=4.7"></script>
+  <script src="app.js?v=4.8"></script>
 </body>
 
 </html>

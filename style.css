@@ -3908,7 +3908,7 @@ body::before {
   box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.6), 0 -1px 0 rgba(0, 240, 255, 0.2);
   display: flex;
   justify-content: space-around;
-  padding: 8px 6px calc(8px + var(--safe-bottom));
+  padding: 6px 3px calc(7px + var(--safe-bottom));
   z-index: 50;
 }
 
@@ -3919,14 +3919,22 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  font-size: 0.62rem;
+  gap: 2px;
+  font-size: 0.58rem;
   font-weight: 600;
   cursor: pointer;
   flex: 1;
-  max-width: 86px;
-  padding: 2px 2px;
+  max-width: 76px;
+  min-width: 0;
+  padding: 2px 1px;
+  white-space: nowrap;
   transition: color 0.15s, transform 0.1s;
+}
+
+.nav-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .nav-btn:active {
@@ -4830,4 +4838,591 @@ body::before {
 
 .card-live-pulse {
   animation: cardLivePulse 1.2s ease-out;
+}
+
+/* ================= SCREEN 8: ABOUT & RULES STYLES ================= */
+#screenAbout {
+  padding-bottom: 30px;
+}
+
+.about-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Top Quick Nav Bar */
+.about-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.about-top-btn {
+  background: rgba(22, 17, 44, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: #e2e8f0;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.about-top-btn:active {
+  transform: scale(0.95);
+  background: rgba(168, 85, 247, 0.2);
+}
+
+.about-top-btn.deposit-accent {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(16, 185, 129, 0.2));
+  border-color: rgba(0, 240, 255, 0.4);
+  color: #00f0ff;
+}
+
+.about-top-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* About Hero Card */
+.about-hero-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(24, 16, 52, 0.95) 0%, rgba(12, 9, 28, 0.98) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 16px;
+  padding: 22px 16px;
+  text-align: center;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 240, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.about-glow {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 90px;
+  background: radial-gradient(circle, rgba(0, 240, 255, 0.28) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.about-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: #00f0ff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.about-title {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #fff;
+  margin: 4px 0;
+  text-shadow: 0 0 18px rgba(0, 240, 255, 0.45);
+}
+
+.about-subtitle {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* About Standard Card */
+.about-card {
+  background: linear-gradient(180deg, rgba(22, 17, 44, 0.92) 0%, rgba(13, 10, 28, 0.96) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 16px;
+  padding: 16px 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+.about-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.about-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.about-card-icon.cyan {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: #00f0ff;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+}
+
+.about-card-icon.gold {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #f59e0b;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+}
+
+.about-card-icon.green {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #10b981;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+.about-card-h3 {
+  font-family: var(--font-heading);
+  font-size: 0.90rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #fff;
+  margin: 0 0 2px 0;
+}
+
+.about-card-sub {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.about-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.about-lead {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Steps List */
+.about-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.about-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(10, 8, 25, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 9px 11px;
+}
+
+.step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00f0ff, #a855f7);
+  color: #05040a;
+  font-weight: 900;
+  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.step-desc {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.step-desc b {
+  color: #fff;
+}
+
+/* Battle Arenas Grid in About */
+.about-rooms-box {
+  background: rgba(10, 8, 26, 0.75);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 12px;
+  padding: 12px 10px;
+}
+
+.about-subhead {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #f59e0b;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.about-rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.about-room-card {
+  background: rgba(22, 18, 48, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.about-room-card.room-trio {
+  border-color: rgba(0, 240, 255, 0.35);
+}
+
+.about-room-card.room-squad {
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.about-room-card.room-elite {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.about-room-card.room-champ {
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.arc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.arc-badge {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.12);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+.arc-badge.hot {
+  color: #ec4899;
+  background: rgba(236, 72, 153, 0.15);
+}
+
+.arc-badge.elite {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.arc-badge.crown {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.arc-players {
+  font-size: 0.62rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.arc-name {
+  font-size: 0.70rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.4px;
+}
+
+.arc-entry {
+  font-size: 0.66rem;
+  color: #94a3b8;
+}
+
+.arc-entry b {
+  color: #cbd5e1;
+}
+
+.arc-reward {
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+/* Highlight / Alert Banner Box */
+.about-highlight-box {
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px dashed rgba(0, 240, 255, 0.35);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.73rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+.about-highlight-box i {
+  font-size: 1.15rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.ahb-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ahb-text b {
+  color: #00f0ff;
+}
+
+/* Feature Row in Referral Section */
+.about-feature-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  background: rgba(10, 8, 25, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.afr-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.afr-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.73rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.afr-info b {
+  color: #fff;
+  font-size: 0.76rem;
+}
+
+/* Deposit & Withdraw Rules Blocks */
+.rules-block {
+  background: rgba(10, 8, 25, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.rules-block.deposit-rules {
+  border-left: 3px solid #00f0ff;
+}
+
+.rules-block.withdraw-rules {
+  border-left: 3px solid #10b981;
+}
+
+.rb-title {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.about-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.about-list li {
+  font-size: 0.73rem;
+  color: #94a3b8;
+  line-height: 1.45;
+  position: relative;
+  padding-left: 15px;
+}
+
+.about-list li::before {
+  content: "•";
+  position: absolute;
+  left: 2px;
+  color: var(--cyan);
+  font-weight: bold;
+  font-size: 1rem;
+  top: -2px;
+}
+
+.about-list li b {
+  color: #e2e8f0;
+}
+
+.about-list li code {
+  background: rgba(0, 240, 255, 0.15);
+  color: #00f0ff;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.70rem;
+}
+
+/* ================= SECTION 4: DISCLAIMER IN SEPARATE BOX ================= */
+.about-disclaimer-box {
+  background: linear-gradient(180deg, rgba(38, 14, 25, 0.95) 0%, rgba(20, 8, 16, 0.98) 100%);
+  border: 1.5px solid rgba(239, 68, 68, 0.55);
+  border-radius: 16px;
+  padding: 16px 14px;
+  box-shadow: 0 0 35px rgba(239, 68, 68, 0.16), inset 0 0 25px rgba(239, 68, 68, 0.06);
+  position: relative;
+  margin-top: 4px;
+}
+
+.disclaimer-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.disclaimer-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
+  animation: pulseDisclaimer 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseDisclaimer {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.7);
+  }
+}
+
+.disclaimer-title {
+  font-family: var(--font-heading);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #fca5a5;
+  margin: 0 0 2px 0;
+}
+
+.disclaimer-sub {
+  font-size: 0.66rem;
+  color: #f87171;
+  font-weight: 600;
+}
+
+.disclaimer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.disclaimer-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(18, 7, 12, 0.7);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  padding: 9px 11px;
+}
+
+.disclaimer-item i {
+  color: #ef4444;
+  font-size: 0.95rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.disclaimer-item b {
+  color: #fecaca;
+  font-size: 0.75rem;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.disclaimer-item p {
+  color: #cbd5e1;
+  font-size: 0.71rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.disclaimer-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(239, 68, 68, 0.3);
+  text-align: center;
+  font-size: 0.65rem;
+  color: #f87171;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }

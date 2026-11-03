@@ -353,6 +353,7 @@ function navigateTo(screenId) {
   }
   else if (screenId === 'screenReferral') document.getElementById('navReferralBtn')?.classList.add('active');
   else if (screenId === 'screenWallet') document.getElementById('navWalletBtn')?.classList.add('active');
+  else if (screenId === 'screenAbout') document.getElementById('navAboutBtn')?.classList.add('active');
 }
 
 // 7. Initialize User and Backend Authentication

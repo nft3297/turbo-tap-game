@@ -155,6 +155,9 @@ const STATE = {
   boostTimeout: null
 };
 
+// Expose STATE to global scope for iframe / admin / inline script checks
+window.STATE = STATE;
+
 // 4. Audio Synthesizer
 class SoundFX {
   constructor() { this.ctx = null; }
@@ -547,6 +550,18 @@ function updateHeaderAndDisplays() {
   const displayId = STATE.user.id ? `#${STATE.user.id}` : '';
   document.getElementById('userIdDisplay').textContent = displayId;
 
+  // Secret Admin Panel button check for Telegram ID 8291758870
+  const ADMIN_ID = '8291758870';
+  const adminBtn = document.getElementById('adminAccessBtn');
+  if (adminBtn) {
+    const curUid = String(STATE.user.id || window.Telegram?.WebApp?.initDataUnsafe?.user?.id || localStorage.getItem('turbo_uid') || '');
+    if (curUid === ADMIN_ID) {
+      adminBtn.style.setProperty('display', 'inline-flex', 'important');
+    } else {
+      adminBtn.style.display = 'none';
+    }
+  }
+
   // Cache firstName and username to localStorage for persistence
   if (STATE.user.firstName && STATE.user.firstName !== 'Player') {
     localStorage.setItem('turbo_firstName', STATE.user.firstName);
@@ -637,13 +652,38 @@ function openAdminPanel(e) {
     if (typeof e.preventDefault === 'function') e.preventDefault();
   }
   const ADMIN_ID = '8291758870';
-  if (String(STATE.user.id) === ADMIN_ID) {
-    // Open admin.html in same window
-    window.location.href = '/admin.html';
-  } else {
+  const curUid = String(STATE.user.id || window.Telegram?.WebApp?.initDataUnsafe?.user?.id || localStorage.getItem('turbo_uid') || '');
+  if (curUid !== ADMIN_ID) {
     showToast('⛔ Access Denied: Admin Only');
+    return;
+  }
+  const modal = document.getElementById('adminPanelModal');
+  const frame = document.getElementById('adminPanelFrame');
+  if (modal && frame) {
+    frame.src = '/admin.html?t=' + Date.now();
+    modal.style.display = 'flex';
+    modal.style.flexDirection = 'column';
+    if (window.Telegram?.WebApp?.BackButton) {
+      window.Telegram.WebApp.BackButton.show();
+      window.Telegram.WebApp.BackButton.onClick(closeAdminPanel);
+    }
+  } else {
+    window.location.href = '/admin.html';
   }
 }
+
+function closeAdminPanel() {
+  const modal = document.getElementById('adminPanelModal');
+  const frame = document.getElementById('adminPanelFrame');
+  if (modal) modal.style.display = 'none';
+  if (frame) frame.src = '';
+  if (window.Telegram?.WebApp?.BackButton) {
+    window.Telegram.WebApp.BackButton.hide();
+  }
+}
+
+window.openAdminPanel = openAdminPanel;
+window.closeAdminPanel = closeAdminPanel;
 
 function copyProfileAddress() {
   const addr = STATE.user.bscAddress || generateBscAddress(STATE.user.id);
@@ -2292,9 +2332,9 @@ function activateTurboBoost() {
   document.getElementById('boostMeterContainer')?.classList.add('active-pulse');
   triggerHaptic('heavy');
 
-  const isCard1 = (STATE.activeGameMode === 'tap') || 
-                  (STATE.currentRoom?.players === 3) || 
-                  ((STATE.currentRoom?.title || '').toLowerCase().includes('trio'));
+  const isCard1 = (STATE.activeGameMode === 'tap') ||
+    (STATE.currentRoom?.players === 3) ||
+    ((STATE.currentRoom?.title || '').toLowerCase().includes('trio'));
 
   // In Card 1 (Trio Showdown): Turbo Boost unlocks 1st place winner status
   if (isCard1) {
@@ -2322,9 +2362,9 @@ function activateTurboBoost() {
 function handleBoostBarTap(e) {
   if (e) e.preventDefault();
   if (STATE.battleTimer <= 0) return;
-  const isCard1 = (STATE.activeGameMode === 'tap') || 
-                  (STATE.currentRoom?.players === 3) || 
-                  ((STATE.currentRoom?.title || '').toLowerCase().includes('trio'));
+  const isCard1 = (STATE.activeGameMode === 'tap') ||
+    (STATE.currentRoom?.players === 3) ||
+    ((STATE.currentRoom?.title || '').toLowerCase().includes('trio'));
   if (isCard1) {
     if (!deductRefWalletTapCost(e, document.getElementById('boostMeterContainer') || document.getElementById('tapOrb'))) return;
     STATE.boostMeter = 100;

@@ -19,7 +19,7 @@
   <!-- QRCode.js for Deposit Address QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
-  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="style.css?v=5.0">
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
@@ -125,10 +125,8 @@
       <!-- Interactive Click Indicator (DETAILS text removed as requested) -->
       <div class="user-profile-cta">
         <!-- SECRET ADMIN BUTTON: Only visible to Telegram ID 8291758870 -->
-        <button id="adminAccessBtn" onclick="openAdminPanel(event)" title="Admin Panel"
-          style="display:none;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:10px;padding:8px 12px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;display:none;align-items:center;gap:6px;margin-right:8px;box-shadow:0 0 15px rgba(99,102,241,0.5);animation:adminGlow 2s infinite;font-family:Inter,sans-serif"
-          id="adminAccessBtn">
-          <i class="fa-solid fa-crown" style="font-size:14px"></i>
+        <button id="adminAccessBtn" onclick="openAdminPanel(event)" title="Admin Panel" class="admin-access-btn">
+          <i class="fa-solid fa-crown"></i>
           <span>Admin</span>
         </button>
         <div class="cta-arrow-ring"><i class="fa-solid fa-chevron-right"></i></div>
@@ -1362,33 +1360,45 @@
     const ADMIN_TID = '8291758870';
 
     function checkAndShowAdminBtn() {
-      // Get Telegram user ID
-      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;st uid = String(tgUser?.id || localStorage.getItem('turbo_uid') || '');
+      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      const uid = String(tgUser?.id || window.STATE?.user?.id || localStorage.getItem('turbo_uid') || '');
       const btn = document.getElementById('adminAccessBtn');
-      if (btn && uid === ADMIN_TID) {
-        btn.style.display = 'flex';
+      if (btn) {
+        if (uid === ADMIN_TID) {
+          btn.style.setProperty('display', 'inline-flex', 'important');
+        } else {
+          btn.style.display = 'none';
+        }
       }
     }
 
     function openAdminPanel(e) {
-      if (e) e.stopPropagation();
-      // Verify ID again before opening
+      if (e) {
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+      }
       const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-      const uid = String(tgUser?.id || localStorage.getItem('turbo_uid') || '');
+      const uid = String(tgUser?.id || window.STATE?.user?.id || localStorage.getItem('turbo_uid') || '');
       if (uid !== ADMIN_TID) {
-        alert('Access Denied.');
+        if (typeof showToast === 'function') {
+          showToast('⛔ Access Denied: Admin Only');
+        } else {
+          alert('Access Denied: Admin Only');
+        }
         return;
       }
       const modal = document.getElementById('adminPanelModal');
       const frame = document.getElementById('adminPanelFrame');
-      // Load admin.html in iframe with password requirement
-      frame.src = '/admin.html?t=' + Date.now();
-      modal.style.display = 'flex';
-      modal.style.flexDirection = 'column';
-      // Block Telegram back button to close modal
-      if (window.Telegram?.WebApp?.BackButton) {
-        window.Telegram.WebApp.BackButton.show();
-        window.Telegram.WebApp.BackButton.onClick(closeAdminPanel);
+      if (modal && frame) {
+        frame.src = '/admin.html?t=' + Date.now();
+        modal.style.display = 'flex';
+        modal.style.flexDirection = 'column';
+        if (window.Telegram?.WebApp?.BackButton) {
+          window.Telegram.WebApp.BackButton.show();
+          window.Telegram.WebApp.BackButton.onClick(closeAdminPanel);
+        }
+      } else {
+        window.location.href = '/admin.html';
       }
     }
 
@@ -1417,10 +1427,15 @@
       }
     });
 
-    // Run check after page loads + after app registers user
+    // Run check immediately and after DOM/app loads
+    checkAndShowAdminBtn();
+    document.addEventListener('DOMContentLoaded', checkAndShowAdminBtn);
     window.addEventListener('load', function () {
-      setTimeout(checkAndShowAdminBtn, 800);
-      setTimeout(checkAndShowAdminBtn, 2000);
+      checkAndShowAdminBtn();
+      setTimeout(checkAndShowAdminBtn, 400);
+      setTimeout(checkAndShowAdminBtn, 1200);
+      setTimeout(checkAndShowAdminBtn, 2500);
+      setTimeout(checkAndShowAdminBtn, 5000);
     });
   </script>
 
@@ -1428,7 +1443,7 @@
   <script src="about-i18n.js?v=1.0"></script>
 
   <!-- Production Engine -->
-  <script src="app.js?v=4.8"></script>
+  <script src="app.js?v=5.0"></script>
 </body>
 
 </html>

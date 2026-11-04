@@ -5572,3 +5572,252 @@ body::before {
   justify-content: center;
   gap: 6px;
 }
+
+/* ================= 38. INVITED FRIENDS MODAL & DETAILS LIST ================= */
+.ref-stat-box.ref-clickable {
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+}
+
+.ref-stat-box.ref-clickable:hover {
+  background: rgba(0, 240, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.ref-stat-box.ref-clickable:active {
+  transform: scale(0.94);
+}
+
+.friends-modal-content {
+  border-color: rgba(0, 240, 255, 0.45);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 30px rgba(0, 240, 255, 0.2);
+}
+
+.friends-modal-subtitle {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-weight: 500;
+  display: block;
+  margin-top: 2px;
+}
+
+.friends-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: rgba(10, 14, 30, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: var(--radius-md);
+  padding: 10px 8px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.f-sum-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.f-sum-val {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.f-sum-lbl {
+  font-size: 0.6rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* Friends Table Header */
+.friends-table-header {
+  display: grid;
+  grid-template-columns: 46px 1fr 86px 76px;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(14, 20, 44, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 8px 8px 0 0;
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  align-items: center;
+}
+
+.friends-list-container {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  background: rgba(6, 10, 24, 0.6);
+}
+
+.friend-row {
+  display: grid;
+  grid-template-columns: 46px 1fr 86px 76px;
+  gap: 8px;
+  padding: 10px 10px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.15s ease;
+}
+
+.friend-row:last-child {
+  border-bottom: none;
+}
+
+.friend-row:hover {
+  background: rgba(0, 240, 255, 0.08);
+}
+
+.friend-sl-badge {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-align: center;
+  display: inline-block;
+  width: fit-content;
+}
+
+.friend-user-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.friend-uname {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-uname:hover {
+  color: var(--cyan);
+  text-decoration: underline;
+}
+
+.friend-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.friend-status-badge.status-active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.friend-status-badge.status-inactive {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.status-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: statusPulse 1.5s infinite;
+}
+
+.status-muted-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+@keyframes statusPulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+.friend-deposit-amt {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: right;
+  padding-right: 4px;
+}
+
+.friends-modal-footer {
+  margin-top: 14px;
+}
+
+.f-modal-share-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #0088cc 0%, #00f0ff 100%);
+  color: #04101e;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 11px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.f-modal-share-btn:active {
+  transform: scale(0.96);
+}
+
+.friends-empty-box {
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.friends-empty-box i {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+}
+
+.friends-empty-box h4 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.friends-empty-box p {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin-bottom: 14px;
+}

@@ -19,7 +19,7 @@
   <!-- QRCode.js for Deposit Address QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
-  <link rel="stylesheet" href="style.css?v=5.0">
+  <link rel="stylesheet" href="style.css?v=5.1">
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
@@ -482,7 +482,8 @@
                 </div>
               </button>
             </div>
-            <div class="boost-meter-container" id="boostMeterContainer" onclick="handleBoostBarTap(event)" ontouchstart="handleBoostBarTap(event)" title="Tap to Activate Boost & Win!">
+            <div class="boost-meter-container" id="boostMeterContainer" onclick="handleBoostBarTap(event)"
+              ontouchstart="handleBoostBarTap(event)" title="Tap to Activate Boost & Win!">
               <div class="boost-label">
                 <span><i class="fa-solid fa-bolt"></i> 3X CASH FRENZY (TAP TO BOOST)</span>
                 <span id="boostPercent">0%</span>
@@ -577,9 +578,9 @@
           <p class="ref-reward-highlight">Earn <b>+$25.00</b> for every friend who joins via your link!</p>
 
           <div class="ref-stats-grid">
-            <div class="ref-stat-box">
+            <div class="ref-stat-box ref-clickable" id="refFriendsCountBox" onclick="openFriendsListModal()" title="Click to view invited friends list & status">
               <span class="rs-num" id="totalFriendsCount">0</span>
-              <span class="rs-lbl">Friends Invited</span>
+              <span class="rs-lbl">Friends Invited <i class="fa-solid fa-arrow-up-right-from-square text-cyan" style="font-size: 0.58rem; margin-left: 2px;"></i></span>
             </div>
             <div class="ref-stat-box">
               <span class="rs-num text-gold" id="totalEarnedRef">$0.00</span>
@@ -954,6 +955,64 @@
         </div>
       </div>
 
+      <!-- ================= MODAL: INVITED FRIENDS DETAILS LIST ================= -->
+      <div id="friendsListModal" class="app-modal">
+        <div class="modal-backdrop" onclick="closeFriendsListModal()"></div>
+        <div class="modal-content friends-modal-content">
+          <div class="modal-header">
+            <div class="modal-title-wrap" style="display: flex; align-items: center; gap: 10px;">
+              <i class="fa-solid fa-users-viewfinder text-cyan" style="font-size: 1.25rem;"></i>
+              <div class="modal-title-text">
+                <h3 style="margin: 0; font-size: 1rem; color: #fff; font-weight: 800;">Invited Friends List</h3>
+                <span class="friends-modal-subtitle">Track your referred members, activity & deposits</span>
+              </div>
+            </div>
+            <button class="modal-close-btn" onclick="closeFriendsListModal()" title="Close"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div class="modal-body friends-modal-body">
+            <!-- Quick Summary KPI Pills -->
+            <div class="friends-summary-bar">
+              <div class="f-sum-pill">
+                <span class="f-sum-val text-cyan" id="friendsModalCount">0</span>
+                <span class="f-sum-lbl">Total Invited</span>
+              </div>
+              <div class="f-sum-pill">
+                <span class="f-sum-val text-green" id="friendsModalActiveCount">0</span>
+                <span class="f-sum-lbl">Active Now</span>
+              </div>
+              <div class="f-sum-pill">
+                <span class="f-sum-val text-gold" id="friendsModalDepositSum">$0.00</span>
+                <span class="f-sum-lbl">Deposits</span>
+              </div>
+            </div>
+
+            <!-- Table Header -->
+            <div class="friends-table-header">
+              <span class="col-sl">SL No.</span>
+              <span class="col-user">Username (TG)</span>
+              <span class="col-status">Status</span>
+              <span class="col-deposit">Deposit</span>
+            </div>
+
+            <!-- Scrollable Friends List Container -->
+            <div id="friendsListContainer" class="friends-list-container">
+              <div class="friends-loading-state" style="text-align: center; padding: 25px; color: #94a3b8;">
+                <i class="fa-solid fa-circle-notch fa-spin text-cyan" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+                <div style="font-size: 0.75rem;">Loading invited friends...</div>
+              </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="friends-modal-footer">
+              <button class="f-modal-share-btn" onclick="closeFriendsListModal(); shareInviteToTelegram();">
+                <i class="fa-brands fa-telegram"></i> Invite More Friends (+$25 Bonus)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ================= MODAL: USER PROFILE DETAILS ================= -->
       <div id="profileModal" class="app-modal">
         <div class="modal-backdrop" onclick="closeProfileModal()"></div>
@@ -1036,9 +1095,9 @@
                 <div class="prof-val text-gold" id="profRefBal">$0.00</div>
               </div>
 
-              <div class="prof-detail-row">
+              <div class="prof-detail-row" onclick="closeProfileModal(); openFriendsListModal();" style="cursor: pointer;" title="Click to view invited friends list">
                 <div class="prof-label"><i class="fa-solid fa-users text-cyan"></i> Total Referrals:</div>
-                <div class="prof-val" id="profFriendsCount">0 Friends</div>
+                <div class="prof-val" id="profFriendsCount">0 Friends <i class="fa-solid fa-chevron-right text-cyan" style="font-size:0.6rem; margin-left: 4px;"></i></div>
               </div>
 
               <div class="prof-detail-row">
@@ -1443,7 +1502,7 @@
   <script src="about-i18n.js?v=1.0"></script>
 
   <!-- Production Engine -->
-  <script src="app.js?v=5.0"></script>
+  <script src="app.js?v=5.1"></script>
 </body>
 
 </html>

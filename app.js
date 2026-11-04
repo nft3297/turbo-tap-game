@@ -152,7 +152,8 @@ const STATE = {
   royaleSpawnInterval: null,
   boostMeter: 0,
   isBoostActive: false,
-  boostTimeout: null
+  boostTimeout: null,
+  telegramCommunityUrl: localStorage.getItem('turbo_tg_community') || 'https://t.me/turbotapgame_2nd'
 };
 
 // Expose STATE to global scope for iframe / admin / inline script checks
@@ -1813,9 +1814,21 @@ async function loadDynamicRooms() {
   }
 }
 
+async function syncPublicConfig() {
+  try {
+    const res = await fetch('/api/config?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && data.telegramCommunityUrl) {
+      applyTelegramCommunityUrl(data.telegramCommunityUrl);
+    }
+  } catch (err) { }
+}
+
 function initRoomsLiveSync() {
   // 1. Initial Immediate Load
   loadDynamicRooms();
+  syncPublicConfig();
 
   // 2. Real-Time Server-Sent Events (SSE) Stream
   if (window.EventSource && !__roomsEventSource) {
@@ -1827,6 +1840,14 @@ function initRoomsLiveSync() {
           if (payload && Array.isArray(payload.rooms)) {
             window.__ARENA_ROOMS = payload.rooms;
             applyDynamicRooms(payload.rooms, true);
+          }
+        } catch (err) { }
+      });
+      __roomsEventSource.addEventListener('configUpdated', (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          if (payload && payload.config && payload.config.telegramCommunityUrl) {
+            applyTelegramCommunityUrl(payload.config.telegramCommunityUrl);
           }
         } catch (err) { }
       });
@@ -3206,16 +3227,35 @@ function shareTelegramScore() {
 }
 
 // 16b. Join Official Telegram Community Group
-function joinTelegramGroup(e) {
-  if (e) e.preventDefault();
-  triggerHaptic('impact');
-  const groupUrl = 'https://t.me/turbotapgame_2nd';
-  if (tg?.openTelegramLink) {
-    tg.openTelegramLink(groupUrl);
-  } else {
-    window.open(groupUrl, '_blank');
+function applyTelegramCommunityUrl(url) {
+  if (!url || typeof url !== 'string') return;
+  const cleanUrl = url.trim();
+  if (!cleanUrl) return;
+  STATE.telegramCommunityUrl = cleanUrl;
+  try {
+    localStorage.setItem('turbo_tg_community', cleanUrl);
+  } catch (e) { }
+  const btn = document.getElementById('floatingTelegramBtn');
+  if (btn) {
+    btn.href = cleanUrl;
   }
 }
+
+function joinTelegramGroup(e) {
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+  triggerHaptic('impact');
+  const groupUrl = STATE.telegramCommunityUrl || localStorage.getItem('turbo_tg_community') || 'https://t.me/turbotapgame_2nd';
+  if (window.Telegram?.WebApp?.openTelegramLink) {
+    window.Telegram.WebApp.openTelegramLink(groupUrl);
+  } else {
+    window.open(groupUrl, '_blank', 'noopener,noreferrer');
+  }
+}
+
+window.applyTelegramCommunityUrl = applyTelegramCommunityUrl;
+window.joinTelegramGroup = joinTelegramGroup;
 
 // 17. Confetti Effect
 function createConfetti() {

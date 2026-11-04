@@ -19,7 +19,7 @@
   <!-- QRCode.js for Deposit Address QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
-  <link rel="stylesheet" href="style.css?v=5.2">
+  <link rel="stylesheet" href="style.css?v=5.3">
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
@@ -1053,7 +1053,8 @@
                 <div class="prof-label"><i class="fa-solid fa-envelope text-purple"></i> Email:</div>
                 <div class="prof-email-val-wrap">
                   <span class="prof-val" id="profEmail">Not set</span>
-                  <button type="button" class="prof-edit-email-btn" onclick="openEditEmailModal(event)" title="Edit Email Address">
+                  <button type="button" class="prof-edit-email-btn" onclick="openEditEmailModal(event)"
+                    title="Edit Email Address">
                     <i class="fa-solid fa-pen-to-square"></i> <span>Edit</span>
                   </button>
                 </div>
@@ -1151,12 +1152,14 @@
               <i class="fa-solid fa-pen-to-square text-cyan" style="font-size: 1.15rem;"></i>
               <h3 style="margin: 0; font-size: 0.98rem; color: #fff; font-weight: 800;">Update Email Address</h3>
             </div>
-            <button class="modal-close-btn" onclick="closeEditEmailModal()" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            <button class="modal-close-btn" onclick="closeEditEmailModal()" title="Close"><i
+                class="fa-solid fa-xmark"></i></button>
           </div>
 
           <div class="modal-body" style="padding-top: 6px;">
             <p style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 14px; line-height: 1.45;">
-              Enter your official email address to update your Web3 profile. This email will be linked to your account for notifications and transaction receipts.
+              Enter your official email address to update your Web3 profile. This email will be linked to your account
+              for notifications and transaction receipts.
             </p>
 
             <div class="email-edit-box">
@@ -1164,7 +1167,8 @@
                 <i class="fa-solid fa-envelope text-purple"></i> NEW EMAIL ADDRESS
               </label>
               <div class="email-input-wrapper">
-                <input type="email" id="editEmailInput" class="email-edit-input" placeholder="e.g. yourname@gmail.com" autocomplete="email" />
+                <input type="email" id="editEmailInput" class="email-edit-input" placeholder="e.g. yourname@gmail.com"
+                  autocomplete="email" />
                 <i class="fa-solid fa-at email-input-icon"></i>
               </div>
               <div id="editEmailError" class="email-error-msg"></div>
@@ -1543,7 +1547,7 @@
       setTimeout(checkAndShowAdminBtn, 400);
       setTimeout(checkAndShowAdminBtn, 1200);
       setTimeout(checkAndShowAdminBtn, 2500);
-      setTimeout(checkAndShowAdminBtn, 5000);
+      sTimeout(cShowAdminBtn, 5000);
     });
   </script>
 
@@ -1551,7 +1555,7 @@
   <script src="about-i18n.js?v=1.0"></script>
 
   <!-- Production Engine -->
-  <script src="app.js?v=5.2"></script>
+  <script src="app.js?v=5.3"></script>
 </body>
 
 </html>

@@ -280,6 +280,10 @@ async function handleTelegramMessage(msg) {
     const appBaseUrl = 'https://turbo-tap-game.onrender.com';
     const webAppUrl = refId ? `${appBaseUrl}?startapp=ref_${refId}` : appBaseUrl;
 
+    const localDB = readDB();
+    const communityUrl = localDB.gameConfig?.telegramCommunityUrl || 'https://t.me/turbotapgame_2nd';
+    const supportHandle = (localDB.gameConfig?.supportUsername || '@TurboSupport').trim();
+
     const welcomeMsg = `🎮 <b>Welcome to Turbo Tap Game, ${firstName}!</b> ⚡\n\n` +
       `⚔️ <b>Multiplayer Arena Battles:</b> Compete in 3P, 5P, 8P, and 12P fast-paced showdowns!\n` +
       `💰 <b>Win Real Crypto:</b> Instant Binance Smart Chain (BSC BEP-20) payouts!\n` +
@@ -297,11 +301,11 @@ async function handleTelegramMessage(msg) {
         [
           {
             text: '💬 Official Community',
-            url: 'https://t.me/turbotapgame_2nd'
+            url: communityUrl
           },
           {
             text: '🆘 Support',
-            url: 'https://t.me/TurboSupport'
+            url: supportHandle.startsWith('http') ? supportHandle : `https://t.me/${supportHandle.replace('@', '')}`
           }
         ]
       ]
@@ -310,13 +314,16 @@ async function handleTelegramMessage(msg) {
     console.log(`[Telegram Bot] /start received from ${chatId} (${firstName}). Sending interactive game launcher...`);
     await sendTelegramReply(chatId, welcomeMsg, keyboard);
   } else if (text.startsWith('/help')) {
+    const localDB = readDB();
+    const communityUrl = localDB.gameConfig?.telegramCommunityUrl || 'https://t.me/turbotapgame_2nd';
+    const supportHandle = (localDB.gameConfig?.supportUsername || '@TurboSupport').trim();
     const helpMsg = `ℹ️ <b>Turbo Tap Game — Help & Info</b>\n\n` +
       `1️⃣ Tap <b>"Play Turbo Tap Game"</b> below to open the game inside Telegram.\n` +
       `2️⃣ Choose a battle arena: Trio ($2), Squad ($4), Elite ($7), or Royale ($15).\n` +
       `3️⃣ Beat the timer and rivals to claim the Winner Reward!\n` +
       `4️⃣ Invite friends to earn $25/ref.\n\n` +
-      `🆘 <b>Support:</b> @TurboSupport\n` +
-      `💬 <b>Community:</b> @turbotapgame_2nd`;
+      `🆘 <b>Support:</b> ${supportHandle}\n` +
+      `💬 <b>Community:</b> <a href="${communityUrl}">${communityUrl}</a>`;
     await sendTelegramReply(chatId, helpMsg, {
       inline_keyboard: [
         [{ text: '🕹️ Open Game', web_app: { url: 'https://turbo-tap-game.onrender.com' } }]
@@ -715,6 +722,7 @@ const server = http.createServer(async (req, res) => {
       const localDB = readDB();
       res.write(`event: connected\ndata: ${JSON.stringify({ connected: true, time: Date.now() })}\n\n`);
       res.write(`event: roomsUpdated\ndata: ${JSON.stringify({ rooms: localDB.battleRooms || DEFAULT_ARENA_ROOMS, time: Date.now() })}\n\n`);
+      res.write(`event: configUpdated\ndata: ${JSON.stringify({ config: localDB.gameConfig || {}, time: Date.now() })}\n\n`);
       liveSyncClients.add(res);
       req.on('close', () => {
         liveSyncClients.delete(res);
@@ -2154,6 +2162,7 @@ const server = http.createServer(async (req, res) => {
           welcomeMessage: 'Welcome to Turbo Team Battle! 🚀',
           botName: 'Turbo Team Battle',
           supportUsername: '@TurboSupport',
+          telegramCommunityUrl: 'https://t.me/turbotapgame_2nd',
           announcementText: '',
           announcementActive: false,
           minDepositAmount: 1,
@@ -2223,7 +2232,8 @@ const server = http.createServer(async (req, res) => {
           const typeIcons = { info: 'ℹ️', success: '✅', warning: '⚠️', alert: '🚨', error: '🚨' };
           const icon = typeIcons[type] || '📢';
           const titleLine = title ? `\n\n📌 <b>${escapeHtml(title)}</b>` : '';
-          const broadcastText = `🎮 <b>Turbo Tap Game — Announcement</b> ${icon}${titleLine}\n\n${escapeHtml(message)}\n\n━━━━━━━━━━━━━━━━━\n🕹️ <b>Play & Battle Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>\n💬 <b>Join Community:</b> <a href="https://t.me/turbotapgame_2nd">Turbo Tap Community</a>`;
+          const commUrl = localDB.gameConfig?.telegramCommunityUrl || 'https://t.me/turbotapgame_2nd';
+          const broadcastText = `🎮 <b>Turbo Tap Game — Announcement</b> ${icon}${titleLine}\n\n${escapeHtml(message)}\n\n━━━━━━━━━━━━━━━━━\n🕹️ <b>Play & Battle Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>\n💬 <b>Join Community:</b> <a href="${commUrl}">Turbo Tap Community</a>`;
 
           // Asynchronously dispatch direct Telegram messages to all registered users
           let sentTotal = 0;
@@ -2419,6 +2429,7 @@ const server = http.createServer(async (req, res) => {
           announcementActive: config.announcementActive || false,
           depositNetwork: config.depositNetwork || 'BSC (BEP-20)',
           minDepositAmount: config.minDepositAmount || 1,
+          telegramCommunityUrl: config.telegramCommunityUrl || 'https://t.me/turbotapgame_2nd',
           rooms: localDB.battleRooms || DEFAULT_ARENA_ROOMS
         }));
       }

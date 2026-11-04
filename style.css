@@ -5821,3 +5821,159 @@ body::before {
   line-height: 1.4;
   margin-bottom: 14px;
 }
+
+/* ================= 39. EDIT EMAIL BUTTON & MODAL ================= */
+.prof-email-val-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 72%;
+  justify-content: flex-end;
+}
+
+.prof-email-val-wrap .prof-val {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prof-edit-email-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  border-radius: 6px;
+  color: #d8b4fe;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.25);
+}
+
+.prof-edit-email-btn:hover {
+  background: rgba(168, 85, 247, 0.35);
+  border-color: #a855f7;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+  transform: translateY(-1px);
+}
+
+.prof-edit-email-btn:active {
+  transform: scale(0.92);
+}
+
+.edit-email-modal-content {
+  max-width: 400px;
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(168, 85, 247, 0.25);
+}
+
+.email-edit-box {
+  margin-bottom: 16px;
+}
+
+.email-edit-label {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: #c084fc;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+  font-family: var(--font-display);
+}
+
+.email-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.email-edit-input {
+  width: 100%;
+  background: rgba(8, 12, 28, 0.85);
+  border: 1.5px solid rgba(168, 85, 247, 0.4);
+  border-radius: var(--radius-sm);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  padding: 10px 38px 10px 12px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.email-edit-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.35);
+}
+
+.email-input-icon {
+  position: absolute;
+  right: 12px;
+  color: #818cf8;
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.email-error-msg {
+  display: none;
+  color: #f87171;
+  font-size: 0.68rem;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.email-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 10px;
+}
+
+.btn-email-cancel {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #cbd5e1;
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-email-cancel:hover {
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.btn-email-save {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #a855f7 0%, #06b6d4 100%);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 10px;
+  cursor: pointer;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.4);
+  transition: all 0.15s ease;
+}
+
+.btn-email-save:hover {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
+  transform: translateY(-1px);
+}
+
+.btn-email-save:active {
+  transform: scale(0.95);
+}
+

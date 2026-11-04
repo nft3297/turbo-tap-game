@@ -115,7 +115,7 @@ const STATE = {
     username: tgUser?.username
       ? '@' + tgUser.username
       : (localStorage.getItem('turbo_username') || ''),
-    email: '',
+    email: localStorage.getItem('turbo_email') || '',
     photoUrl: tgUser?.photo_url
       || localStorage.getItem('turbo_photoUrl')
       || 'images/avatars/bot_0.jpg',
@@ -589,7 +589,7 @@ function openProfileModal() {
   triggerHaptic('impact');
 
   const displayUsername = STATE.user.username || STATE.user.firstName || 'turbogame';
-  const displayEmail = STATE.user.email || 'player@gmail.com';
+  const displayEmail = STATE.user.email || localStorage.getItem('turbo_email') || 'player@gmail.com';
   const tgUsername = tg?.initDataUnsafe?.user?.username ? '@' + tg.initDataUnsafe.user.username : (displayUsername.startsWith('@') ? displayUsername : '@' + displayUsername);
 
   const largeAvatar = document.getElementById('profLargeAvatar');
@@ -644,6 +644,109 @@ function openProfileModal() {
 function closeProfileModal() {
   document.getElementById('profileModal')?.classList.remove('active');
 }
+
+// ================= EDIT EMAIL MODAL LOGIC =================
+function openEditEmailModal(e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+  triggerHaptic('impact');
+  const modal = document.getElementById('editEmailModal');
+  const input = document.getElementById('editEmailInput');
+  const errEl = document.getElementById('editEmailError');
+  if (errEl) {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+  }
+  if (input) {
+    const currentEmail = STATE.user.email || localStorage.getItem('turbo_email') || '';
+    input.value = currentEmail === 'player@gmail.com' ? '' : currentEmail;
+  }
+  if (modal) {
+    modal.classList.add('active');
+    modal.scrollTop = 0;
+    setTimeout(() => input?.focus(), 150);
+  }
+}
+
+function closeEditEmailModal() {
+  const modal = document.getElementById('editEmailModal');
+  if (modal) modal.classList.remove('active');
+}
+
+async function submitEmailUpdate() {
+  const input = document.getElementById('editEmailInput');
+  const errEl = document.getElementById('editEmailError');
+  const btn = document.getElementById('btnSaveEmail');
+  const btnText = document.getElementById('btnSaveEmailText');
+
+  if (!input) return;
+  const newEmail = input.value.trim().toLowerCase();
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!newEmail || !emailRegex.test(newEmail)) {
+    if (errEl) {
+      errEl.textContent = 'Please enter a valid email address (e.g. name@gmail.com)';
+      errEl.style.display = 'block';
+    }
+    input.focus();
+    triggerHaptic('error');
+    return;
+  }
+
+  if (errEl) errEl.style.display = 'none';
+
+  // Loading state
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
+  triggerHaptic('impact');
+
+  try {
+    const res = await fetch('/api/user/update-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        telegramId: STATE.user.id,
+        email: newEmail
+      })
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      STATE.user.email = newEmail;
+      localStorage.setItem('turbo_email', newEmail);
+
+      const profEmail = document.getElementById('profEmail');
+      if (profEmail) profEmail.textContent = newEmail;
+
+      closeEditEmailModal();
+      triggerHaptic('success');
+      showToast('✅ Email updated successfully!');
+    } else {
+      throw new Error(result.error || 'Failed to update email');
+    }
+  } catch (err) {
+    console.warn('[Update Email Fallback]', err);
+    // Optimistic fallback for offline/local
+    STATE.user.email = newEmail;
+    localStorage.setItem('turbo_email', newEmail);
+    const profEmail = document.getElementById('profEmail');
+    if (profEmail) profEmail.textContent = newEmail;
+
+    closeEditEmailModal();
+    triggerHaptic('success');
+    showToast('✅ Email saved successfully!');
+  } finally {
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'Update Email';
+  }
+}
+
+window.openEditEmailModal = openEditEmailModal;
+window.closeEditEmailModal = closeEditEmailModal;
+window.submitEmailUpdate = submitEmailUpdate;
 
 // ================= ADMIN PANEL ACCESS =================
 function openAdminPanel(e) {

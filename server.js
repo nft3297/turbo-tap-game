@@ -1430,6 +1430,69 @@ const server = http.createServer(async (req, res) => {
         return res.end(JSON.stringify({ success: true, user: formatUser(createdUser || newUserRow) }));
       }
 
+      // 2b. Update User Email: POST /api/user/update-email
+      if (req.method === 'POST' && reqPath === '/api/user/update-email') {
+        const { telegramId, email } = data || {};
+
+        if (!telegramId) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'telegramId is required' }));
+        }
+
+        const cleanTelegramId = String(telegramId).trim();
+        if (!/^[a-zA-Z0-9_-]{1,64}$/.test(cleanTelegramId)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Invalid telegramId format' }));
+        }
+
+        if (!email || typeof email !== 'string') {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Valid email address is required' }));
+        }
+
+        const cleanEmail = email.trim().toLowerCase().slice(0, 100);
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(cleanEmail)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Invalid email address format' }));
+        }
+
+        try {
+          // Update Supabase
+          const { data: updatedUser, error: updateErr } = await supabase
+            .from('users')
+            .update({
+              email: cleanEmail,
+              updated_at: new Date().toISOString()
+            })
+            .eq('telegram_id', String(cleanTelegramId))
+            .select()
+            .single();
+
+          if (updateErr) {
+            console.warn('[Supabase Update Email Warning]', updateErr.message);
+          }
+
+          // Sync local DB
+          const localDB = readDB();
+          if (localDB.users[cleanTelegramId]) {
+            localDB.users[cleanTelegramId].email = cleanEmail;
+            writeDB(localDB);
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({
+            success: true,
+            email: cleanEmail,
+            message: 'Email updated successfully'
+          }));
+        } catch (err) {
+          console.error('[Update Email Error]', err);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'Failed to update email', message: err.message }));
+        }
+      }
+
       // 3. Update Balance / Win / Entry Fee / Referral Bonus: POST /api/wallet/update
       if (req.method === 'POST' && reqPath === '/api/wallet/update') {
         const { telegramId, amount, type } = data;

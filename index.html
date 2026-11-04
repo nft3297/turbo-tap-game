@@ -19,7 +19,7 @@
   <!-- QRCode.js for Deposit Address QR -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="icon" type="image/png" href="images/logo.png">
-  <link rel="stylesheet" href="style.css?v=5.1">
+  <link rel="stylesheet" href="style.css?v=5.2">
 
   <!-- Instant High-Speed Preload for All Game & Background Images -->
   <link rel="preload" as="image" href="images/logo.png">
@@ -578,9 +578,11 @@
           <p class="ref-reward-highlight">Earn <b>+$25.00</b> for every friend who joins via your link!</p>
 
           <div class="ref-stats-grid">
-            <div class="ref-stat-box ref-clickable" id="refFriendsCountBox" onclick="openFriendsListModal()" title="Click to view invited friends list & status">
+            <div class="ref-stat-box ref-clickable" id="refFriendsCountBox" onclick="openFriendsListModal()"
+              title="Click to view invited friends list & status">
               <span class="rs-num" id="totalFriendsCount">0</span>
-              <span class="rs-lbl">Friends Invited <i class="fa-solid fa-arrow-up-right-from-square text-cyan" style="font-size: 0.58rem; margin-left: 2px;"></i></span>
+              <span class="rs-lbl">Friends Invited <i class="fa-solid fa-arrow-up-right-from-square text-cyan"
+                  style="font-size: 0.58rem; margin-left: 2px;"></i></span>
             </div>
             <div class="ref-stat-box">
               <span class="rs-num text-gold" id="totalEarnedRef">$0.00</span>
@@ -967,7 +969,8 @@
                 <span class="friends-modal-subtitle">Track your referred members, activity & deposits</span>
               </div>
             </div>
-            <button class="modal-close-btn" onclick="closeFriendsListModal()" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            <button class="modal-close-btn" onclick="closeFriendsListModal()" title="Close"><i
+                class="fa-solid fa-xmark"></i></button>
           </div>
 
           <div class="modal-body friends-modal-body">
@@ -998,7 +1001,8 @@
             <!-- Scrollable Friends List Container -->
             <div id="friendsListContainer" class="friends-list-container">
               <div class="friends-loading-state" style="text-align: center; padding: 25px; color: #94a3b8;">
-                <i class="fa-solid fa-circle-notch fa-spin text-cyan" style="font-size: 1.5rem; margin-bottom: 8px;"></i>
+                <i class="fa-solid fa-circle-notch fa-spin text-cyan"
+                  style="font-size: 1.5rem; margin-bottom: 8px;"></i>
                 <div style="font-size: 0.75rem;">Loading invited friends...</div>
               </div>
             </div>
@@ -1047,7 +1051,12 @@
 
               <div class="prof-detail-row">
                 <div class="prof-label"><i class="fa-solid fa-envelope text-purple"></i> Email:</div>
-                <div class="prof-val" id="profEmail">Not set</div>
+                <div class="prof-email-val-wrap">
+                  <span class="prof-val" id="profEmail">Not set</span>
+                  <button type="button" class="prof-edit-email-btn" onclick="openEditEmailModal(event)" title="Edit Email Address">
+                    <i class="fa-solid fa-pen-to-square"></i> <span>Edit</span>
+                  </button>
+                </div>
               </div>
 
               <div class="prof-detail-row">
@@ -1095,9 +1104,11 @@
                 <div class="prof-val text-gold" id="profRefBal">$0.00</div>
               </div>
 
-              <div class="prof-detail-row" onclick="closeProfileModal(); openFriendsListModal();" style="cursor: pointer;" title="Click to view invited friends list">
+              <div class="prof-detail-row" onclick="closeProfileModal(); openFriendsListModal();"
+                style="cursor: pointer;" title="Click to view invited friends list">
                 <div class="prof-label"><i class="fa-solid fa-users text-cyan"></i> Total Referrals:</div>
-                <div class="prof-val" id="profFriendsCount">0 Friends <i class="fa-solid fa-chevron-right text-cyan" style="font-size:0.6rem; margin-left: 4px;"></i></div>
+                <div class="prof-val" id="profFriendsCount">0 Friends <i class="fa-solid fa-chevron-right text-cyan"
+                    style="font-size:0.6rem; margin-left: 4px;"></i></div>
               </div>
 
               <div class="prof-detail-row">
@@ -1125,6 +1136,44 @@
               </button>
               <button class="prof-action-btn prof-close-btn" onclick="closeProfileModal()">
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= MODAL: EDIT / UPDATE EMAIL ID ================= -->
+      <div id="editEmailModal" class="app-modal center-modal">
+        <div class="modal-backdrop" onclick="closeEditEmailModal()"></div>
+        <div class="modal-content edit-email-modal-content">
+          <div class="modal-header">
+            <div class="modal-title-wrap" style="display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-pen-to-square text-cyan" style="font-size: 1.15rem;"></i>
+              <h3 style="margin: 0; font-size: 0.98rem; color: #fff; font-weight: 800;">Update Email Address</h3>
+            </div>
+            <button class="modal-close-btn" onclick="closeEditEmailModal()" title="Close"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div class="modal-body" style="padding-top: 6px;">
+            <p style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 14px; line-height: 1.45;">
+              Enter your official email address to update your Web3 profile. This email will be linked to your account for notifications and transaction receipts.
+            </p>
+
+            <div class="email-edit-box">
+              <label class="email-edit-label">
+                <i class="fa-solid fa-envelope text-purple"></i> NEW EMAIL ADDRESS
+              </label>
+              <div class="email-input-wrapper">
+                <input type="email" id="editEmailInput" class="email-edit-input" placeholder="e.g. yourname@gmail.com" autocomplete="email" />
+                <i class="fa-solid fa-at email-input-icon"></i>
+              </div>
+              <div id="editEmailError" class="email-error-msg"></div>
+            </div>
+
+            <div class="email-modal-actions">
+              <button type="button" class="btn-email-cancel" onclick="closeEditEmailModal()">Cancel</button>
+              <button type="button" class="btn-email-save" id="btnSaveEmail" onclick="submitEmailUpdate()">
+                <i class="fa-solid fa-check"></i> <span id="btnSaveEmailText">Update Email</span>
               </button>
             </div>
           </div>
@@ -1502,7 +1551,7 @@
   <script src="about-i18n.js?v=1.0"></script>
 
   <!-- Production Engine -->
-  <script src="app.js?v=5.1"></script>
+  <script src="app.js?v=5.2"></script>
 </body>
 
 </html>

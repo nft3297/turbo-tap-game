@@ -621,6 +621,218 @@ async function checkBscUsdtBalance(address) {
   return 0;
 }
 
+// ================= BULLETPROOF DEPOSIT CREDIT ENGINE (ANTI-DOUBLE CREDIT) =================
+const activeDepositLocks = new Set();
+
+async function processDepositCredit({
+  telegramId,
+  paymentId,
+  amount,
+  txHash,
+  payAddress,
+  gateway = 'Plisio',
+  source = 'check'
+}) {
+  if (!telegramId || !amount || parseFloat(amount) <= 0) {
+    return { success: false, error: 'Invalid telegramId or amount' };
+  }
+
+  const cleanTelegramId = String(telegramId).trim();
+  const cleanAmount = parseFloat(parseFloat(amount).toFixed(2));
+  const cleanPaymentId = paymentId ? String(paymentId).trim() : null;
+
+  // Extract clean 66-character tx hash if present (0x...)
+  let cleanTxHash = null;
+  if (typeof txHash === 'string') {
+    const match = txHash.match(/0x[a-fA-F0-9]{64}/);
+    if (match) cleanTxHash = match[0].toLowerCase();
+  }
+
+  // 1. MUTEX / IN-FLIGHT LOCKING
+  const lockKeys = [`user_${cleanTelegramId}`];
+  if (cleanPaymentId) lockKeys.push(`pay_${cleanPaymentId}`);
+  if (cleanTxHash) lockKeys.push(`tx_${cleanTxHash}`);
+
+  const isLocked = lockKeys.some(k => activeDepositLocks.has(k));
+  if (isLocked) {
+    console.warn(`[Deposit Engine] Concurrent credit attempt blocked by lock for user ${cleanTelegramId}, payment ${cleanPaymentId}`);
+    const userRow = await getSupabaseUser(cleanTelegramId);
+    return { success: true, alreadyCredited: true, wallet: parseFloat(userRow?.wallet || 0) };
+  }
+
+  lockKeys.forEach(k => activeDepositLocks.add(k));
+
+  try {
+    // 2. CHECK DEDUPLICATION IN SUPABASE
+
+    // Check A: Is this payment_id or deposit id already finished?
+    if (cleanPaymentId && !cleanPaymentId.startsWith('local_')) {
+      const { data: existingDep } = await supabase
+        .from('deposits')
+        .select('*')
+        .or(`payment_id.eq.${cleanPaymentId},id.eq.plisio_${cleanPaymentId}`)
+        .eq('status', 'finished')
+        .maybeSingle();
+
+      if (existingDep) {
+        console.log(`[Deposit Engine] Deduplication Check A: payment_id ${cleanPaymentId} is ALREADY credited! Skipping.`);
+        const userRow = await getSupabaseUser(cleanTelegramId);
+        return {
+          success: true,
+          alreadyCredited: true,
+          depositId: existingDep.id,
+          amount: parseFloat(existingDep.amount || cleanAmount),
+          wallet: parseFloat(userRow?.wallet || 0)
+        };
+      }
+    }
+
+    // Check B: Is the on-chain tx_hash already credited for any deposit?
+    if (cleanTxHash) {
+      const { data: txDep } = await supabase
+        .from('deposits')
+        .select('*')
+        .ilike('tx_hash', `%${cleanTxHash}%`)
+        .eq('status', 'finished')
+        .maybeSingle();
+
+      if (txDep) {
+        console.log(`[Deposit Engine] Deduplication Check B: tx_hash ${cleanTxHash} is ALREADY credited in deposit ${txDep.id}! Skipping.`);
+        const userRow = await getSupabaseUser(cleanTelegramId);
+        return {
+          success: true,
+          alreadyCredited: true,
+          depositId: txDep.id,
+          amount: parseFloat(txDep.amount || cleanAmount),
+          wallet: parseFloat(userRow?.wallet || 0)
+        };
+      }
+    }
+
+    // Check C: Address & amount time-window deduplication (Prevent On-Chain Scanner from double-crediting Plisio callback or vice versa)
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { data: recentDeps } = await supabase
+      .from('deposits')
+      .select('*')
+      .eq('telegram_id', cleanTelegramId)
+      .eq('status', 'finished')
+      .gte('created_at', fifteenMinsAgo);
+
+    if (recentDeps && recentDeps.length > 0) {
+      const dupDep = recentDeps.find(d => {
+        const amt = parseFloat(d.amount || 0);
+        return Math.abs(amt - cleanAmount) < 0.20;
+      });
+
+      if (dupDep) {
+        const isDistinctTx = cleanTxHash && dupDep.tx_hash &&
+          dupDep.tx_hash.match(/0x[a-fA-F0-9]{64}/) &&
+          !dupDep.tx_hash.toLowerCase().includes(cleanTxHash);
+
+        if (!isDistinctTx) {
+          console.log(`[Deposit Engine] Deduplication Check C: Found matching deposit ${dupDep.id} ($${dupDep.amount}) within 15 min window! Skipping duplicate.`);
+          if (cleanPaymentId && !cleanPaymentId.startsWith('local_')) {
+            await supabase.from('deposits').update({
+              status: 'finished',
+              tx_hash: txHash || dupDep.tx_hash
+            }).eq('payment_id', cleanPaymentId);
+          }
+          const userRow = await getSupabaseUser(cleanTelegramId);
+          return {
+            success: true,
+            alreadyCredited: true,
+            depositId: dupDep.id,
+            amount: parseFloat(dupDep.amount || cleanAmount),
+            wallet: parseFloat(userRow?.wallet || 0)
+          };
+        }
+      }
+    }
+
+    // 3. ATOMIC DEPOSIT RECORDING & WALLET CREDIT
+    const depositRecordId = cleanPaymentId ? (cleanPaymentId.startsWith('dep_') || cleanPaymentId.startsWith('plisio_') ? cleanPaymentId : `plisio_${cleanPaymentId}`) : `dep_bsc_${cleanTelegramId}_${Date.now()}`;
+    const paymentIdToSave = cleanPaymentId || `bsc_onchain_${cleanTelegramId}_${Date.now()}`;
+
+    // Upsert deposit record as finished
+    const { error: depErr } = await supabase.from('deposits').upsert({
+      id: depositRecordId,
+      payment_id: paymentIdToSave,
+      telegram_id: cleanTelegramId,
+      amount: cleanAmount,
+      network: 'BSC-BEP20',
+      tx_hash: txHash || payAddress || cleanTxHash || 'BSC_ONCHAIN',
+      status: 'finished',
+      created_at: new Date().toISOString()
+    });
+
+    if (depErr) {
+      console.error('[Deposit Engine] Error writing deposit record:', depErr);
+      return { success: false, error: depErr.message };
+    }
+
+    // Fetch fresh user record
+    const userRow = await getSupabaseUser(cleanTelegramId);
+    if (!userRow) {
+      return { success: false, error: 'User not found' };
+    }
+
+    const currentWallet = parseFloat(userRow.wallet || 0);
+    const updatedWallet = parseFloat((currentWallet + cleanAmount).toFixed(2));
+
+    // Update wallet in Supabase
+    const { error: userErr } = await supabase.from('users').update({
+      wallet: updatedWallet,
+      updated_at: new Date().toISOString()
+    }).eq('telegram_id', cleanTelegramId);
+
+    if (userErr) {
+      console.error('[Deposit Engine] Error updating user wallet:', userErr);
+      return { success: false, error: userErr.message };
+    }
+
+    // Sync local DB
+    try {
+      const localDB = readDB();
+      localDB.creditedDeposits = localDB.creditedDeposits || {};
+      localDB.creditedDeposits[paymentIdToSave] = {
+        amount: cleanAmount,
+        telegramId: cleanTelegramId,
+        date: new Date().toISOString()
+      };
+      if (localDB.users[cleanTelegramId]) {
+        localDB.users[cleanTelegramId].wallet = updatedWallet;
+      }
+      writeDB(localDB);
+    } catch (e) {
+      console.warn('[Deposit Engine] Local DB sync error:', e.message);
+    }
+
+    console.log(`[Deposit Engine] SUCCESSFULLY CREDITED $${cleanAmount} to user ${cleanTelegramId} (Wallet: ${currentWallet} -> ${updatedWallet}). Source: ${source}`);
+
+    // Send Telegram Notification
+    const depMsg = `🎮 <b>Turbo Tap Game — Deposit Confirmed!</b> 💰\n\n` +
+      `Hello <b>${escapeHtml(userRow?.username || 'Player')}</b>!\n` +
+      `Your deposit of <b>$${cleanAmount.toFixed(2)} USDT</b> has been verified and added to your Game Wallet! 🚀\n\n` +
+      `💳 <b>Amount:</b> $${cleanAmount.toFixed(2)} USDT\n` +
+      `💰 <b>New Game Balance:</b> $${updatedWallet.toFixed(2)}\n` +
+      `⚡ <b>Status:</b> Completed\n` +
+      `⛓️ <b>Network:</b> BSC (BEP-20)\n\n` +
+      `⚔️ <i>Jump into Turbo Team Battle and multiply your coins!</i>\n` +
+      `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
+    sendTelegramMessage(cleanTelegramId, depMsg).catch(() => { });
+
+    return {
+      success: true,
+      credited: true,
+      depositId: depositRecordId,
+      amount: cleanAmount,
+      wallet: updatedWallet
+    };
+  } finally {
+    lockKeys.forEach(k => activeDepositLocks.delete(k));
+  }
+}
+
 // ================= ANTI-HACKER RATE LIMITING ENGINE =================
 const ipRateLimitMap = new Map();
 
@@ -1060,11 +1272,12 @@ const server = http.createServer(async (req, res) => {
             .from('deposits')
             .select('*')
             .or(`payment_id.eq.${paymentId},id.eq.plisio_${paymentId}`)
+            .eq('status', 'finished')
             .maybeSingle();
           depRecord = data;
         }
 
-        if (depRecord && depRecord.status === 'finished') {
+        if (depRecord) {
           const userRow = await getSupabaseUser(telegramId);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({
@@ -1090,49 +1303,27 @@ const server = http.createServer(async (req, res) => {
             const paidAmount = parseFloat(invoice.amount || invoice.pending_amount || invoice.source_sum || 0);
 
             if (isPaid && paidAmount > 0) {
-              await supabase.from('deposits').upsert({
-                id: 'plisio_' + paymentId,
-                payment_id: String(paymentId),
-                telegram_id: String(telegramId),
+              const creditResult = await processDepositCredit({
+                telegramId,
+                paymentId,
                 amount: paidAmount,
-                network: 'BSC-BEP20',
-                tx_hash: invoice.tx_urls || invoice.txn_id || null,
-                status: 'finished',
-                created_at: new Date().toISOString()
+                txHash: invoice.tx_urls || invoice.txn_id || null,
+                payAddress: invoice.wallet_hash,
+                gateway: 'Plisio',
+                source: 'plisio_api_check'
               });
 
-              const userRow = await getSupabaseUser(telegramId);
-              const updatedWallet = parseFloat(userRow?.wallet || 0) + paidAmount;
-              await supabase.from('users').update({
-                wallet: updatedWallet,
-                updated_at: new Date().toISOString()
-              }).eq('telegram_id', String(telegramId));
-
-              // Sync local DB
-              const localDB = readDB();
-              if (localDB.users[telegramId]) localDB.users[telegramId].wallet = updatedWallet;
-              writeDB(localDB);
-
-              // Send Telegram Notification to user
-              const depMsg = `🎮 <b>Turbo Tap Game — Deposit Confirmed!</b> 💰\n\n` +
-                `Hello <b>${escapeHtml(userRow?.username || 'Player')}</b>!\n` +
-                `Your deposit of <b>$${paidAmount.toFixed(2)} USDT</b> has been verified and added to your Game Wallet! 🚀\n\n` +
-                `💳 <b>Amount:</b> $${paidAmount.toFixed(2)} USDT\n` +
-                `💰 <b>New Game Balance:</b> $${updatedWallet.toFixed(2)}\n` +
-                `⚡ <b>Status:</b> Completed\n\n` +
-                `⚔️ <i>Jump into Turbo Team Battle and multiply your coins!</i>\n` +
-                `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
-              sendTelegramMessage(telegramId, depMsg).catch(() => { });
-
-              res.writeHead(200, { 'Content-Type': 'application/json' });
-              return res.end(JSON.stringify({
-                status: 'completed',
-                credited: true,
-                depositId: 'plisio_' + paymentId,
-                amount: paidAmount,
-                wallet: updatedWallet,
-                message: `Deposit of $${paidAmount.toFixed(2)} USDT credited to Game Wallet!`
-              }));
+              if (creditResult.success) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                return res.end(JSON.stringify({
+                  status: 'completed',
+                  credited: true,
+                  depositId: creditResult.depositId,
+                  amount: creditResult.amount,
+                  wallet: creditResult.wallet,
+                  message: `Deposit of $${creditResult.amount.toFixed(2)} USDT credited to Game Wallet!`
+                }));
+              }
             }
           }
         } catch (e) {
@@ -1144,6 +1335,16 @@ const server = http.createServer(async (req, res) => {
       try {
         const userRow = await getSupabaseUser(telegramId);
         if (userRow?.bsc_address) {
+          // Check if this address has an active waiting Plisio invoice
+          const { data: waitingDep } = await supabase
+            .from('deposits')
+            .select('*')
+            .eq('telegram_id', String(telegramId))
+            .eq('status', 'waiting')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
           const onChainBal = await checkBscUsdtBalance(userRow.bsc_address);
           if (onChainBal > 0) {
             const { data: allDeps } = await supabase
@@ -1155,47 +1356,29 @@ const server = http.createServer(async (req, res) => {
             const totalCredited = (allDeps || []).reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
             if (onChainBal > totalCredited) {
               const diff = parseFloat((onChainBal - totalCredited).toFixed(4));
-              const updatedWallet = parseFloat(userRow.wallet || 0) + diff;
+              const targetPaymentId = paymentId || waitingDep?.payment_id || null;
 
-              await supabase.from('deposits').insert({
-                id: `dep_bsc_${telegramId}_${Date.now()}`,
-                payment_id: `bsc_onchain_${telegramId}_${Date.now()}`,
-                telegram_id: String(telegramId),
+              const creditResult = await processDepositCredit({
+                telegramId,
+                paymentId: targetPaymentId,
                 amount: diff,
-                network: 'BSC-BEP20',
-                tx_hash: userRow.bsc_address,
-                status: 'finished',
-                created_at: new Date().toISOString()
+                txHash: userRow.bsc_address,
+                payAddress: userRow.bsc_address,
+                gateway: 'BSC-BEP20-OnChain',
+                source: 'bsc_onchain_scanner'
               });
 
-              await supabase.from('users').update({
-                wallet: updatedWallet,
-                updated_at: new Date().toISOString()
-              }).eq('telegram_id', String(telegramId));
-
-              const localDB = readDB();
-              if (localDB.users[telegramId]) localDB.users[telegramId].wallet = updatedWallet;
-              writeDB(localDB);
-
-              // Send Telegram Notification to user
-              const bscDepMsg = `🎮 <b>Turbo Tap Game — On-Chain Deposit Detected!</b> ⚡\n\n` +
-                `Hello <b>${escapeHtml(userRow?.username || 'Player')}</b>!\n` +
-                `Your Binance Smart Chain (BEP-20) deposit of <b>$${diff.toFixed(2)} USDT</b> has been confirmed on-chain and credited to your Game Wallet! 💎\n\n` +
-                `💳 <b>Deposited:</b> $${diff.toFixed(2)} USDT\n` +
-                `💰 <b>New Game Balance:</b> $${updatedWallet.toFixed(2)}\n` +
-                `⛓️ <b>Network:</b> BSC (BEP-20)\n\n` +
-                `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
-              sendTelegramMessage(telegramId, bscDepMsg).catch(() => { });
-
-              res.writeHead(200, { 'Content-Type': 'application/json' });
-              return res.end(JSON.stringify({
-                status: 'completed',
-                credited: true,
-                depositId: `dep_bsc_${telegramId}_${Date.now()}`,
-                amount: diff,
-                wallet: updatedWallet,
-                message: `Deposit of $${diff.toFixed(2)} USDT verified on Binance Smart Chain!`
-              }));
+              if (creditResult.success) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                return res.end(JSON.stringify({
+                  status: 'completed',
+                  credited: true,
+                  depositId: creditResult.depositId,
+                  amount: creditResult.amount,
+                  wallet: creditResult.wallet,
+                  message: `Deposit of $${creditResult.amount.toFixed(2)} USDT verified on Binance Smart Chain!`
+                }));
+              }
             }
           }
         }
@@ -1273,49 +1456,20 @@ const server = http.createServer(async (req, res) => {
 
         const isPaid = ['completed', 'mismatch', 'finished', 'confirmed', 'partially_paid'].includes(status);
         if (isPaid && actuallyPaid > 0 && targetTelegramId) {
-          const { data: depRecord } = await supabase
-            .from('deposits')
-            .select('status')
-            .eq('payment_id', String(paymentId))
-            .maybeSingle();
+          const creditResult = await processDepositCredit({
+            telegramId: targetTelegramId,
+            paymentId: paymentId,
+            amount: actuallyPaid,
+            txHash: data.tx_urls || data.txn_id || data.payin_hash || null,
+            payAddress: payAddress,
+            gateway: 'Plisio',
+            source: 'plisio_ipn_webhook'
+          });
 
-          if (depRecord?.status !== 'finished') {
-            await supabase.from('deposits').upsert({
-              id: 'plisio_' + paymentId,
-              payment_id: String(paymentId),
-              telegram_id: String(targetTelegramId),
-              amount: actuallyPaid,
-              network: 'BSC-BEP20',
-              tx_hash: data.tx_urls || data.txn_id || data.payin_hash || null,
-              status: 'finished',
-              created_at: new Date().toISOString()
-            });
-
-            const userRow = await getSupabaseUser(targetTelegramId);
-            const newBal = parseFloat(userRow?.wallet || 0) + actuallyPaid;
-            await supabase.from('users').update({
-              wallet: newBal,
-              updated_at: new Date().toISOString()
-            }).eq('telegram_id', String(targetTelegramId));
-
-            // Sync local DB backup
-            const localDB = readDB();
-            localDB.creditedDeposits = localDB.creditedDeposits || {};
-            localDB.creditedDeposits[String(paymentId)] = { amount: actuallyPaid, telegramId: targetTelegramId, date: new Date().toISOString() };
-            if (localDB.users[targetTelegramId]) localDB.users[targetTelegramId].wallet = newBal;
-            writeDB(localDB);
-
-            console.log(`[Plisio Callback] Auto-credited $${actuallyPaid} USDT to Game Wallet of user ${targetTelegramId} in Supabase!`);
-
-            // Send Telegram Notification to user
-            const ipnDepMsg = `🎮 <b>Turbo Tap Game — Deposit Successful!</b> 💳\n\n` +
-              `Hello <b>${escapeHtml(userRow?.username || 'Player')}</b>!\n` +
-              `Your payment of <b>$${actuallyPaid.toFixed(2)} USDT</b> has been processed and credited to your Game Wallet! 🎉\n\n` +
-              `💵 <b>Amount Credited:</b> $${actuallyPaid.toFixed(2)} USDT\n` +
-              `💰 <b>New Game Balance:</b> $${newBal.toFixed(2)}\n` +
-              `⚡ <b>Status:</b> Finished\n\n` +
-              `🕹️ <b>Play Now:</b> <a href="https://t.me/TurboTapgame_bot">@TurboTapgame_bot</a>`;
-            sendTelegramMessage(targetTelegramId, ipnDepMsg).catch(() => { });
+          if (creditResult.alreadyCredited) {
+            console.log(`[Plisio Callback] Payment ${paymentId} was already credited. Ignored duplicate webhook.`);
+          } else if (creditResult.success) {
+            console.log(`[Plisio Callback] Auto-credited $${actuallyPaid} USDT to Game Wallet of user ${targetTelegramId}!`);
           }
         }
 
